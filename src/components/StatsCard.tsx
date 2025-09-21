@@ -1,0 +1,60 @@
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { LucideIcon } from "lucide-react";
+
+interface StatsCardProps {
+  title: string;
+  value: string | number;
+  subtitle?: string;
+  icon: LucideIcon;
+  variant?: "primary" | "secondary" | "success" | "warning";
+  trend?: "up" | "down" | "neutral";
+}
+
+export const StatsCard = ({
+  title,
+  value,
+  subtitle,
+  icon: Icon,
+  variant = "primary",
+  trend = "neutral",
+}: StatsCardProps) => {
+  const variantClasses = {
+    primary: "border-primary/20 bg-primary/5",
+    secondary: "border-secondary/20 bg-secondary/5",
+    success: "border-success/20 bg-success/5",
+    warning: "border-warning/20 bg-warning/5",
+  };
+
+  const iconClasses = {
+    primary: "text-primary",
+    secondary: "text-secondary", 
+    success: "text-success",
+    warning: "text-warning",
+  };
+
+  return (
+    <Card className={`
+      p-4 space-y-3 border-2 backdrop-blur-sm transition-all duration-300 
+      hover:shadow-card hover:scale-105 animate-slide-up
+      ${variantClasses[variant]}
+    `}>
+      <div className="flex items-center justify-between">
+        <Icon className={`h-5 w-5 ${iconClasses[variant]}`} />
+        {trend !== "neutral" && (
+          <Badge variant="outline" className="text-xs">
+            {trend === "up" ? "📈" : "📉"}
+          </Badge>
+        )}
+      </div>
+      
+      <div className="space-y-1">
+        <p className="text-2xl font-bold tracking-tight">{value}</p>
+        <p className="text-xs text-muted-foreground font-medium">{title}</p>
+        {subtitle && (
+          <p className="text-xs text-muted-foreground">{subtitle}</p>
+        )}
+      </div>
+    </Card>
+  );
+};

@@ -1,11 +1,43 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { useState } from "react";
+import { Navigation } from "@/components/Navigation";
+import { Hero } from "@/components/Hero";
+import { Dashboard } from "@/components/Dashboard";
+import { ReadingGame } from "@/components/ReadingGame";
 
 const Index = () => {
+  const [currentView, setCurrentView] = useState<"hero" | "dashboard" | "game">("hero");
+
+  const renderContent = () => {
+    switch (currentView) {
+      case "hero":
+        return (
+          <Hero 
+            onStartPlaying={() => setCurrentView("dashboard")}
+            onViewLeaderboard={() => setCurrentView("dashboard")}
+          />
+        );
+      case "dashboard":
+        return <Dashboard onStartGame={(gameType) => setCurrentView("game")} />;
+      case "game":
+        return (
+          <ReadingGame 
+            onComplete={() => setCurrentView("dashboard")}
+            onBack={() => setCurrentView("dashboard")}
+          />
+        );
+      default:
+        return <Hero />;
+    }
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="mb-4 text-4xl font-bold">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
+    <div className="min-h-screen">
+      <Navigation 
+        currentView={currentView} 
+        onViewChange={setCurrentView} 
+      />
+      <div className="pt-20">
+        {renderContent()}
       </div>
     </div>
   );
