@@ -2,8 +2,15 @@ import { useState, useEffect } from "react";
 import { StatsCard } from "./StatsCard";
 import { UnitCard } from "./UnitCard";
 import { GameCard } from "./GameCard";
+import { Leaderboard } from "./Leaderboard";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { 
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { 
   Trophy, 
   Target, 
@@ -11,7 +18,9 @@ import {
   Zap,
   Crown,
   Users,
-  ArrowRight
+  ArrowRight,
+  BookOpen,
+  Calendar
 } from "lucide-react";
 import { useProfile } from "@/hooks/useProfile";
 import { useAuth } from "@/contexts/AuthContext";
@@ -41,6 +50,15 @@ export const Dashboard = ({ onStartGame }: DashboardProps) => {
   const [selectedUnit, setSelectedUnit] = useState<Unit | null>(null);
   const [gameProgress, setGameProgress] = useState<Record<string, { bestScore: number; completed: boolean }>>({});
   const [userStats, setUserStats] = useState({ avgScore: 0, unitsCompleted: 0 });
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  const [studyHistory, setStudyHistory] = useState<Array<{
+    id: string;
+    game_type: string;
+    score: number;
+    created_at: string;
+    unit_title: string;
+  }>>([]);
 
   useEffect(() => {
     fetchUnits();
@@ -100,6 +118,41 @@ export const Dashboard = ({ onStartGame }: DashboardProps) => {
     }
 
     setUserStats({ avgScore, unitsCompleted });
+  };
+
+  const fetchStudyHistory = async () => {
+    if (!user) return;
+
+    const { data, error } = await supabase
+      .from('game_attempts')
+      .select('id, game_type, score, created_at, unit_id')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(20);
+
+    if (error) {
+      console.error('Error fetching study history:', error);
+      return;
+    }
+
+    // Map unit IDs to titles
+    const historyWithTitles = data.map(attempt => {
+      const unit = units.find(u => u.id === attempt.unit_id);
+      return {
+        id: attempt.id,
+        game_type: attempt.game_type,
+        score: attempt.score,
+        created_at: attempt.created_at,
+        unit_title: unit?.title || 'Unknown Unit'
+      };
+    });
+
+    setStudyHistory(historyWithTitles);
+  };
+
+  const handleShowHistory = () => {
+    fetchStudyHistory();
+    setShowHistory(true);
   };
 
   const fetchUnits = async () => {
@@ -229,7 +282,7 @@ export const Dashboard = ({ onStartGame }: DashboardProps) => {
               <Crown className="h-4 w-4 mr-2" />
               Level {profile?.level || 1}
             </Badge>
-            <Button variant="gaming">
+            <Button variant="gaming" onClick={() => setShowLeaderboard(true)}>
               <Users className="h-4 w-4 mr-2" />
               Leaderboard
             </Button>
@@ -248,7 +301,7 @@ export const Dashboard = ({ onStartGame }: DashboardProps) => {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-bold">Current Unit: {currentUnit.title}</h2>
-            <Button variant="outline">
+            <Button variant="outline" onClick={handleShowHistory}>
               <Clock className="h-4 w-4 mr-2" />
               Study History
             </Button>
@@ -293,6 +346,59 @@ export const Dashboard = ({ onStartGame }: DashboardProps) => {
           </div>
         </div>
       </div>
+
+      {/* Leaderboard Overlay */}
+      {showLeaderboard && (
+        <div className="fixed inset-0 z-50">
+          <Leaderboard onBack={() => setShowLeaderboard(false)} />
+        </div>
+      )}
+
+      {/* Study History Dialog */}
+      <Dialog open={showHistory} onOpenChange={setShowHistory}>
+        <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Clock className="h-5 w-5" />
+              Study History
+            </DialogTitle>
+          </DialogHeader>
+          
+          {studyHistory.length === 0 ? (
+            <div className="text-center py-8">
+              <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-3 opacity-50" />
+              <p className="text-muted-foreground">No study sessions yet</p>
+              <p className="text-sm text-muted-foreground">Complete a game to see your history</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {studyHistory.map((entry) => (
+                <div 
+                  key={entry.id} 
+                  className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <BookOpen className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="font-medium capitalize">{entry.game_type} Quest</p>
+                      <p className="text-sm text-muted-foreground">{entry.unit_title}</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-bold text-lg">{entry.score}%</p>
+                    <p className="text-xs text-muted-foreground flex items-center gap-1">
+                      <Calendar className="h-3 w-3" />
+                      {new Date(entry.created_at).toLocaleDateString()}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
