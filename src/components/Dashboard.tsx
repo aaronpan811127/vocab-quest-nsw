@@ -375,21 +375,9 @@ export const Dashboard = ({ onStartGame }: DashboardProps) => {
     <div className="min-h-screen bg-gradient-hero">
       <div className="max-w-7xl mx-auto px-6 py-8 space-y-8">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">Welcome back, {displayName}! 🎮</h1>
-            <p className="text-muted-foreground mt-1">Ready to level up your vocabulary skills?</p>
-          </div>
-          <div className="flex items-center gap-4">
-            <Badge className="bg-gradient-success text-success-foreground">
-              <Crown className="h-4 w-4 mr-2" />
-              Level {profile?.level || 1}
-            </Badge>
-            <Button variant="gaming" onClick={() => setShowLeaderboard(true)}>
-              <Users className="h-4 w-4 mr-2" />
-              Leaderboard
-            </Button>
-          </div>
+        <div>
+          <h1 className="text-3xl font-bold">Welcome back, {displayName}! 🎮</h1>
+          <p className="text-muted-foreground mt-1">Ready to level up your vocabulary skills?</p>
         </div>
 
         {/* Stats Overview */}
