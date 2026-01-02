@@ -5,17 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
-import { 
-  Headphones, 
-  Volume2, 
-  RotateCcw,
-  Trophy,
-  Zap,
-  ArrowRight,
-  Check,
-  X,
-  Loader2
-} from "lucide-react";
+import { Headphones, Volume2, RotateCcw, Trophy, Zap, ArrowRight, Check, X, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -48,7 +38,7 @@ export const ListeningGame = ({ unitId, unitTitle, onComplete, onBack }: Listeni
   const [hasPlayed, setHasPlayed] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [currentFeedback, setCurrentFeedback] = useState<{ isCorrect: boolean; correctWord: string } | null>(null);
-  
+
   const { user } = useAuth();
   const { toast } = useToast();
   const startTimeRef = useRef<number>(Date.now());
@@ -59,7 +49,7 @@ export const ListeningGame = ({ unitId, unitTitle, onComplete, onBack }: Listeni
     synthRef.current = window.speechSynthesis;
     fetchWords();
     startTimeRef.current = Date.now();
-    
+
     return () => {
       if (synthRef.current) {
         synthRef.current.cancel();
@@ -86,18 +76,14 @@ export const ListeningGame = ({ unitId, unitTitle, onComplete, onBack }: Listeni
   }, [hasPlayed, showFeedback]);
 
   const fetchWords = async (playAllWords: boolean = false) => {
-    console.log('ListeningGame fetchWords called with playAllWords:', playAllWords);
+    console.log("ListeningGame fetchWords called with playAllWords:", playAllWords);
     setLoading(true);
-    
+
     try {
-      const { data: unit, error } = await supabase
-        .from('units')
-        .select('words')
-        .eq('id', unitId)
-        .single();
+      const { data: unit, error } = await supabase.from("units").select("words").eq("id", unitId).single();
 
       if (error) throw error;
-      
+
       if (!unit || !unit.words) {
         toast({
           title: "No words found",
@@ -109,70 +95,63 @@ export const ListeningGame = ({ unitId, unitTitle, onComplete, onBack }: Listeni
       }
 
       // Parse words - they come as an array
-      const wordList: string[] = Array.isArray(unit.words) 
-        ? unit.words 
-        : JSON.parse(unit.words as string);
-      
+      const wordList: string[] = Array.isArray(unit.words) ? unit.words : JSON.parse(unit.words as string);
+
       let finalWords: string[];
       let priorityWords: string[] = [];
-      
+
       if (playAllWords) {
         // Play Again: shuffle all words randomly
         finalWords = [...wordList].sort(() => Math.random() - 0.5);
-        console.log('ListeningGame: Playing ALL words, count:', finalWords.length);
+        console.log("ListeningGame: Playing ALL words, count:", finalWords.length);
       } else {
         // Initial play: prioritize incorrect words from last 3 attempts
         if (user) {
           const { data: prevAttempts } = await supabase
-            .from('game_attempts')
-            .select('id')
-            .eq('user_id', user.id)
-            .eq('unit_id', unitId)
-            .eq('game_type', 'listening')
-            .order('created_at', { ascending: false })
+            .from("game_attempts")
+            .select("id")
+            .eq("user_id", user.id)
+            .eq("unit_id", unitId)
+            .eq("game_type", "listening")
+            .order("created_at", { ascending: false })
             .limit(3);
 
           if (prevAttempts && prevAttempts.length > 0) {
-            const attemptIds = prevAttempts.map(a => a.id);
-            
+            const attemptIds = prevAttempts.map((a) => a.id);
+
             // Get incorrect words from last 3 attempts only
             const { data: incorrectAnswers } = await supabase
-              .from('attempt_incorrect_answers_dictation')
-              .select('incorrect_word')
-              .in('attempt_id', attemptIds);
+              .from("attempt_incorrect_answers_dictation")
+              .select("incorrect_word")
+              .in("attempt_id", attemptIds);
 
             if (incorrectAnswers && incorrectAnswers.length > 0) {
               // Get unique incorrect words that are still in the unit's word list
-              const incorrectSet = new Set(incorrectAnswers.map(a => a.incorrect_word.toLowerCase()));
-              priorityWords = wordList.filter(word => incorrectSet.has(word.toLowerCase()));
+              const incorrectSet = new Set(incorrectAnswers.map((a) => a.incorrect_word.toLowerCase()));
+              priorityWords = wordList.filter((word) => incorrectSet.has(word.toLowerCase()));
             }
           }
         }
 
-        // If there are priority words, put them first but still include ALL words
+        // If there are priority words, ONLY test those; otherwise test all words
         if (priorityWords.length > 0) {
-          const nonPriorityWords = wordList.filter(
-            (word) => !priorityWords.some((p) => p.toLowerCase() === word.toLowerCase())
-          );
-
-          finalWords = [
-            ...[...priorityWords].sort(() => Math.random() - 0.5),
-            ...[...nonPriorityWords].sort(() => Math.random() - 0.5),
-          ];
+          finalWords = [...priorityWords].sort(() => Math.random() - 0.5);
         } else {
           finalWords = [...wordList].sort(() => Math.random() - 0.5);
         }
       }
-      
+
       setWords(finalWords);
-      setQuestions(finalWords.map(word => ({
-        word,
-        userAnswer: "",
-        isCorrect: null,
-        isPriority: priorityWords.includes(word)
-      })));
+      setQuestions(
+        finalWords.map((word) => ({
+          word,
+          userAnswer: "",
+          isCorrect: null,
+          isPriority: priorityWords.includes(word),
+        })),
+      );
     } catch (err) {
-      console.error('Error fetching words:', err);
+      console.error("Error fetching words:", err);
       toast({
         title: "Failed to load words",
         description: "Please try again.",
@@ -185,53 +164,54 @@ export const ListeningGame = ({ unitId, unitTitle, onComplete, onBack }: Listeni
 
   const playWord = useCallback((word: string) => {
     if (!synthRef.current) return;
-    
+
     // Cancel any ongoing speech
     synthRef.current.cancel();
-    
+
     setIsPlaying(true);
-    
+
     const utterance = new SpeechSynthesisUtterance(word);
     utterance.rate = 0.8; // Slower for kids
     utterance.pitch = 1;
     utterance.volume = 1;
-    
+
     // Try to use a good English voice
     const voices = synthRef.current.getVoices();
-    const englishVoice = voices.find(v => v.lang.startsWith('en-') && v.name.includes('Female')) 
-      || voices.find(v => v.lang.startsWith('en-'));
+    const englishVoice =
+      voices.find((v) => v.lang.startsWith("en-") && v.name.includes("Female")) ||
+      voices.find((v) => v.lang.startsWith("en-"));
     if (englishVoice) {
       utterance.voice = englishVoice;
     }
-    
+
     utterance.onend = () => {
       setIsPlaying(false);
       setHasPlayed(true);
     };
-    
+
     utterance.onerror = () => {
       setIsPlaying(false);
       setHasPlayed(true);
     };
-    
+
     synthRef.current.speak(utterance);
   }, []);
 
   const handleSubmit = () => {
     if (!userInput.trim() || showFeedback) return;
-    
+
     const currentWord = words[currentIndex];
     const isCorrect = userInput.trim().toLowerCase() === currentWord.toLowerCase();
-    
+
     // Update questions with the answer
     const updatedQuestions = [...questions];
     updatedQuestions[currentIndex] = {
       word: currentWord,
       userAnswer: userInput.trim(),
-      isCorrect
+      isCorrect,
     };
     setQuestions(updatedQuestions);
-    
+
     // Show feedback
     setCurrentFeedback({ isCorrect, correctWord: currentWord });
     setShowFeedback(true);
@@ -241,7 +221,7 @@ export const ListeningGame = ({ unitId, unitTitle, onComplete, onBack }: Listeni
     setShowFeedback(false);
     setCurrentFeedback(null);
     setUserInput("");
-    
+
     if (currentIndex < words.length - 1) {
       setCurrentIndex(currentIndex + 1);
     } else {
@@ -251,7 +231,7 @@ export const ListeningGame = ({ unitId, unitTitle, onComplete, onBack }: Listeni
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
+    if (e.key === "Enter") {
       if (showFeedback) {
         handleNext();
       } else {
@@ -262,28 +242,28 @@ export const ListeningGame = ({ unitId, unitTitle, onComplete, onBack }: Listeni
 
   const saveGameAttempt = async () => {
     if (!user) return;
-    
+
     setSaving(true);
     try {
       const timeSpentSeconds = Math.round((Date.now() - startTimeRef.current) / 1000);
-      
+
       // Submit only raw answers to server for validation and scoring
-      const answers = questions.map(q => ({
+      const answers = questions.map((q) => ({
         word: q.word,
-        user_answer: q.userAnswer
+        user_answer: q.userAnswer,
       }));
 
-      const { data, error } = await supabase.functions.invoke('submit-dictation-game', {
+      const { data, error } = await supabase.functions.invoke("submit-dictation-game", {
         body: {
           unit_id: unitId,
-          game_type: 'listening',
+          game_type: "listening",
           answers,
-          time_spent_seconds: timeSpentSeconds
-        }
+          time_spent_seconds: timeSpentSeconds,
+        },
       });
 
       if (error) {
-        console.error('Server submission error:', error);
+        console.error("Server submission error:", error);
         toast({
           title: "Failed to save results",
           description: "Your progress could not be saved.",
@@ -293,7 +273,7 @@ export const ListeningGame = ({ unitId, unitTitle, onComplete, onBack }: Listeni
       }
 
       if (!data.success) {
-        console.error('Submission failed:', data.error);
+        console.error("Submission failed:", data.error);
         toast({
           title: "Failed to save results",
           description: data.error || "Your progress could not be saved.",
@@ -305,9 +285,8 @@ export const ListeningGame = ({ unitId, unitTitle, onComplete, onBack }: Listeni
       // Use server-calculated XP
       setEarnedXp(data.game_xp);
       setTimeout(() => setShowXpAnimation(true), 300);
-
     } catch (err) {
-      console.error('Error saving game attempt:', err);
+      console.error("Error saving game attempt:", err);
       toast({
         title: "Failed to save results",
         description: "An unexpected error occurred.",
@@ -319,7 +298,7 @@ export const ListeningGame = ({ unitId, unitTitle, onComplete, onBack }: Listeni
   };
 
   const getScore = () => {
-    const correct = questions.filter(q => q.isCorrect).length;
+    const correct = questions.filter((q) => q.isCorrect).length;
     return Math.round((correct / questions.length) * 100);
   };
 
@@ -351,7 +330,7 @@ export const ListeningGame = ({ unitId, unitTitle, onComplete, onBack }: Listeni
   if (showResults) {
     const score = getScore();
     const isPerfect = score === 100;
-    
+
     return (
       <div className="min-h-screen bg-gradient-hero p-6">
         <div className="max-w-2xl mx-auto">
@@ -361,19 +340,15 @@ export const ListeningGame = ({ unitId, unitTitle, onComplete, onBack }: Listeni
                 <div className="text-6xl mb-4">🎉</div>
                 <Trophy className="h-16 w-16 mx-auto text-success" />
                 <h2 className="text-3xl font-bold text-success">Perfect Spelling!</h2>
-                <p className="text-lg text-muted-foreground">
-                  You spelled every word correctly!
-                </p>
-                <Badge className="bg-gradient-success text-success-foreground text-lg px-6 py-2">
-                  Score: {score}%
-                </Badge>
+                <p className="text-lg text-muted-foreground">You spelled every word correctly!</p>
+                <Badge className="bg-gradient-success text-success-foreground text-lg px-6 py-2">Score: {score}%</Badge>
               </>
             ) : (
               <>
                 <div className="text-6xl mb-4">🎧</div>
                 <h2 className="text-3xl font-bold">Good Listening!</h2>
                 <p className="text-lg text-muted-foreground">
-                  You got {questions.filter(q => q.isCorrect).length} out of {questions.length} correct.
+                  You got {questions.filter((q) => q.isCorrect).length} out of {questions.length} correct.
                 </p>
                 <Badge variant="outline" className="text-lg px-6 py-2">
                   Score: {score}%
@@ -384,10 +359,12 @@ export const ListeningGame = ({ unitId, unitTitle, onComplete, onBack }: Listeni
             {/* Results breakdown */}
             <div className="max-h-48 overflow-y-auto space-y-2">
               {questions.map((q, i) => (
-                <div 
+                <div
                   key={i}
                   className={`flex items-center justify-between p-3 rounded-lg ${
-                    q.isCorrect ? 'bg-success/10 border border-success/30' : 'bg-destructive/10 border border-destructive/30'
+                    q.isCorrect
+                      ? "bg-success/10 border border-success/30"
+                      : "bg-destructive/10 border border-destructive/30"
                   }`}
                 >
                   <div className="flex items-center gap-2">
@@ -398,25 +375,21 @@ export const ListeningGame = ({ unitId, unitTitle, onComplete, onBack }: Listeni
                     )}
                     <span className="font-medium">{q.word}</span>
                   </div>
-                  {!q.isCorrect && (
-                    <span className="text-sm text-muted-foreground">
-                      You typed: "{q.userAnswer}"
-                    </span>
-                  )}
+                  {!q.isCorrect && <span className="text-sm text-muted-foreground">You typed: "{q.userAnswer}"</span>}
                 </div>
               ))}
             </div>
 
             {/* XP Animation */}
-            <div 
+            <div
               className={`
                 flex items-center justify-center gap-2 py-3 px-6 rounded-full 
                 bg-gradient-to-r from-primary/20 to-primary/10 border border-primary/30
                 transition-all duration-500 ease-out
-                ${showXpAnimation ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-4 scale-95'}
+                ${showXpAnimation ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-4 scale-95"}
               `}
             >
-              <Zap className={`h-6 w-6 text-primary ${showXpAnimation ? 'animate-pulse' : ''}`} />
+              <Zap className={`h-6 w-6 text-primary ${showXpAnimation ? "animate-pulse" : ""}`} />
               <span className="text-xl font-bold text-primary">+{earnedXp} XP</span>
               {saving && <span className="text-sm text-muted-foreground">(saving...)</span>}
             </div>
@@ -458,7 +431,9 @@ export const ListeningGame = ({ unitId, unitTitle, onComplete, onBack }: Listeni
         {/* Progress */}
         <div className="space-y-2">
           <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Word {currentIndex + 1} of {words.length}</span>
+            <span className="text-muted-foreground">
+              Word {currentIndex + 1} of {words.length}
+            </span>
             <span className="font-medium">{Math.round(progress)}%</span>
           </div>
           <Progress value={progress} className="h-2" />
@@ -468,10 +443,8 @@ export const ListeningGame = ({ unitId, unitTitle, onComplete, onBack }: Listeni
         <Card className="p-8 bg-card/50 backdrop-blur-sm border-2 border-border/50 space-y-6">
           {/* Audio Button */}
           <div className="flex flex-col items-center space-y-4">
-            <p className="text-muted-foreground text-center">
-              Listen to the word and type what you hear
-            </p>
-            
+            <p className="text-muted-foreground text-center">Listen to the word and type what you hear</p>
+
             <Button
               onClick={() => playWord(words[currentIndex])}
               disabled={isPlaying}
@@ -479,25 +452,21 @@ export const ListeningGame = ({ unitId, unitTitle, onComplete, onBack }: Listeni
               size="lg"
               className="w-32 h-32 rounded-full"
             >
-              {isPlaying ? (
-                <Loader2 className="h-12 w-12 animate-spin" />
-              ) : (
-                <Volume2 className="h-12 w-12" />
-              )}
+              {isPlaying ? <Loader2 className="h-12 w-12 animate-spin" /> : <Volume2 className="h-12 w-12" />}
             </Button>
-            
-            <p className="text-sm text-muted-foreground">
-              {isPlaying ? "Playing..." : "Click to play again"}
-            </p>
+
+            <p className="text-sm text-muted-foreground">{isPlaying ? "Playing..." : "Click to play again"}</p>
           </div>
 
           {/* Input Area */}
           {showFeedback && currentFeedback ? (
-            <div className={`p-6 rounded-lg text-center ${
-              currentFeedback.isCorrect 
-                ? 'bg-success/10 border-2 border-success/30' 
-                : 'bg-destructive/10 border-2 border-destructive/30'
-            }`}>
+            <div
+              className={`p-6 rounded-lg text-center ${
+                currentFeedback.isCorrect
+                  ? "bg-success/10 border-2 border-success/30"
+                  : "bg-destructive/10 border-2 border-destructive/30"
+              }`}
+            >
               <div className="flex items-center justify-center gap-2">
                 {currentFeedback.isCorrect ? (
                   <>
@@ -526,14 +495,8 @@ export const ListeningGame = ({ unitId, unitTitle, onComplete, onBack }: Listeni
                 autoCorrect="off"
                 spellCheck={false}
               />
-              
-              <Button
-                onClick={handleSubmit}
-                disabled={!userInput.trim()}
-                variant="game"
-                size="lg"
-                className="w-full"
-              >
+
+              <Button onClick={handleSubmit} disabled={!userInput.trim()} variant="game" size="lg" className="w-full">
                 Check Spelling
               </Button>
             </div>
@@ -541,12 +504,7 @@ export const ListeningGame = ({ unitId, unitTitle, onComplete, onBack }: Listeni
 
           {/* Next Button */}
           {showFeedback && (
-            <Button
-              onClick={handleNext}
-              variant="hero"
-              size="lg"
-              className="w-full"
-            >
+            <Button onClick={handleNext} variant="hero" size="lg" className="w-full">
               {currentIndex < words.length - 1 ? (
                 <>
                   Next Word
