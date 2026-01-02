@@ -196,10 +196,6 @@ export type Database = {
           created_at: string
           default_test_type_id: string | null
           id: string
-          last_study_date: string | null
-          level: number
-          study_streak: number
-          total_xp: number
           updated_at: string
           user_id: string
           username: string | null
@@ -209,10 +205,6 @@ export type Database = {
           created_at?: string
           default_test_type_id?: string | null
           id?: string
-          last_study_date?: string | null
-          level?: number
-          study_streak?: number
-          total_xp?: number
           updated_at?: string
           user_id: string
           username?: string | null
@@ -222,10 +214,6 @@ export type Database = {
           created_at?: string
           default_test_type_id?: string | null
           id?: string
-          last_study_date?: string | null
-          level?: number
-          study_streak?: number
-          total_xp?: number
           updated_at?: string
           user_id?: string
           username?: string | null
@@ -523,27 +511,16 @@ export type Database = {
       }
     }
     Functions: {
-      get_leaderboard:
-        | {
-            Args: { limit_count?: number }
-            Returns: {
-              id: string
-              level: number
-              study_streak: number
-              total_xp: number
-              username: string
-            }[]
-          }
-        | {
-            Args: { limit_count?: number; p_test_type_id?: string }
-            Returns: {
-              id: string
-              level: number
-              study_streak: number
-              total_xp: number
-              username: string
-            }[]
-          }
+      get_leaderboard: {
+        Args: { limit_count?: number; p_test_type_id?: string }
+        Returns: {
+          id: string
+          level: number
+          study_streak: number
+          total_xp: number
+          username: string
+        }[]
+      }
       validate_dictation_game_submission: {
         Args: {
           p_answers: Json
