@@ -51,6 +51,7 @@ export const Dashboard = ({ onStartGame }: DashboardProps) => {
   const [gameProgress, setGameProgress] = useState<Record<string, { bestScore: number; completed: boolean }>>({});
   const [userStats, setUserStats] = useState({ avgScore: 0, unitsCompleted: 0 });
   const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [showAllUnits, setShowAllUnits] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [studyHistory, setStudyHistory] = useState<Array<{
     id: string;
@@ -420,18 +421,23 @@ export const Dashboard = ({ onStartGame }: DashboardProps) => {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-bold">All Units</h2>
-            <Button variant="ghost">
-              View All
-              <ArrowRight className="h-4 w-4 ml-2" />
+            <Button variant="ghost" onClick={() => setShowAllUnits(!showAllUnits)}>
+              {showAllUnits ? 'Show Less' : 'View All'}
+              <ArrowRight className={`h-4 w-4 ml-2 transition-transform ${showAllUnits ? 'rotate-90' : ''}`} />
             </Button>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {units.map((unit, index) => (
+            {(showAllUnits ? units : units.slice(0, 3)).map((unit) => (
               <UnitCard 
                 key={unit.unitNumber} 
                 {...unit} 
-                onEnter={() => console.log(`Entering Unit ${unit.unitNumber}`)}
+                onEnter={() => {
+                  if (unit.isUnlocked) {
+                    setSelectedUnit(unit);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }
+                }}
               />
             ))}
           </div>
