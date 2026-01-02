@@ -21,7 +21,6 @@ interface Question {
   id: string;
   question_text: string;
   options: string[];
-  correct_answer: string;
 }
 
 interface Passage {
@@ -51,6 +50,8 @@ export const ReadingGame = ({ unitId, unitTitle, onComplete, onBack }: ReadingGa
   const [earnedXp, setEarnedXp] = useState(0);
   const [showXpAnimation, setShowXpAnimation] = useState(false);
   const [generatingQuestions, setGeneratingQuestions] = useState(false);
+  const [serverScore, setServerScore] = useState(0);
+  const [serverCorrectCount, setServerCorrectCount] = useState(0);
   const { user } = useAuth();
   const { toast } = useToast();
   const startTimeRef = useRef<number>(Date.now());
@@ -109,10 +110,10 @@ export const ReadingGame = ({ unitId, unitTitle, onComplete, onBack }: ReadingGa
       // Pick a random unattempted passage
       const selectedPassage = unattemptedPassages[Math.floor(Math.random() * unattemptedPassages.length)];
 
-      // Fetch questions for this passage
+      // Fetch questions for this passage (using secure view that excludes correct_answer)
       const { data: questionsData, error: questionsError } = await supabase
-        .from('question_bank')
-        .select('*')
+        .from('questions_for_play')
+        .select('id, question_text, options, passage_id, unit_id, game_type')
         .eq('passage_id', selectedPassage.id)
         .eq('game_type', 'reading');
 
@@ -134,8 +135,7 @@ export const ReadingGame = ({ unitId, unitTitle, onComplete, onBack }: ReadingGa
       const formattedQuestions: Question[] = questionsData.map(q => ({
         id: q.id,
         question_text: q.question_text,
-        options: Array.isArray(q.options) ? q.options : JSON.parse(q.options as string),
-        correct_answer: q.correct_answer
+        options: Array.isArray(q.options) ? q.options : JSON.parse(q.options as string)
       }));
 
       // Shuffle and take up to 10 questions
@@ -272,8 +272,8 @@ export const ReadingGame = ({ unitId, unitTitle, onComplete, onBack }: ReadingGa
     });
 
     const { data: questionsData } = await supabase
-      .from('question_bank')
-      .select('*')
+      .from('questions_for_play')
+      .select('id, question_text, options, passage_id, unit_id, game_type')
       .eq('passage_id', passageData.id)
       .eq('game_type', 'reading');
 
@@ -281,8 +281,7 @@ export const ReadingGame = ({ unitId, unitTitle, onComplete, onBack }: ReadingGa
       const formattedQuestions: Question[] = questionsData.map(q => ({
         id: q.id,
         question_text: q.question_text,
-        options: Array.isArray(q.options) ? q.options : JSON.parse(q.options as string),
-        correct_answer: q.correct_answer
+        options: Array.isArray(q.options) ? q.options : JSON.parse(q.options as string)
       }));
       const shuffled = formattedQuestions.sort(() => Math.random() - 0.5);
       setQuestions(shuffled.slice(0, Math.min(10, shuffled.length)));
@@ -340,7 +339,9 @@ export const ReadingGame = ({ unitId, unitTitle, onComplete, onBack }: ReadingGa
       }
 
       // Use server-calculated values
-      setEarnedXp(data.xp_earned);
+      setServerScore(data.score);
+      setServerCorrectCount(data.correct_count);
+      setEarnedXp(data.game_xp);
       setGameCompleted(data.is_perfect);
       
       // Trigger XP animation after a short delay
@@ -354,16 +355,11 @@ export const ReadingGame = ({ unitId, unitTitle, onComplete, onBack }: ReadingGa
   };
 
   const getScore = () => {
-    const correctAnswers = selectedAnswers.filter((answer, index) => 
-      questions[index].options[answer] === questions[index].correct_answer
-    ).length;
-    return Math.round((correctAnswers / questions.length) * 100);
+    return serverScore;
   };
 
   const getCorrectCount = () => {
-    return selectedAnswers.filter((answer, index) => 
-      questions[index].options[answer] === questions[index].correct_answer
-    ).length;
+    return serverCorrectCount;
   };
 
   const resetGame = () => {
@@ -373,6 +369,8 @@ export const ReadingGame = ({ unitId, unitTitle, onComplete, onBack }: ReadingGa
     setGameCompleted(false);
     setEarnedXp(0);
     setShowXpAnimation(false);
+    setServerScore(0);
+    setServerCorrectCount(0);
     startTimeRef.current = Date.now();
     fetchPassageAndQuestions();
   };
