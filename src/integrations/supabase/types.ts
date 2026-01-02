@@ -344,6 +344,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_leaderboard: {
+        Args: { limit_count?: number }
+        Returns: {
+          id: string
+          level: number
+          study_streak: number
+          total_xp: number
+          username: string
+        }[]
+      }
       validate_game_submission: {
         Args: {
           p_answers: Json

@@ -16,10 +16,7 @@ export const useLeaderboard = (limit: number = 10) => {
   useEffect(() => {
     const fetchLeaderboard = async () => {
       const { data, error } = await supabase
-        .from("profiles")
-        .select("id, username, level, total_xp, study_streak")
-        .order("total_xp", { ascending: false })
-        .limit(limit);
+        .rpc("get_leaderboard", { limit_count: limit });
 
       if (error) {
         console.error("Error fetching leaderboard:", error);
