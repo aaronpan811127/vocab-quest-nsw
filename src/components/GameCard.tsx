@@ -4,12 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { 
-  BookOpen, 
-  Headphones, 
-  Mic, 
-  PenTool, 
-  Trophy, 
+import {
+  BookOpen,
+  Headphones,
+  Mic,
+  PenTool,
+  Trophy,
   Star,
   Lock,
   Zap,
@@ -17,7 +17,7 @@ import {
   Target,
   Layers,
   History,
-  Calendar
+  Calendar,
 } from "lucide-react";
 
 interface GameHistoryEntry {
@@ -79,9 +79,9 @@ export const GameCard = ({
       <Card className="group relative overflow-hidden border-2 border-border/50 bg-card/50 backdrop-blur-sm hover:border-primary/30 transition-all duration-300 hover:shadow-card animate-slide-up">
         {/* History Badge - Top Right */}
         {!isLocked && history.length > 0 && (
-          <Badge 
-            variant="secondary" 
-            className="absolute -top-1 -right-1 z-10 cursor-pointer hover:bg-secondary/80 gap-1 text-xs"
+          <Badge
+            variant="secondary"
+            className="absolute top-2 right-2 z-10 cursor-pointer hover:bg-secondary/80 gap-1 text-xs"
             onClick={(e) => {
               e.stopPropagation();
               setShowHistory(true);
@@ -94,12 +94,12 @@ export const GameCard = ({
 
         {/* Background gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-secondary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-        
+
         <div className="relative p-6 space-y-4">
           {/* Header */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className={`p-2 rounded-lg ${isLocked ? 'bg-muted' : 'bg-primary/10'} transition-colors`}>
+              <div className={`p-2 rounded-lg ${isLocked ? "bg-muted" : "bg-primary/10"} transition-colors`}>
                 {isLocked ? (
                   <Lock className="h-5 w-5 text-muted-foreground" />
                 ) : (
@@ -108,7 +108,7 @@ export const GameCard = ({
               </div>
               <h3 className="font-semibold text-lg">{title}</h3>
             </div>
-            
+
             {isCompleted && (
               <div className="flex items-center gap-1 text-success">
                 <Trophy className="h-4 w-4" />
@@ -117,53 +117,48 @@ export const GameCard = ({
             )}
           </div>
 
-        {/* Description */}
-        <p className="text-sm text-muted-foreground leading-relaxed">
-          {description}
-        </p>
+          {/* Description */}
+          <p className="text-sm text-muted-foreground leading-relaxed">{description}</p>
 
-        {/* Game Stats */}
-        {!isLocked && hasStats && (
-          <div className="grid grid-cols-3 gap-2 py-2 px-3 rounded-lg bg-muted/30 border border-border/50">
-            <div className="flex flex-col items-center">
-              <div className="flex items-center gap-1 text-primary">
-                <Zap className="h-3.5 w-3.5" />
-                <span className="text-sm font-semibold">{totalXp}</span>
+          {/* Game Stats */}
+          {!isLocked && hasStats && (
+            <div className="grid grid-cols-3 gap-2 py-2 px-3 rounded-lg bg-muted/30 border border-border/50">
+              <div className="flex flex-col items-center">
+                <div className="flex items-center gap-1 text-primary">
+                  <Zap className="h-3.5 w-3.5" />
+                  <span className="text-sm font-semibold">{totalXp}</span>
+                </div>
+                <span className="text-[10px] text-muted-foreground">XP</span>
               </div>
-              <span className="text-[10px] text-muted-foreground">XP</span>
-            </div>
-            <div className="flex flex-col items-center border-x border-border/50">
-              <div className="flex items-center gap-1 text-muted-foreground">
-                <Clock className="h-3.5 w-3.5" />
-                <span className="text-sm font-semibold">{formatTime(totalTimeSeconds)}</span>
+              <div className="flex flex-col items-center border-x border-border/50">
+                <div className="flex items-center gap-1 text-muted-foreground">
+                  <Clock className="h-3.5 w-3.5" />
+                  <span className="text-sm font-semibold">{formatTime(totalTimeSeconds)}</span>
+                </div>
+                <span className="text-[10px] text-muted-foreground">Time</span>
               </div>
-              <span className="text-[10px] text-muted-foreground">Time</span>
-            </div>
-            <div className="flex flex-col items-center">
-              <div className="flex items-center gap-1 text-muted-foreground">
-                <Target className="h-3.5 w-3.5" />
-                <span className="text-sm font-semibold">{attempts}</span>
+              <div className="flex flex-col items-center">
+                <div className="flex items-center gap-1 text-muted-foreground">
+                  <Target className="h-3.5 w-3.5" />
+                  <span className="text-sm font-semibold">{attempts}</span>
+                </div>
+                <span className="text-[10px] text-muted-foreground">Plays</span>
               </div>
-              <span className="text-[10px] text-muted-foreground">Plays</span>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Progress */}
-        {!isLocked && (
-          <div className="space-y-2">
-            <div className="flex justify-between text-xs">
-              <span className="text-muted-foreground">Best Score</span>
-              <span className="font-medium">{progress}%</span>
+          {/* Progress */}
+          {!isLocked && (
+            <div className="space-y-2">
+              <div className="flex justify-between text-xs">
+                <span className="text-muted-foreground">Best Score</span>
+                <span className="font-medium">{progress}%</span>
+              </div>
+              <Progress value={progress} className="h-2 bg-muted/50" />
             </div>
-            <Progress 
-              value={progress} 
-              className="h-2 bg-muted/50" 
-            />
-          </div>
-        )}
+          )}
 
-        {/* Action Button */}
+          {/* Action Button */}
           <Button
             onClick={onPlay}
             disabled={isLocked}
@@ -202,10 +197,7 @@ export const GameCard = ({
 
           <div className="space-y-3">
             {history.map((entry, index) => (
-              <div 
-                key={entry.id} 
-                className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border"
-              >
+              <div key={entry.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-medium">
                     #{index + 1}
@@ -216,7 +208,9 @@ export const GameCard = ({
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className={`font-bold text-lg ${entry.score >= 80 ? 'text-success' : entry.score >= 50 ? 'text-warning' : 'text-destructive'}`}>
+                  <p
+                    className={`font-bold text-lg ${entry.score >= 80 ? "text-success" : entry.score >= 50 ? "text-warning" : "text-destructive"}`}
+                  >
                     {entry.score}%
                   </p>
                 </div>
