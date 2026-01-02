@@ -18,7 +18,8 @@ import {
   Crown,
   ArrowRight,
   BookOpen,
-  Calendar
+  Calendar,
+  Layers
 } from "lucide-react";
 import { useProfile } from "@/hooks/useProfile";
 import { useAuth } from "@/contexts/AuthContext";
@@ -345,6 +346,13 @@ Total XP = Sum of all games' XP
   };
 
   const games = [
+    {
+      title: "Flashcards",
+      description: "Learn vocabulary with interactive flip cards",
+      gameType: "flashcards" as const,
+      ...getGameData("flashcards"),
+      isLocked: false,
+    },
     {
       title: "Reading Quest",
       description: "Embark on reading adventures with comprehension challenges",

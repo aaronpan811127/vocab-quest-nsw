@@ -11,13 +11,14 @@ import {
   Lock,
   Zap,
   Clock,
-  Target
+  Target,
+  Layers
 } from "lucide-react";
 
 interface GameCardProps {
   title: string;
   description: string;
-  gameType: "reading" | "listening" | "speaking" | "writing";
+  gameType: "reading" | "listening" | "speaking" | "writing" | "flashcards";
   progress: number;
   isCompleted: boolean;
   isLocked: boolean;
@@ -32,6 +33,7 @@ const gameIcons = {
   listening: Headphones,
   speaking: Mic,
   writing: PenTool,
+  flashcards: Layers,
 };
 
 const formatTime = (seconds: number): string => {
