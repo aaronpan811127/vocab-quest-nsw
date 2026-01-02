@@ -73,7 +73,7 @@ export const UnitCard = ({
             <h3 className="font-bold text-xl">{title}</h3>
             {isCompleted && <Trophy className="h-5 w-5 text-success fill-current" />}
           </div>
-          <p className="text-sm text-muted-foreground leading-relaxed">{unitNumber}</p>
+          <p className="text-sm text-muted-foreground leading-relaxed">{description}</p>
         </div>
 
         {/* Stats */}
