@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.evaluate-sentence]
 verify_jwt = false
+
+[functions.generate-vocabulary]
+verify_jwt = false
