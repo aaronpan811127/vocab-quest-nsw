@@ -339,6 +339,47 @@ export type Database = {
         }
         Relationships: []
       }
+      vocabulary: {
+        Row: {
+          antonyms: string[] | null
+          created_at: string
+          definition: string
+          examples: string[] | null
+          id: string
+          synonyms: string[] | null
+          unit_id: string
+          word: string
+        }
+        Insert: {
+          antonyms?: string[] | null
+          created_at?: string
+          definition: string
+          examples?: string[] | null
+          id?: string
+          synonyms?: string[] | null
+          unit_id: string
+          word: string
+        }
+        Update: {
+          antonyms?: string[] | null
+          created_at?: string
+          definition?: string
+          examples?: string[] | null
+          id?: string
+          synonyms?: string[] | null
+          unit_id?: string
+          word?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vocabulary_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "units"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
