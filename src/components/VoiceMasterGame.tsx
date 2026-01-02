@@ -554,7 +554,7 @@ export const VoiceMasterGame = ({ unitId, unitTitle, onComplete, onBack }: Voice
             <div className="flex justify-center gap-4 pt-4">
               <Button variant="game" onClick={resetGame} size="lg">
                 <RotateCcw className="h-5 w-5 mr-2" />
-                Try Again
+                Play Again
               </Button>
               <Button variant="outline" onClick={onBack} size="lg">
                 Back to Dashboard
