@@ -44,6 +44,7 @@ export const Dashboard = ({ onStartGame, onBack }: DashboardProps) => {
     >
   >({});
   const [userStats, setUserStats] = useState({ avgScore: 0, unitsCompleted: 0 });
+  const [testTypeStats, setTestTypeStats] = useState({ level: 1, totalXp: 0, studyStreak: 0 });
   const [showAllUnits, setShowAllUnits] = useState(false);
   const [gameHistory, setGameHistory] = useState<
     Record<string, Array<{ id: string; score: number; created_at: string }>>
@@ -53,10 +54,37 @@ export const Dashboard = ({ onStartGame, onBack }: DashboardProps) => {
     if (user && selectedTestType) {
       fetchUnitsWithProgress();
       fetchUserStats();
+      fetchTestTypeStats();
     } else if (selectedTestType) {
       fetchUnits();
     }
   }, [user, selectedTestType]);
+
+  const fetchTestTypeStats = async () => {
+    if (!user || !selectedTestType) return;
+
+    const { data, error } = await supabase
+      .from("leaderboard")
+      .select("level, total_xp, study_streak")
+      .eq("user_id", user.id)
+      .eq("test_type_id", selectedTestType.id)
+      .maybeSingle();
+
+    if (error) {
+      console.error("Error fetching test type stats:", error);
+      return;
+    }
+
+    if (data) {
+      setTestTypeStats({
+        level: data.level || 1,
+        totalXp: data.total_xp || 0,
+        studyStreak: data.study_streak || 0,
+      });
+    } else {
+      setTestTypeStats({ level: 1, totalXp: 0, studyStreak: 0 });
+    }
+  };
 
   useEffect(() => {
     if (user && selectedUnit) {
@@ -285,8 +313,8 @@ Total XP = Sum of all games' XP
 
 💡 Example: Avg 80% in avg 4s/q = 40 + 25 = 65 XP`;
 
-  const currentXp = profile?.total_xp || 0;
-  const currentLevel = profile?.level || 1;
+  const currentXp = testTypeStats.totalXp;
+  const currentLevel = testTypeStats.level;
   const xpForCurrentLevel = (currentLevel - 1) * 100;
   const xpInCurrentLevel = currentXp - xpForCurrentLevel;
   const xpNeededForNextLevel = 100;
