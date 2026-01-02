@@ -112,7 +112,7 @@ export const ListeningGame = ({ unitId, unitTitle, onComplete, onBack }: Listeni
         ? unit.words 
         : JSON.parse(unit.words as string);
       
-      // Fetch previous incorrect answers from dictation table for this user and unit
+      // Fetch previous incorrect answers from last 3 attempts for this user and unit
       let priorityWords: string[] = [];
       if (user) {
         const { data: prevAttempts } = await supabase
@@ -120,12 +120,14 @@ export const ListeningGame = ({ unitId, unitTitle, onComplete, onBack }: Listeni
           .select('id')
           .eq('user_id', user.id)
           .eq('unit_id', unitId)
-          .eq('game_type', 'listening');
+          .eq('game_type', 'listening')
+          .order('created_at', { ascending: false })
+          .limit(3);
 
         if (prevAttempts && prevAttempts.length > 0) {
           const attemptIds = prevAttempts.map(a => a.id);
           
-          // Get incorrect words from all previous attempts
+          // Get incorrect words from last 3 attempts only
           const { data: incorrectAnswers } = await supabase
             .from('attempt_incorrect_answers_dictation')
             .select('incorrect_word')
@@ -139,19 +141,13 @@ export const ListeningGame = ({ unitId, unitTitle, onComplete, onBack }: Listeni
         }
       }
 
-      // Create word selection: prioritize ALL previously incorrect words
+      // Use ALL words from the unit (not limited to 10)
       const shuffledPriority = [...priorityWords].sort(() => Math.random() - 0.5);
       const remainingWords = wordList.filter(w => !priorityWords.includes(w));
       const shuffledRemaining = [...remainingWords].sort(() => Math.random() - 0.5);
       
-      // Take ALL priority words first (up to maxWords), then fill with remaining
-      const maxWords = Math.min(10, wordList.length);
-      const selectedPriority = shuffledPriority.slice(0, maxWords);
-      const selectedRemaining = shuffledRemaining.slice(0, maxWords - selectedPriority.length);
-      const selectedWords = [...selectedPriority, ...selectedRemaining];
-      
-      // Shuffle the final selection so priority words aren't always first
-      const finalWords = [...selectedWords].sort(() => Math.random() - 0.5);
+      // Combine: priority words first, then remaining words
+      const finalWords = [...shuffledPriority, ...shuffledRemaining];
       
       setWords(finalWords);
       setQuestions(finalWords.map(word => ({
