@@ -11,6 +11,7 @@ export interface Profile {
   total_xp: number;
   study_streak: number;
   last_study_date: string | null;
+  default_test_type_id: string | null;
   created_at: string;
   updated_at: string;
 }

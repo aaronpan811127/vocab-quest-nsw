@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,9 +10,17 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Settings, Save, Loader2, Camera, User } from "lucide-react";
 import { useProfile } from "@/hooks/useProfile";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTestType } from "@/contexts/TestTypeContext";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -23,13 +31,34 @@ interface ProfileSettingsProps {
 export const ProfileSettings = ({ trigger }: ProfileSettingsProps) => {
   const { user } = useAuth();
   const { profile, updateProfile } = useProfile();
+  const { testTypes } = useTestType();
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [username, setUsername] = useState(profile?.username || "");
+  const [defaultTestTypeId, setDefaultTestTypeId] = useState<string>("");
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (open && profile) {
+      fetchDefaultTestType();
+    }
+  }, [open, profile]);
+
+  const fetchDefaultTestType = async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from("profiles")
+      .select("default_test_type_id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    
+    if (data?.default_test_type_id) {
+      setDefaultTestTypeId(data.default_test_type_id);
+    }
+  };
 
   const handleAvatarClick = () => {
     fileInputRef.current?.click();
@@ -39,7 +68,6 @@ export const ProfileSettings = ({ trigger }: ProfileSettingsProps) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
 
-    // Basic client-side validation (server will verify magic bytes)
     if (!file.type.startsWith("image/")) {
       toast({
         title: "Invalid file",
@@ -49,7 +77,6 @@ export const ProfileSettings = ({ trigger }: ProfileSettingsProps) => {
       return;
     }
 
-    // Validate file size (max 2MB)
     if (file.size > 2 * 1024 * 1024) {
       toast({
         title: "File too large",
@@ -62,11 +89,9 @@ export const ProfileSettings = ({ trigger }: ProfileSettingsProps) => {
     setUploading(true);
 
     try {
-      // Create form data for server-side validation
       const formData = new FormData();
       formData.append('file', file);
 
-      // Upload via secure edge function that validates magic bytes
       const { data, error } = await supabase.functions.invoke('upload-avatar', {
         body: formData,
       });
@@ -77,7 +102,6 @@ export const ProfileSettings = ({ trigger }: ProfileSettingsProps) => {
         throw new Error(data.error || "Failed to upload avatar");
       }
 
-      // Update the profile with the new avatar URL
       await updateProfile({ avatar_url: data.avatar_url });
       
       setAvatarPreview(data.avatar_url);
@@ -107,13 +131,19 @@ export const ProfileSettings = ({ trigger }: ProfileSettingsProps) => {
     }
 
     setSaving(true);
-    const { error } = await updateProfile({ username: username.trim() });
+    
+    const updates: any = { username: username.trim() };
+    if (defaultTestTypeId) {
+      updates.default_test_type_id = defaultTestTypeId;
+    }
+    
+    const { error } = await updateProfile(updates);
     setSaving(false);
 
     if (error) {
       toast({
         title: "Error",
-        description: "Failed to update username",
+        description: "Failed to update profile",
         variant: "destructive",
       });
     } else {
@@ -195,6 +225,26 @@ export const ProfileSettings = ({ trigger }: ProfileSettingsProps) => {
               onChange={(e) => setUsername(e.target.value)}
               placeholder="Enter your username"
             />
+          </div>
+
+          {/* Default Test Type */}
+          <div className="space-y-2">
+            <Label htmlFor="default-test-type">Default Test Type</Label>
+            <Select value={defaultTestTypeId} onValueChange={setDefaultTestTypeId}>
+              <SelectTrigger className="w-full bg-background">
+                <SelectValue placeholder="Select default test type" />
+              </SelectTrigger>
+              <SelectContent className="bg-card border-border">
+                {testTypes.map((testType) => (
+                  <SelectItem key={testType.id} value={testType.id}>
+                    {testType.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              This will be auto-selected when you log in
+            </p>
           </div>
         </div>
         <div className="flex justify-end">
