@@ -1,6 +1,5 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { 
   BookOpen, 
@@ -9,7 +8,10 @@ import {
   PenTool, 
   Trophy, 
   Star,
-  Lock
+  Lock,
+  Zap,
+  Clock,
+  Target
 } from "lucide-react";
 
 interface GameCardProps {
@@ -20,6 +22,9 @@ interface GameCardProps {
   isCompleted: boolean;
   isLocked: boolean;
   onPlay: () => void;
+  totalXp?: number;
+  totalTimeSeconds?: number;
+  attempts?: number;
 }
 
 const gameIcons = {
@@ -27,6 +32,15 @@ const gameIcons = {
   listening: Headphones,
   speaking: Mic,
   writing: PenTool,
+};
+
+const formatTime = (seconds: number): string => {
+  if (seconds < 60) return `${seconds}s`;
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.floor(minutes / 60);
+  const remainingMins = minutes % 60;
+  return `${hours}h ${remainingMins}m`;
 };
 
 export const GameCard = ({
@@ -37,8 +51,12 @@ export const GameCard = ({
   isCompleted,
   isLocked,
   onPlay,
+  totalXp = 0,
+  totalTimeSeconds = 0,
+  attempts = 0,
 }: GameCardProps) => {
   const Icon = gameIcons[gameType];
+  const hasStats = totalXp > 0 || attempts > 0;
 
   return (
     <Card className="group relative overflow-hidden border-2 border-border/50 bg-card/50 backdrop-blur-sm hover:border-primary/30 transition-all duration-300 hover:shadow-card animate-slide-up">
@@ -72,11 +90,38 @@ export const GameCard = ({
           {description}
         </p>
 
+        {/* Game Stats */}
+        {!isLocked && hasStats && (
+          <div className="grid grid-cols-3 gap-2 py-2 px-3 rounded-lg bg-muted/30 border border-border/50">
+            <div className="flex flex-col items-center">
+              <div className="flex items-center gap-1 text-primary">
+                <Zap className="h-3.5 w-3.5" />
+                <span className="text-sm font-semibold">{totalXp}</span>
+              </div>
+              <span className="text-[10px] text-muted-foreground">XP</span>
+            </div>
+            <div className="flex flex-col items-center border-x border-border/50">
+              <div className="flex items-center gap-1 text-muted-foreground">
+                <Clock className="h-3.5 w-3.5" />
+                <span className="text-sm font-semibold">{formatTime(totalTimeSeconds)}</span>
+              </div>
+              <span className="text-[10px] text-muted-foreground">Time</span>
+            </div>
+            <div className="flex flex-col items-center">
+              <div className="flex items-center gap-1 text-muted-foreground">
+                <Target className="h-3.5 w-3.5" />
+                <span className="text-sm font-semibold">{attempts}</span>
+              </div>
+              <span className="text-[10px] text-muted-foreground">Plays</span>
+            </div>
+          </div>
+        )}
+
         {/* Progress */}
         {!isLocked && (
           <div className="space-y-2">
             <div className="flex justify-between text-xs">
-              <span className="text-muted-foreground">Progress</span>
+              <span className="text-muted-foreground">Best Score</span>
               <span className="font-medium">{progress}%</span>
             </div>
             <Progress 

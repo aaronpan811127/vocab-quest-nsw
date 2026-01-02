@@ -50,7 +50,7 @@ export const Dashboard = ({ onStartGame }: DashboardProps) => {
   const { toast } = useToast();
   const [units, setUnits] = useState<Unit[]>([]);
   const [selectedUnit, setSelectedUnit] = useState<Unit | null>(null);
-  const [gameProgress, setGameProgress] = useState<Record<string, { bestScore: number; completed: boolean }>>({});
+  const [gameProgress, setGameProgress] = useState<Record<string, { bestScore: number; completed: boolean; totalXp: number; totalTimeSeconds: number; attempts: number }>>({});
   const [userStats, setUserStats] = useState({ avgScore: 0, unitsCompleted: 0 });
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [showAllUnits, setShowAllUnits] = useState(false);
@@ -277,9 +277,10 @@ export const Dashboard = ({ onStartGame }: DashboardProps) => {
   const fetchGameProgress = async (unitId: string) => {
     if (!user) return;
 
+    // Fetch from user_progress table (game-level data)
     const { data, error } = await supabase
-      .from('game_attempts')
-      .select('game_type, score, completed')
+      .from('user_progress')
+      .select('game_type, best_score, completed, total_xp, total_time_seconds, attempts')
       .eq('user_id', user.id)
       .eq('unit_id', unitId);
 
@@ -288,16 +289,16 @@ export const Dashboard = ({ onStartGame }: DashboardProps) => {
       return;
     }
 
-    const progress: Record<string, { bestScore: number; completed: boolean }> = {};
+    const progress: Record<string, { bestScore: number; completed: boolean; totalXp: number; totalTimeSeconds: number; attempts: number }> = {};
     
-    data?.forEach(attempt => {
-      const existing = progress[attempt.game_type];
-      if (!existing || attempt.score > existing.bestScore) {
-        progress[attempt.game_type] = {
-          bestScore: attempt.score,
-          completed: attempt.score === 100 || existing?.completed || false
-        };
-      }
+    data?.forEach(record => {
+      progress[record.game_type] = {
+        bestScore: record.best_score || 0,
+        completed: record.completed || false,
+        totalXp: record.total_xp || 0,
+        totalTimeSeconds: record.total_time_seconds || 0,
+        attempts: record.attempts || 0,
+      };
     });
 
     setGameProgress(progress);
@@ -342,6 +343,9 @@ Your Total XP = Sum of all games
     return {
       progress: progress?.bestScore || 0,
       isCompleted: progress?.completed || false,
+      totalXp: progress?.totalXp || 0,
+      totalTimeSeconds: progress?.totalTimeSeconds || 0,
+      attempts: progress?.attempts || 0,
     };
   };
 
