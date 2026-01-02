@@ -142,6 +142,8 @@ export const VoiceMasterGame = ({ unitId, unitTitle, onComplete, onBack }: Voice
             .order('created_at', { ascending: false })
             .limit(3);
 
+          console.log('Previous speaking attempts:', prevAttempts);
+
           if (prevAttempts && prevAttempts.length > 0) {
             const attemptIds = prevAttempts.map(a => a.id);
             
@@ -150,19 +152,22 @@ export const VoiceMasterGame = ({ unitId, unitTitle, onComplete, onBack }: Voice
               .select('incorrect_word')
               .in('attempt_id', attemptIds);
 
-            if (incorrectAnswers) {
+            console.log('Incorrect answers from last 3 attempts:', incorrectAnswers);
+
+            if (incorrectAnswers && incorrectAnswers.length > 0) {
               const incorrectSet = new Set(incorrectAnswers.map(a => a.incorrect_word.toLowerCase()));
               priorityWords = wordList.filter(word => incorrectSet.has(word.toLowerCase()));
+              console.log('Priority words to test:', priorityWords);
             }
           }
         }
 
-        // Priority words first, then remaining
-        const shuffledPriority = [...priorityWords].sort(() => Math.random() - 0.5);
-        const remainingWords = wordList.filter(w => !priorityWords.includes(w));
-        const shuffledRemaining = [...remainingWords].sort(() => Math.random() - 0.5);
-        
-        finalWords = [...shuffledPriority, ...shuffledRemaining];
+        // If there are priority words, ONLY test those; otherwise test all words
+        if (priorityWords.length > 0) {
+          finalWords = [...priorityWords].sort(() => Math.random() - 0.5);
+        } else {
+          finalWords = [...wordList].sort(() => Math.random() - 0.5);
+        }
       }
       
       setWords(finalWords);
