@@ -52,8 +52,8 @@ export const StatsCard = ({
 
   return (
     <Card className={`
-      p-4 space-y-3 border-2 backdrop-blur-sm transition-all duration-300 
-      hover:shadow-card hover:scale-105 animate-slide-up
+      p-3 space-y-2 border backdrop-blur-sm transition-all duration-300 
+      hover:shadow-card hover:scale-[1.02] animate-slide-up
       ${variantClasses[variant]}
     `}>
       <div className="flex items-center justify-between">
@@ -62,9 +62,9 @@ export const StatsCard = ({
           <TooltipProvider>
             <Tooltip delayDuration={100}>
               <TooltipTrigger asChild>
-                <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help hover:text-primary transition-colors" />
+                <HelpCircle className="h-3.5 w-3.5 text-muted-foreground cursor-help hover:text-primary transition-colors" />
               </TooltipTrigger>
-              <TooltipContent className="max-w-sm p-4 z-50" side="top" sideOffset={8}>
+              <TooltipContent className="max-w-sm p-3 z-50" side="top" sideOffset={8}>
                 <div className="text-sm space-y-2 whitespace-pre-line">{tooltip}</div>
               </TooltipContent>
             </Tooltip>
@@ -72,14 +72,14 @@ export const StatsCard = ({
         )}
       </div>
       
-      <div className="space-y-1">
-        <p className="text-2xl font-bold tracking-tight">{value}</p>
+      <div>
+        <p className="text-xl font-bold tracking-tight">{value}</p>
       </div>
 
       {progress && (
-        <div className="space-y-1">
-          <Progress value={progressPercent} className="h-2" />
-          <p className="text-xs text-muted-foreground">
+        <div className="space-y-0.5">
+          <Progress value={progressPercent} className="h-1.5" />
+          <p className="text-[10px] text-muted-foreground">
             {progress.label || `${progress.current}/${progress.max} XP to next level`}
           </p>
         </div>
