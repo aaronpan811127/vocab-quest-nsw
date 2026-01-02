@@ -8,7 +8,8 @@ import {
   BookOpen, 
   ArrowRight,
   RotateCcw,
-  Trophy
+  Trophy,
+  Zap
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -43,6 +44,8 @@ export const ReadingGame = ({ unitId, unitTitle, onComplete, onBack }: ReadingGa
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [earnedXp, setEarnedXp] = useState(0);
+  const [showXpAnimation, setShowXpAnimation] = useState(false);
   const { user } = useAuth();
   const startTimeRef = useRef<number>(Date.now());
 
@@ -142,6 +145,10 @@ export const ReadingGame = ({ unitId, unitTitle, onComplete, onBack }: ReadingGa
 
       // Calculate XP earned (base 10 XP + bonus for score)
       const xpEarned = Math.round(10 + (score / 10));
+      setEarnedXp(xpEarned);
+      
+      // Trigger XP animation after a short delay
+      setTimeout(() => setShowXpAnimation(true), 300);
 
       // Insert game attempt
       const { data: attempt, error: attemptError } = await supabase
@@ -286,6 +293,9 @@ export const ReadingGame = ({ unitId, unitTitle, onComplete, onBack }: ReadingGa
     setSelectedAnswers([]);
     setShowResults(false);
     setGameCompleted(false);
+    setEarnedXp(0);
+    setShowXpAnimation(false);
+    startTimeRef.current = Date.now();
     fetchPassageAndQuestions();
   };
 
@@ -370,6 +380,22 @@ export const ReadingGame = ({ unitId, unitTitle, onComplete, onBack }: ReadingGa
                 </p>
               </>
             )}
+
+            {/* XP Earned Animation */}
+            <div 
+              className={`
+                flex items-center justify-center gap-2 py-3 px-6 rounded-full 
+                bg-gradient-to-r from-primary/20 to-primary/10 border border-primary/30
+                transition-all duration-500 ease-out
+                ${showXpAnimation 
+                  ? 'opacity-100 translate-y-0 scale-100' 
+                  : 'opacity-0 translate-y-4 scale-95'}
+              `}
+            >
+              <Zap className={`h-6 w-6 text-primary ${showXpAnimation ? 'animate-pulse' : ''}`} />
+              <span className="text-xl font-bold text-primary">+{earnedXp} XP</span>
+              {saving && <span className="text-sm text-muted-foreground">(saving...)</span>}
+            </div>
 
             <div className="flex justify-center gap-4 pt-4">
               {gameCompleted ? (
