@@ -81,7 +81,7 @@ export const GameCard = ({
         {!isLocked && history.length > 0 && (
           <Badge 
             variant="secondary" 
-            className="absolute top-3 right-3 z-10 cursor-pointer hover:bg-secondary/80 gap-1"
+            className="absolute -top-1 -right-1 z-10 cursor-pointer hover:bg-secondary/80 gap-1 text-xs"
             onClick={(e) => {
               e.stopPropagation();
               setShowHistory(true);
@@ -211,8 +211,8 @@ export const GameCard = ({
                     #{index + 1}
                   </div>
                   <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                    <Calendar className="h-3.5 w-3.5" />
-                    {new Date(entry.created_at).toLocaleDateString()}
+                    <Clock className="h-3.5 w-3.5" />
+                    {new Date(entry.created_at).toLocaleString()}
                   </div>
                 </div>
                 <div className="text-right">
