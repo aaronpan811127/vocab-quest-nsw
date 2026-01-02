@@ -316,7 +316,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      validate_game_submission: {
+        Args: {
+          p_answers: Json
+          p_passage_id: string
+          p_time_spent_seconds: number
+          p_unit_id: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never

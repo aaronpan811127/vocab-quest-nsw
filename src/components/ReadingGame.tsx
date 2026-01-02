@@ -129,154 +129,45 @@ export const ReadingGame = ({ unitId, unitTitle, onComplete, onBack }: ReadingGa
   };
 
   const saveGameAttempt = async () => {
-    if (!user) return;
+    if (!user || !passage) return;
     
     setSaving(true);
     try {
-      const correctCount = selectedAnswers.filter((answer, index) => 
-        questions[index].options[answer] === questions[index].correct_answer
-      ).length;
-      
       const timeSpentSeconds = Math.round((Date.now() - startTimeRef.current) / 1000);
-      const score = Math.round((correctCount / questions.length) * 100);
-      const isPerfect = correctCount === questions.length;
       
-      setGameCompleted(isPerfect);
+      // Prepare answers for server-side validation
+      const answers = selectedAnswers.map((answerIndex, questionIndex) => ({
+        question_id: questions[questionIndex].id,
+        answer_index: answerIndex
+      }));
 
-      // Calculate XP earned
-      // Base XP from score (0-100 score = 0-20 XP)
-      const scoreXp = Math.round(score * 0.2);
-      
-      // Time bonus: faster = more XP (max 10 XP bonus for under 30 seconds, scales down)
-      // Average expected time is ~60 seconds, so under 30s gets full bonus
-      const avgTimePerQuestion = timeSpentSeconds / questions.length;
-      const timeBonus = Math.max(0, Math.round(10 - (avgTimePerQuestion / 3)));
-      
-      // Total XP = score XP + time bonus (minimum 5 XP for completing)
-      const xpEarned = Math.max(5, scoreXp + timeBonus);
-      setEarnedXp(xpEarned);
+      // Submit to server-side function for secure validation
+      const { data, error } = await supabase.functions.invoke('submit-game', {
+        body: {
+          unit_id: unitId,
+          passage_id: passage.id,
+          answers,
+          time_spent_seconds: timeSpentSeconds
+        }
+      });
+
+      if (error) {
+        console.error('Error submitting game:', error);
+        throw error;
+      }
+
+      if (!data.success) {
+        console.error('Game submission failed:', data.error);
+        throw new Error(data.error || 'Failed to submit game');
+      }
+
+      // Use server-calculated values
+      setEarnedXp(data.xp_earned);
+      setGameCompleted(data.is_perfect);
       
       // Trigger XP animation after a short delay
       setTimeout(() => setShowXpAnimation(true), 300);
 
-      // Insert game attempt
-      const { data: attempt, error: attemptError } = await supabase
-        .from('game_attempts')
-        .insert({
-          user_id: user.id,
-          unit_id: unitId,
-          game_type: 'reading',
-          score,
-          correct_answers: correctCount,
-          total_questions: questions.length,
-          time_spent_seconds: timeSpentSeconds,
-          completed: true
-        })
-        .select()
-        .single();
-
-      if (attemptError) throw attemptError;
-
-      // Save incorrect answers
-      const incorrectAnswers = selectedAnswers
-        .map((answer, index) => ({
-          questionIndex: index,
-          userAnswer: questions[index].options[answer],
-          isCorrect: questions[index].options[answer] === questions[index].correct_answer
-        }))
-        .filter(a => !a.isCorrect);
-
-      if (incorrectAnswers.length > 0 && attempt) {
-        const incorrectRecords = incorrectAnswers.map(a => ({
-          attempt_id: attempt.id,
-          question_id: questions[a.questionIndex].id,
-          user_answer: a.userAnswer
-        }));
-
-        const { error: incorrectError } = await supabase
-          .from('attempt_incorrect_answers')
-          .insert(incorrectRecords);
-
-        if (incorrectError) console.error('Error saving incorrect answers:', incorrectError);
-      }
-
-      // Update user profile XP and level
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('total_xp, level, last_study_date, study_streak')
-        .eq('user_id', user.id)
-        .single();
-
-      if (profile) {
-        const newXp = (profile.total_xp || 0) + xpEarned;
-        const newLevel = Math.floor(newXp / 100) + 1; // Level up every 100 XP
-        
-        // Calculate streak
-        const today = new Date().toISOString().split('T')[0];
-        const lastStudy = profile.last_study_date;
-        let newStreak = profile.study_streak || 0;
-        
-        if (lastStudy !== today) {
-          const yesterday = new Date();
-          yesterday.setDate(yesterday.getDate() - 1);
-          const yesterdayStr = yesterday.toISOString().split('T')[0];
-          
-          if (lastStudy === yesterdayStr) {
-            newStreak += 1;
-          } else if (lastStudy !== today) {
-            newStreak = 1;
-          }
-        }
-
-        await supabase
-          .from('profiles')
-          .update({
-            total_xp: newXp,
-            level: newLevel,
-            last_study_date: today,
-            study_streak: newStreak
-          })
-          .eq('user_id', user.id);
-      }
-
-      // Update or create user_progress for this unit
-      const { data: existingProgress } = await supabase
-        .from('user_progress')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('unit_id', unitId)
-        .maybeSingle();
-
-      if (existingProgress) {
-        const updates: Record<string, unknown> = {
-          attempts: (existingProgress.attempts || 0) + 1,
-          time_spent_minutes: (existingProgress.time_spent_minutes || 0) + Math.ceil(timeSpentSeconds / 60)
-        };
-        
-        // Update reading score if better
-        if (score > (existingProgress.reading_score || 0)) {
-          updates.reading_score = score;
-        }
-        if (isPerfect) {
-          updates.reading_completed = true;
-        }
-
-        await supabase
-          .from('user_progress')
-          .update(updates)
-          .eq('id', existingProgress.id);
-      } else {
-        await supabase
-          .from('user_progress')
-          .insert({
-            user_id: user.id,
-            unit_id: unitId,
-            reading_score: score,
-            reading_completed: isPerfect,
-            attempts: 1,
-            time_spent_minutes: Math.ceil(timeSpentSeconds / 60)
-          });
-      }
     } catch (err) {
       console.error('Error saving game attempt:', err);
     } finally {

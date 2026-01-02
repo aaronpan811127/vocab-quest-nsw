@@ -39,11 +39,11 @@ export const ProfileSettings = ({ trigger }: ProfileSettingsProps) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
 
-    // Validate file type
+    // Basic client-side validation (server will verify magic bytes)
     if (!file.type.startsWith("image/")) {
       toast({
         title: "Invalid file",
-        description: "Please select an image file",
+        description: "Please select an image file (JPEG, PNG, GIF, or WebP)",
         variant: "destructive",
       });
       return;
@@ -62,29 +62,22 @@ export const ProfileSettings = ({ trigger }: ProfileSettingsProps) => {
     setUploading(true);
 
     try {
-      const fileExt = file.name.split(".").pop();
-      const filePath = `${user.id}/avatar.${fileExt}`;
+      // Create form data for server-side validation
+      const formData = new FormData();
+      formData.append('file', file);
 
-      // Upload to Supabase Storage
-      const { error: uploadError } = await supabase.storage
-        .from("avatars")
-        .upload(filePath, file, { upsert: true });
+      // Upload via secure edge function that validates magic bytes
+      const { data, error } = await supabase.functions.invoke('upload-avatar', {
+        body: formData,
+      });
 
-      if (uploadError) throw uploadError;
+      if (error) throw error;
 
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from("avatars")
-        .getPublicUrl(filePath);
+      if (!data.success) {
+        throw new Error(data.error || "Failed to upload avatar");
+      }
 
-      // Add cache-busting query param
-      const avatarUrl = `${publicUrl}?t=${Date.now()}`;
-
-      // Update profile with new avatar URL
-      const { error: updateError } = await updateProfile({ avatar_url: avatarUrl });
-      if (updateError) throw updateError;
-
-      setAvatarPreview(avatarUrl);
+      setAvatarPreview(data.avatar_url);
       toast({
         title: "Success",
         description: "Avatar updated successfully",
