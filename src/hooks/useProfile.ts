@@ -7,10 +7,6 @@ export interface Profile {
   user_id: string;
   username: string | null;
   avatar_url: string | null;
-  level: number;
-  total_xp: number;
-  study_streak: number;
-  last_study_date: string | null;
   default_test_type_id: string | null;
   created_at: string;
   updated_at: string;
@@ -61,18 +57,5 @@ export const useProfile = () => {
     return { error };
   };
 
-  const addXP = async (xp: number) => {
-    if (!profile) return;
-
-    const newXP = profile.total_xp + xp;
-    const newLevel = Math.floor(newXP / 500) + 1;
-
-    await updateProfile({
-      total_xp: newXP,
-      level: newLevel,
-      last_study_date: new Date().toISOString().split('T')[0]
-    });
-  };
-
-  return { profile, loading, updateProfile, addXP };
+  return { profile, loading, updateProfile };
 };
