@@ -106,27 +106,8 @@ export const Hero = ({ onSelectTestType }: HeroProps) => {
           </p>
         </div>
 
-        {/* Stats */}
-        <div className="flex items-center justify-center gap-4 sm:gap-8 text-xs sm:text-sm">
-          <div className="text-center">
-            <div className="text-xl sm:text-2xl font-bold text-primary">10</div>
-            <div className="text-muted-foreground text-xs sm:text-sm">Words/Unit</div>
-          </div>
-          <div className="text-center">
-            <div className="text-xl sm:text-2xl font-bold text-secondary">4</div>
-            <div className="text-muted-foreground text-xs sm:text-sm">Game Types</div>
-          </div>
-          <div className="text-center">
-            <div className="text-xl sm:text-2xl font-bold text-accent">∞</div>
-            <div className="text-muted-foreground text-xs sm:text-sm">Practice</div>
-          </div>
-        </div>
-
         {/* Test Type Selection */}
         <div className="space-y-4">
-          <h2 className="text-lg sm:text-xl font-semibold text-foreground">
-            {user ? "Select Your Test Type" : "Sign in to start learning"}
-          </h2>
           
           {!user ? (
             <Button 
