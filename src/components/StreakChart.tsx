@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Trophy } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTestType } from "@/contexts/TestTypeContext";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell } from "recharts";
 import {
   ChartContainer,
@@ -18,17 +19,49 @@ interface DayData {
 
 export const StreakChart = () => {
   const { user } = useAuth();
+  const { selectedTestType } = useTestType();
   const [data, setData] = useState<DayData[]>([]);
   const [streak, setStreak] = useState(0);
 
   useEffect(() => {
-    if (user) {
+    if (user && selectedTestType) {
       fetchWeekData();
+      fetchStreak();
     }
-  }, [user]);
+  }, [user, selectedTestType]);
+
+  const fetchStreak = async () => {
+    if (!user || !selectedTestType) return;
+
+    const { data, error } = await supabase
+      .from("leaderboard")
+      .select("study_streak")
+      .eq("user_id", user.id)
+      .eq("test_type_id", selectedTestType.id)
+      .maybeSingle();
+
+    if (!error && data) {
+      setStreak(data.study_streak || 0);
+    } else {
+      setStreak(0);
+    }
+  };
 
   const fetchWeekData = async () => {
-    if (!user) return;
+    if (!user || !selectedTestType) return;
+
+    // First get unit IDs for this test type
+    const { data: testTypeUnits, error: unitsError } = await supabase
+      .from("units")
+      .select("id")
+      .eq("test_type_id", selectedTestType.id);
+
+    if (unitsError || !testTypeUnits?.length) {
+      setData([]);
+      return;
+    }
+
+    const unitIds = testTypeUnits.map(u => u.id);
 
     // Get last 7 days
     const today = new Date();
@@ -37,8 +70,9 @@ export const StreakChart = () => {
 
     const { data: attempts, error } = await supabase
       .from("game_attempts")
-      .select("created_at, time_spent_seconds")
+      .select("created_at, time_spent_seconds, unit_id")
       .eq("user_id", user.id)
+      .in("unit_id", unitIds)
       .gte("created_at", sevenDaysAgo.toISOString())
       .lte("created_at", today.toISOString());
 
@@ -78,18 +112,6 @@ export const StreakChart = () => {
     }));
 
     setData(updatedDays);
-
-    // Calculate streak (consecutive days with activity from today backwards)
-    let currentStreak = 0;
-    for (let i = updatedDays.length - 1; i >= 0; i--) {
-      if (updatedDays[i].minutes > 0) {
-        currentStreak++;
-      } else if (i < updatedDays.length - 1) {
-        // If it's not today and there's a gap, break
-        break;
-      }
-    }
-    setStreak(currentStreak);
   };
 
   const maxMinutes = Math.max(...data.map((d) => d.minutes), 1);
