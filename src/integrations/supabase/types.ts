@@ -268,64 +268,44 @@ export type Database = {
       user_progress: {
         Row: {
           attempts: number
+          best_score: number
+          completed: boolean
           created_at: string
+          game_type: string
           id: string
-          listening_completed: boolean
-          listening_score: number | null
-          reading_completed: boolean
-          reading_score: number | null
-          speaking_completed: boolean
-          speaking_score: number | null
-          time_spent_minutes: number
+          total_time_seconds: number
+          total_xp: number
           unit_id: string
           updated_at: string
           user_id: string
-          writing_completed: boolean
-          writing_score: number | null
         }
         Insert: {
           attempts?: number
+          best_score?: number
+          completed?: boolean
           created_at?: string
+          game_type: string
           id?: string
-          listening_completed?: boolean
-          listening_score?: number | null
-          reading_completed?: boolean
-          reading_score?: number | null
-          speaking_completed?: boolean
-          speaking_score?: number | null
-          time_spent_minutes?: number
+          total_time_seconds?: number
+          total_xp?: number
           unit_id: string
           updated_at?: string
           user_id: string
-          writing_completed?: boolean
-          writing_score?: number | null
         }
         Update: {
           attempts?: number
+          best_score?: number
+          completed?: boolean
           created_at?: string
+          game_type?: string
           id?: string
-          listening_completed?: boolean
-          listening_score?: number | null
-          reading_completed?: boolean
-          reading_score?: number | null
-          speaking_completed?: boolean
-          speaking_score?: number | null
-          time_spent_minutes?: number
+          total_time_seconds?: number
+          total_xp?: number
           unit_id?: string
           updated_at?: string
           user_id?: string
-          writing_completed?: boolean
-          writing_score?: number | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "user_progress_unit_id_fkey"
-            columns: ["unit_id"]
-            isOneToOne: false
-            referencedRelation: "units"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
     }
     Views: {

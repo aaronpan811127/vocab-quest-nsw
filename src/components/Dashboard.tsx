@@ -99,10 +99,10 @@ export const Dashboard = ({ onStartGame }: DashboardProps) => {
       avgScore = Math.round(totalScore / attempts.length);
     }
 
-    // Fetch user progress to count completed units
+    // Fetch user progress to count completed units (now at game level)
     const { data: progress, error: progressError } = await supabase
       .from('user_progress')
-      .select('reading_completed, listening_completed, speaking_completed, writing_completed')
+      .select('unit_id, completed')
       .eq('user_id', user.id);
 
     if (progressError) {
@@ -110,14 +110,19 @@ export const Dashboard = ({ onStartGame }: DashboardProps) => {
       return;
     }
 
-    // Count units where all 4 games are completed
+    // Group by unit and count units where all 4 games are completed
+    const unitCompletionMap = new Map<string, number>();
+    progress?.forEach(p => {
+      if (p.completed) {
+        unitCompletionMap.set(p.unit_id, (unitCompletionMap.get(p.unit_id) || 0) + 1);
+      }
+    });
+    
+    // Count units with 4 completed games
     let unitsCompleted = 0;
-    if (progress) {
-      unitsCompleted = progress.filter(p => 
-        p.reading_completed && p.listening_completed && 
-        p.speaking_completed && p.writing_completed
-      ).length;
-    }
+    unitCompletionMap.forEach(count => {
+      if (count >= 4) unitsCompleted++;
+    });
 
     setUserStats({ avgScore, unitsCompleted });
   };
@@ -201,7 +206,7 @@ export const Dashboard = ({ onStartGame }: DashboardProps) => {
       return;
     }
 
-    // Fetch user progress for all units
+    // Fetch user progress for all units (now at game level)
     const { data: progressData, error: progressError } = await supabase
       .from('user_progress')
       .select('*')
@@ -211,49 +216,31 @@ export const Dashboard = ({ onStartGame }: DashboardProps) => {
       console.error('Error fetching progress:', progressError);
     }
 
-    // Fetch game attempts for time spent calculation
-    const { data: attemptsData, error: attemptsError } = await supabase
-      .from('game_attempts')
-      .select('unit_id, time_spent_seconds, score, game_type')
-      .eq('user_id', user.id);
-
-    if (attemptsError) {
-      console.error('Error fetching attempts:', attemptsError);
-    }
-
-    // Create progress map
-    const progressMap = new Map(progressData?.map(p => [p.unit_id, p]) || []);
-    
-    // Create attempts map for time and scores
-    const unitAttemptsMap = new Map<string, { totalTime: number; scores: number[] }>();
-    attemptsData?.forEach(a => {
-      const existing = unitAttemptsMap.get(a.unit_id) || { totalTime: 0, scores: [] };
-      existing.totalTime += a.time_spent_seconds || 0;
-      existing.scores.push(a.score);
-      unitAttemptsMap.set(a.unit_id, existing);
+    // Group progress by unit_id
+    const unitProgressMap = new Map<string, typeof progressData>();
+    progressData?.forEach(p => {
+      const existing = unitProgressMap.get(p.unit_id) || [];
+      existing.push(p);
+      unitProgressMap.set(p.unit_id, existing);
     });
 
     const formattedUnits: Unit[] = unitsData.map((unit, index) => {
-      const progress = progressMap.get(unit.id);
-      const attempts = unitAttemptsMap.get(unit.id);
+      const unitProgress = unitProgressMap.get(unit.id) || [];
       
-      // Count completed games
-      let completedGames = 0;
-      if (progress) {
-        if (progress.reading_completed) completedGames++;
-        if (progress.listening_completed) completedGames++;
-        if (progress.speaking_completed) completedGames++;
-        if (progress.writing_completed) completedGames++;
-      }
+      // Count completed games from progress records
+      const completedGames = unitProgress.filter(p => p.completed).length;
 
-      // Calculate average score for this unit
+      // Calculate average score and total time from progress records
       let averageScore = 0;
-      if (attempts && attempts.scores.length > 0) {
-        averageScore = Math.round(attempts.scores.reduce((a, b) => a + b, 0) / attempts.scores.length);
+      let totalTimeSeconds = 0;
+      if (unitProgress.length > 0) {
+        const totalScore = unitProgress.reduce((sum, p) => sum + (p.best_score || 0), 0);
+        averageScore = Math.round(totalScore / unitProgress.length);
+        totalTimeSeconds = unitProgress.reduce((sum, p) => sum + (p.total_time_seconds || 0), 0);
       }
 
       // Format time spent
-      const totalMinutes = Math.round((attempts?.totalTime || 0) / 60);
+      const totalMinutes = Math.round(totalTimeSeconds / 60);
       const timeSpent = totalMinutes > 60 
         ? `${Math.floor(totalMinutes / 60)}h ${totalMinutes % 60}m`
         : `${totalMinutes}m`;
@@ -262,13 +249,9 @@ export const Dashboard = ({ onStartGame }: DashboardProps) => {
       let isUnlocked = index === 0; // First unit always unlocked
       if (index > 0) {
         const prevUnitId = unitsData[index - 1].id;
-        const prevProgress = progressMap.get(prevUnitId);
-        if (prevProgress) {
-          isUnlocked = prevProgress.reading_completed && 
-                       prevProgress.listening_completed && 
-                       prevProgress.speaking_completed && 
-                       prevProgress.writing_completed;
-        }
+        const prevProgress = unitProgressMap.get(prevUnitId) || [];
+        const prevCompletedGames = prevProgress.filter(p => p.completed).length;
+        isUnlocked = prevCompletedGames >= 4;
       }
 
       return {
