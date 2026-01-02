@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.upload-avatar]
 verify_jwt = false
+
+[functions.evaluate-sentence]
+verify_jwt = false
