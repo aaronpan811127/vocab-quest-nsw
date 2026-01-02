@@ -5,8 +5,11 @@ import {
   Zap, 
   Trophy, 
   Star,
-  ArrowRight
+  ArrowRight,
+  LogIn
 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 import heroImage from "@/assets/hero-gaming.jpg";
 
 interface HeroProps {
@@ -15,6 +18,17 @@ interface HeroProps {
 }
 
 export const Hero = ({ onStartPlaying, onViewLeaderboard }: HeroProps) => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
+  const handleStartPlaying = () => {
+    if (user) {
+      onStartPlaying?.();
+    } else {
+      navigate("/auth");
+    }
+  };
+
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
       {/* Background Image */}
@@ -96,11 +110,21 @@ export const Hero = ({ onStartPlaying, onViewLeaderboard }: HeroProps) => {
             variant="hero" 
             size="lg" 
             className="text-lg px-8 py-6 animate-glow-pulse"
-            onClick={onStartPlaying}
+            onClick={handleStartPlaying}
           >
-            <Gamepad2 className="h-5 w-5 mr-2" />
-            Start Playing
-            <ArrowRight className="h-5 w-5 ml-2" />
+            {user ? (
+              <>
+                <Gamepad2 className="h-5 w-5 mr-2" />
+                Continue Playing
+                <ArrowRight className="h-5 w-5 ml-2" />
+              </>
+            ) : (
+              <>
+                <LogIn className="h-5 w-5 mr-2" />
+                Sign In to Play
+                <ArrowRight className="h-5 w-5 ml-2" />
+              </>
+            )}
           </Button>
           
           <Button 

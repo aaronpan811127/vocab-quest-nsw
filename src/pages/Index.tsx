@@ -3,9 +3,12 @@ import { Navigation } from "@/components/Navigation";
 import { Hero } from "@/components/Hero";
 import { Dashboard } from "@/components/Dashboard";
 import { ReadingGame } from "@/components/ReadingGame";
+import { Leaderboard } from "@/components/Leaderboard";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Index = () => {
-  const [currentView, setCurrentView] = useState<"hero" | "dashboard" | "game">("hero");
+  const [currentView, setCurrentView] = useState<"hero" | "dashboard" | "game" | "leaderboard">("hero");
+  const { user } = useAuth();
 
   const renderContent = () => {
     switch (currentView) {
@@ -13,7 +16,7 @@ const Index = () => {
         return (
           <Hero 
             onStartPlaying={() => setCurrentView("dashboard")}
-            onViewLeaderboard={() => setCurrentView("dashboard")}
+            onViewLeaderboard={() => setCurrentView("leaderboard")}
           />
         );
       case "dashboard":
@@ -25,6 +28,8 @@ const Index = () => {
             onBack={() => setCurrentView("dashboard")}
           />
         );
+      case "leaderboard":
+        return <Leaderboard onBack={() => setCurrentView("hero")} />;
       default:
         return <Hero />;
     }

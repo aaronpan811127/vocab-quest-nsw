@@ -14,7 +14,181 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      game_attempts: {
+        Row: {
+          completed: boolean
+          correct_answers: number
+          created_at: string
+          game_type: string
+          id: string
+          score: number
+          time_spent_seconds: number
+          total_questions: number
+          unit_id: string
+          user_id: string
+        }
+        Insert: {
+          completed?: boolean
+          correct_answers?: number
+          created_at?: string
+          game_type: string
+          id?: string
+          score?: number
+          time_spent_seconds?: number
+          total_questions?: number
+          unit_id: string
+          user_id: string
+        }
+        Update: {
+          completed?: boolean
+          correct_answers?: number
+          created_at?: string
+          game_type?: string
+          id?: string
+          score?: number
+          time_spent_seconds?: number
+          total_questions?: number
+          unit_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "game_attempts_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "units"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          id: string
+          last_study_date: string | null
+          level: number
+          study_streak: number
+          total_xp: number
+          updated_at: string
+          user_id: string
+          username: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          id?: string
+          last_study_date?: string | null
+          level?: number
+          study_streak?: number
+          total_xp?: number
+          updated_at?: string
+          user_id: string
+          username?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          id?: string
+          last_study_date?: string | null
+          level?: number
+          study_streak?: number
+          total_xp?: number
+          updated_at?: string
+          user_id?: string
+          username?: string | null
+        }
+        Relationships: []
+      }
+      units: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          title: string
+          unit_number: number
+          words: Json
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          title: string
+          unit_number: number
+          words?: Json
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          title?: string
+          unit_number?: number
+          words?: Json
+        }
+        Relationships: []
+      }
+      user_progress: {
+        Row: {
+          attempts: number
+          created_at: string
+          id: string
+          listening_completed: boolean
+          listening_score: number | null
+          reading_completed: boolean
+          reading_score: number | null
+          speaking_completed: boolean
+          speaking_score: number | null
+          time_spent_minutes: number
+          unit_id: string
+          updated_at: string
+          user_id: string
+          writing_completed: boolean
+          writing_score: number | null
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          id?: string
+          listening_completed?: boolean
+          listening_score?: number | null
+          reading_completed?: boolean
+          reading_score?: number | null
+          speaking_completed?: boolean
+          speaking_score?: number | null
+          time_spent_minutes?: number
+          unit_id: string
+          updated_at?: string
+          user_id: string
+          writing_completed?: boolean
+          writing_score?: number | null
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          id?: string
+          listening_completed?: boolean
+          listening_score?: number | null
+          reading_completed?: boolean
+          reading_score?: number | null
+          speaking_completed?: boolean
+          speaking_score?: number | null
+          time_spent_minutes?: number
+          unit_id?: string
+          updated_at?: string
+          user_id?: string
+          writing_completed?: boolean
+          writing_score?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_progress_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "units"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
