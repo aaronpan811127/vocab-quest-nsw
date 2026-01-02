@@ -4,18 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
-import { 
-  Mic, 
-  Volume2, 
-  RotateCcw,
-  Trophy,
-  Zap,
-  ArrowRight,
-  Check,
-  X,
-  Loader2,
-  MicOff
-} from "lucide-react";
+import { Mic, Volume2, RotateCcw, Trophy, Zap, ArrowRight, Check, X, Loader2, MicOff } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -45,10 +34,14 @@ export const VoiceMasterGame = ({ unitId, unitTitle, onComplete, onBack }: Voice
   const [showXpAnimation, setShowXpAnimation] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
-  const [currentFeedback, setCurrentFeedback] = useState<{ isCorrect: boolean; correctWord: string; userSaid: string } | null>(null);
+  const [currentFeedback, setCurrentFeedback] = useState<{
+    isCorrect: boolean;
+    correctWord: string;
+    userSaid: string;
+  } | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [speechSupported, setSpeechSupported] = useState(true);
-  
+
   const { user } = useAuth();
   const { toast } = useToast();
   const startTimeRef = useRef<number>(Date.now());
@@ -60,7 +53,7 @@ export const VoiceMasterGame = ({ unitId, unitTitle, onComplete, onBack }: Voice
 
   useEffect(() => {
     synthRef.current = window.speechSynthesis;
-    
+
     // Check for speech recognition support
     const SpeechRecognitionAPI = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognitionAPI) {
@@ -71,10 +64,10 @@ export const VoiceMasterGame = ({ unitId, unitTitle, onComplete, onBack }: Voice
         variant: "destructive",
       });
     }
-    
+
     fetchWords();
     startTimeRef.current = Date.now();
-    
+
     return () => {
       if (synthRef.current) {
         synthRef.current.cancel();
@@ -99,18 +92,14 @@ export const VoiceMasterGame = ({ unitId, unitTitle, onComplete, onBack }: Voice
   }, [questions]);
 
   const fetchWords = async (playAllWords: boolean = false) => {
-    console.log('VoiceMasterGame fetchWords called with playAllWords:', playAllWords);
+    console.log("VoiceMasterGame fetchWords called with playAllWords:", playAllWords);
     setLoading(true);
-    
+
     try {
-      const { data: unit, error } = await supabase
-        .from('units')
-        .select('words')
-        .eq('id', unitId)
-        .single();
+      const { data: unit, error } = await supabase.from("units").select("words").eq("id", unitId).single();
 
       if (error) throw error;
-      
+
       if (!unit || !unit.words) {
         toast({
           title: "No words found",
@@ -121,73 +110,66 @@ export const VoiceMasterGame = ({ unitId, unitTitle, onComplete, onBack }: Voice
         return;
       }
 
-      const wordList: string[] = Array.isArray(unit.words) 
-        ? unit.words 
-        : JSON.parse(unit.words as string);
-      
+      const wordList: string[] = Array.isArray(unit.words) ? unit.words : JSON.parse(unit.words as string);
+
       let finalWords: string[];
       let priorityWords: string[] = [];
-      
+
       if (playAllWords) {
         // Play Again: shuffle all words randomly
         finalWords = [...wordList].sort(() => Math.random() - 0.5);
-        console.log('VoiceMasterGame: Playing ALL words, count:', finalWords.length);
+        console.log("VoiceMasterGame: Playing ALL words, count:", finalWords.length);
       } else {
         // Initial play: prioritize incorrect words from last 3 attempts
         if (user) {
           const { data: prevAttempts } = await supabase
-            .from('game_attempts')
-            .select('id')
-            .eq('user_id', user.id)
-            .eq('unit_id', unitId)
-            .eq('game_type', 'speaking')
-            .order('created_at', { ascending: false })
+            .from("game_attempts")
+            .select("id")
+            .eq("user_id", user.id)
+            .eq("unit_id", unitId)
+            .eq("game_type", "speaking")
+            .order("created_at", { ascending: false })
             .limit(3);
 
-          console.log('Previous speaking attempts:', prevAttempts);
+          console.log("Previous speaking attempts:", prevAttempts);
 
           if (prevAttempts && prevAttempts.length > 0) {
-            const attemptIds = prevAttempts.map(a => a.id);
-            
-            const { data: incorrectAnswers } = await supabase
-              .from('attempt_incorrect_answers_dictation')
-              .select('incorrect_word')
-              .in('attempt_id', attemptIds);
+            const attemptIds = prevAttempts.map((a) => a.id);
 
-            console.log('Incorrect answers from last 3 attempts:', incorrectAnswers);
+            const { data: incorrectAnswers } = await supabase
+              .from("attempt_incorrect_answers_dictation")
+              .select("incorrect_word")
+              .in("attempt_id", attemptIds);
+
+            console.log("Incorrect answers from last 3 attempts:", incorrectAnswers);
 
             if (incorrectAnswers && incorrectAnswers.length > 0) {
-              const incorrectSet = new Set(incorrectAnswers.map(a => a.incorrect_word.toLowerCase()));
-              priorityWords = wordList.filter(word => incorrectSet.has(word.toLowerCase()));
-              console.log('Priority words to test:', priorityWords);
+              const incorrectSet = new Set(incorrectAnswers.map((a) => a.incorrect_word.toLowerCase()));
+              priorityWords = wordList.filter((word) => incorrectSet.has(word.toLowerCase()));
+              console.log("Priority words to test:", priorityWords);
             }
           }
         }
 
-        // If there are priority words, put them first but still include ALL words
+        // If there are priority words, ONLY test those; otherwise test all words
         if (priorityWords.length > 0) {
-          const nonPriorityWords = wordList.filter(
-            (word) => !priorityWords.some((p) => p.toLowerCase() === word.toLowerCase())
-          );
-
-          finalWords = [
-            ...[...priorityWords].sort(() => Math.random() - 0.5),
-            ...[...nonPriorityWords].sort(() => Math.random() - 0.5),
-          ];
+          finalWords = [...priorityWords].sort(() => Math.random() - 0.5);
         } else {
           finalWords = [...wordList].sort(() => Math.random() - 0.5);
         }
       }
-      
+
       setWords(finalWords);
-      setQuestions(finalWords.map(word => ({
-        word,
-        userAnswer: "",
-        isCorrect: null,
-        isPriority: priorityWords.includes(word)
-      })));
+      setQuestions(
+        finalWords.map((word) => ({
+          word,
+          userAnswer: "",
+          isCorrect: null,
+          isPriority: priorityWords.includes(word),
+        })),
+      );
     } catch (err) {
-      console.error('Error fetching words:', err);
+      console.error("Error fetching words:", err);
       toast({
         title: "Failed to load words",
         description: "Please try again.",
@@ -200,25 +182,26 @@ export const VoiceMasterGame = ({ unitId, unitTitle, onComplete, onBack }: Voice
 
   const playWord = useCallback((word: string) => {
     if (!synthRef.current) return;
-    
+
     synthRef.current.cancel();
     setIsPlaying(true);
-    
+
     const utterance = new SpeechSynthesisUtterance(word);
     utterance.rate = 0.8;
     utterance.pitch = 1;
     utterance.volume = 1;
-    
+
     const voices = synthRef.current.getVoices();
-    const englishVoice = voices.find(v => v.lang.startsWith('en-') && v.name.includes('Female')) 
-      || voices.find(v => v.lang.startsWith('en-'));
+    const englishVoice =
+      voices.find((v) => v.lang.startsWith("en-") && v.name.includes("Female")) ||
+      voices.find((v) => v.lang.startsWith("en-"));
     if (englishVoice) {
       utterance.voice = englishVoice;
     }
-    
+
     utterance.onend = () => setIsPlaying(false);
     utterance.onerror = () => setIsPlaying(false);
-    
+
     synthRef.current.speak(utterance);
   }, []);
 
@@ -229,7 +212,7 @@ export const VoiceMasterGame = ({ unitId, unitTitle, onComplete, onBack }: Voice
     recognitionRef.current = new SpeechRecognitionAPI();
     recognitionRef.current.continuous = false;
     recognitionRef.current.interimResults = false;
-    recognitionRef.current.lang = 'en-US';
+    recognitionRef.current.lang = "en-US";
 
     recognitionRef.current.onstart = () => {
       setIsListening(true);
@@ -241,9 +224,9 @@ export const VoiceMasterGame = ({ unitId, unitTitle, onComplete, onBack }: Voice
     };
 
     recognitionRef.current.onerror = (event) => {
-      console.error('Speech recognition error:', event.error);
+      console.error("Speech recognition error:", event.error);
       setIsListening(false);
-      if (event.error === 'no-speech') {
+      if (event.error === "no-speech") {
         toast({
           title: "No speech detected",
           description: "Please try speaking again.",
@@ -267,25 +250,25 @@ export const VoiceMasterGame = ({ unitId, unitTitle, onComplete, onBack }: Voice
 
   const handleSpeechResult = useCallback((transcript: string) => {
     const currentWord = wordsRef.current[currentIndexRef.current];
-    
+
     if (!currentWord) {
-      console.error('No current word found', { 
-        wordsLength: wordsRef.current.length, 
-        currentIndex: currentIndexRef.current 
+      console.error("No current word found", {
+        wordsLength: wordsRef.current.length,
+        currentIndex: currentIndexRef.current,
       });
       return;
     }
-    
+
     const isCorrect = transcript.toLowerCase() === currentWord.toLowerCase();
-    
+
     const updatedQuestions = [...questionsRef.current];
     updatedQuestions[currentIndexRef.current] = {
       word: currentWord,
       userAnswer: transcript,
-      isCorrect
+      isCorrect,
     };
     setQuestions(updatedQuestions);
-    
+
     setCurrentFeedback({ isCorrect, correctWord: currentWord, userSaid: transcript });
     setShowFeedback(true);
   }, []);
@@ -293,7 +276,7 @@ export const VoiceMasterGame = ({ unitId, unitTitle, onComplete, onBack }: Voice
   const handleNext = async () => {
     setShowFeedback(false);
     setCurrentFeedback(null);
-    
+
     if (currentIndex < words.length - 1) {
       setCurrentIndex(currentIndex + 1);
     } else {
@@ -304,28 +287,28 @@ export const VoiceMasterGame = ({ unitId, unitTitle, onComplete, onBack }: Voice
 
   const saveGameAttempt = async () => {
     if (!user) return;
-    
+
     setSaving(true);
     try {
       const timeSpentSeconds = Math.round((Date.now() - startTimeRef.current) / 1000);
-      
+
       // Submit only raw answers to server for validation and scoring
-      const answers = questions.map(q => ({
+      const answers = questions.map((q) => ({
         word: q.word,
-        user_answer: q.userAnswer
+        user_answer: q.userAnswer,
       }));
 
-      const { data, error } = await supabase.functions.invoke('submit-dictation-game', {
+      const { data, error } = await supabase.functions.invoke("submit-dictation-game", {
         body: {
           unit_id: unitId,
-          game_type: 'speaking',
+          game_type: "speaking",
           answers,
-          time_spent_seconds: timeSpentSeconds
-        }
+          time_spent_seconds: timeSpentSeconds,
+        },
       });
 
       if (error) {
-        console.error('Server submission error:', error);
+        console.error("Server submission error:", error);
         toast({
           title: "Failed to save results",
           description: "Your progress could not be saved.",
@@ -335,7 +318,7 @@ export const VoiceMasterGame = ({ unitId, unitTitle, onComplete, onBack }: Voice
       }
 
       if (!data.success) {
-        console.error('Submission failed:', data.error);
+        console.error("Submission failed:", data.error);
         toast({
           title: "Failed to save results",
           description: data.error || "Your progress could not be saved.",
@@ -347,9 +330,8 @@ export const VoiceMasterGame = ({ unitId, unitTitle, onComplete, onBack }: Voice
       // Use server-calculated XP
       setEarnedXp(data.game_xp);
       setTimeout(() => setShowXpAnimation(true), 300);
-
     } catch (err) {
-      console.error('Error saving game attempt:', err);
+      console.error("Error saving game attempt:", err);
       toast({
         title: "Failed to save results",
         description: "An unexpected error occurred.",
@@ -361,7 +343,7 @@ export const VoiceMasterGame = ({ unitId, unitTitle, onComplete, onBack }: Voice
   };
 
   const getScore = () => {
-    const correct = questions.filter(q => q.isCorrect).length;
+    const correct = questions.filter((q) => q.isCorrect).length;
     return Math.round((correct / questions.length) * 100);
   };
 
@@ -385,8 +367,8 @@ export const VoiceMasterGame = ({ unitId, unitTitle, onComplete, onBack }: Voice
             <MicOff className="h-16 w-16 mx-auto text-muted-foreground" />
             <h2 className="text-2xl font-bold">Speech Recognition Not Supported</h2>
             <p className="text-muted-foreground">
-              Your browser doesn't support speech recognition. 
-              Please try Chrome, Edge, or Safari on a desktop or mobile device.
+              Your browser doesn't support speech recognition. Please try Chrome, Edge, or Safari on a desktop or mobile
+              device.
             </p>
             <Button variant="outline" onClick={onBack} size="lg">
               Back to Dashboard
@@ -412,7 +394,7 @@ export const VoiceMasterGame = ({ unitId, unitTitle, onComplete, onBack }: Voice
   if (showResults) {
     const score = getScore();
     const isPerfect = score === 100;
-    
+
     return (
       <div className="min-h-screen bg-gradient-hero p-6">
         <div className="max-w-2xl mx-auto">
@@ -422,19 +404,15 @@ export const VoiceMasterGame = ({ unitId, unitTitle, onComplete, onBack }: Voice
                 <div className="text-6xl mb-4">🎉</div>
                 <Trophy className="h-16 w-16 mx-auto text-success" />
                 <h2 className="text-3xl font-bold text-success">Perfect Pronunciation!</h2>
-                <p className="text-lg text-muted-foreground">
-                  You said every word correctly!
-                </p>
-                <Badge className="bg-gradient-success text-success-foreground text-lg px-6 py-2">
-                  Score: {score}%
-                </Badge>
+                <p className="text-lg text-muted-foreground">You said every word correctly!</p>
+                <Badge className="bg-gradient-success text-success-foreground text-lg px-6 py-2">Score: {score}%</Badge>
               </>
             ) : (
               <>
                 <div className="text-6xl mb-4">🎤</div>
                 <h2 className="text-3xl font-bold">Great Speaking!</h2>
                 <p className="text-lg text-muted-foreground">
-                  You got {questions.filter(q => q.isCorrect).length} out of {questions.length} correct.
+                  You got {questions.filter((q) => q.isCorrect).length} out of {questions.length} correct.
                 </p>
                 <Badge variant="outline" className="text-lg px-6 py-2">
                   Score: {score}%
@@ -445,10 +423,12 @@ export const VoiceMasterGame = ({ unitId, unitTitle, onComplete, onBack }: Voice
             {/* Results breakdown */}
             <div className="max-h-48 overflow-y-auto space-y-2">
               {questions.map((q, i) => (
-                <div 
+                <div
                   key={i}
                   className={`flex items-center justify-between p-3 rounded-lg ${
-                    q.isCorrect ? 'bg-success/10 border border-success/30' : 'bg-destructive/10 border border-destructive/30'
+                    q.isCorrect
+                      ? "bg-success/10 border border-success/30"
+                      : "bg-destructive/10 border border-destructive/30"
                   }`}
                 >
                   <div className="flex items-center gap-2">
@@ -459,25 +439,21 @@ export const VoiceMasterGame = ({ unitId, unitTitle, onComplete, onBack }: Voice
                     )}
                     <span className="font-medium">{q.word}</span>
                   </div>
-                  {!q.isCorrect && (
-                    <span className="text-sm text-muted-foreground">
-                      You said: "{q.userAnswer}"
-                    </span>
-                  )}
+                  {!q.isCorrect && <span className="text-sm text-muted-foreground">You said: "{q.userAnswer}"</span>}
                 </div>
               ))}
             </div>
 
             {/* XP Animation */}
-            <div 
+            <div
               className={`
                 flex items-center justify-center gap-2 py-3 px-6 rounded-full 
                 bg-gradient-to-r from-primary/20 to-primary/10 border border-primary/30
                 transition-all duration-500 ease-out
-                ${showXpAnimation ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-4 scale-95'}
+                ${showXpAnimation ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-4 scale-95"}
               `}
             >
-              <Zap className={`h-6 w-6 text-primary ${showXpAnimation ? 'animate-pulse' : ''}`} />
+              <Zap className={`h-6 w-6 text-primary ${showXpAnimation ? "animate-pulse" : ""}`} />
               <span className="text-xl font-bold text-primary">+{earnedXp} XP</span>
               {saving && <span className="text-sm text-muted-foreground">(saving...)</span>}
             </div>
@@ -498,7 +474,7 @@ export const VoiceMasterGame = ({ unitId, unitTitle, onComplete, onBack }: Voice
   }
 
   const currentWord = words[currentIndex];
-  const progressPercent = ((currentIndex) / words.length) * 100;
+  const progressPercent = (currentIndex / words.length) * 100;
 
   return (
     <div className="min-h-screen bg-gradient-hero p-6">
@@ -521,7 +497,9 @@ export const VoiceMasterGame = ({ unitId, unitTitle, onComplete, onBack }: Voice
         <div className="space-y-2">
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">Progress</span>
-            <span className="font-medium">{currentIndex + 1} of {words.length}</span>
+            <span className="font-medium">
+              {currentIndex + 1} of {words.length}
+            </span>
           </div>
           <Progress value={progressPercent} className="h-2" />
         </div>
@@ -531,15 +509,17 @@ export const VoiceMasterGame = ({ unitId, unitTitle, onComplete, onBack }: Voice
           {showFeedback && currentFeedback ? (
             // Feedback State
             <div className="text-center space-y-6">
-              <div className={`text-6xl ${currentFeedback.isCorrect ? 'animate-bounce' : ''}`}>
-                {currentFeedback.isCorrect ? '🎉' : '🤔'}
+              <div className={`text-6xl ${currentFeedback.isCorrect ? "animate-bounce" : ""}`}>
+                {currentFeedback.isCorrect ? "🎉" : "🤔"}
               </div>
-              
-              <div className={`p-4 rounded-xl ${
-                currentFeedback.isCorrect 
-                  ? 'bg-success/10 border-2 border-success/30' 
-                  : 'bg-destructive/10 border-2 border-destructive/30'
-              }`}>
+
+              <div
+                className={`p-4 rounded-xl ${
+                  currentFeedback.isCorrect
+                    ? "bg-success/10 border-2 border-success/30"
+                    : "bg-destructive/10 border-2 border-destructive/30"
+                }`}
+              >
                 {currentFeedback.isCorrect ? (
                   <div className="flex items-center justify-center gap-2 text-success">
                     <Check className="h-6 w-6" />
@@ -586,28 +566,24 @@ export const VoiceMasterGame = ({ unitId, unitTitle, onComplete, onBack }: Voice
               </div>
 
               {/* Listen Button */}
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 size="lg"
                 onClick={() => playWord(currentWord)}
                 disabled={isPlaying}
                 className="gap-2"
               >
-                {isPlaying ? (
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                ) : (
-                  <Volume2 className="h-5 w-5" />
-                )}
+                {isPlaying ? <Loader2 className="h-5 w-5 animate-spin" /> : <Volume2 className="h-5 w-5" />}
                 Listen
               </Button>
 
               {/* Microphone Button */}
               <div className="relative">
-                <Button 
+                <Button
                   onClick={isListening ? stopListening : startListening}
                   variant={isListening ? "destructive" : "game"}
                   size="lg"
-                  className={`w-32 h-32 rounded-full ${isListening ? 'animate-pulse' : ''}`}
+                  className={`w-32 h-32 rounded-full ${isListening ? "animate-pulse" : ""}`}
                 >
                   {isListening ? (
                     <div className="flex flex-col items-center gap-2">
@@ -621,15 +597,13 @@ export const VoiceMasterGame = ({ unitId, unitTitle, onComplete, onBack }: Voice
                     </div>
                   )}
                 </Button>
-                
+
                 {isListening && (
                   <div className="absolute inset-0 rounded-full border-4 border-primary animate-ping opacity-20" />
                 )}
               </div>
 
-              <p className="text-sm text-muted-foreground">
-                Tap the microphone and say the word clearly
-              </p>
+              <p className="text-sm text-muted-foreground">Tap the microphone and say the word clearly</p>
             </div>
           )}
         </Card>
