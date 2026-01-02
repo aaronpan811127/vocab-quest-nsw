@@ -76,12 +76,10 @@ export const Navigation = ({ currentView, onViewChange }: NavigationProps) => {
               <Users className="h-4 w-4" />
               Leaderboard
             </Button>
-            {user && <ProfileSettings />}
             <Button
               variant="ghost"
               size="icon"
               onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-              className="ml-2"
             >
               {theme === "dark" ? (
                 <Sun className="h-4 w-4" />
