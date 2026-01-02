@@ -576,6 +576,9 @@ export const StoryCreatorGame = ({ unitId, unitTitle, onComplete, onBack }: Stor
                   value={userInput}
                   onChange={(e) => setUserInput(e.target.value)}
                   onKeyDown={handleKeyDown}
+                  onPaste={(e) => e.preventDefault()}
+                  onCopy={(e) => e.preventDefault()}
+                  onCut={(e) => e.preventDefault()}
                   className="min-h-[120px] text-lg resize-none"
                   disabled={evaluating}
                 />
