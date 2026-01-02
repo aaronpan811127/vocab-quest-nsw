@@ -149,6 +149,47 @@ export type Database = {
           },
         ]
       }
+      leaderboard: {
+        Row: {
+          created_at: string
+          last_study_date: string | null
+          level: number
+          study_streak: number
+          test_type_id: string
+          total_xp: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          last_study_date?: string | null
+          level?: number
+          study_streak?: number
+          test_type_id: string
+          total_xp?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          last_study_date?: string | null
+          level?: number
+          study_streak?: number
+          test_type_id?: string
+          total_xp?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leaderboard_test_type_id_fkey"
+            columns: ["test_type_id"]
+            isOneToOne: false
+            referencedRelation: "test_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -277,11 +318,36 @@ export type Database = {
           },
         ]
       }
+      test_types: {
+        Row: {
+          code: string
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
       units: {
         Row: {
           created_at: string
           description: string | null
           id: string
+          test_type_id: string | null
           title: string
           unit_number: number
           words: Json
@@ -290,6 +356,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          test_type_id?: string | null
           title: string
           unit_number: number
           words?: Json
@@ -298,11 +365,20 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          test_type_id?: string | null
           title?: string
           unit_number?: number
           words?: Json
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "units_test_type_id_fkey"
+            columns: ["test_type_id"]
+            isOneToOne: false
+            referencedRelation: "test_types"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_progress: {
         Row: {
@@ -436,16 +512,27 @@ export type Database = {
       }
     }
     Functions: {
-      get_leaderboard: {
-        Args: { limit_count?: number }
-        Returns: {
-          id: string
-          level: number
-          study_streak: number
-          total_xp: number
-          username: string
-        }[]
-      }
+      get_leaderboard:
+        | {
+            Args: { limit_count?: number }
+            Returns: {
+              id: string
+              level: number
+              study_streak: number
+              total_xp: number
+              username: string
+            }[]
+          }
+        | {
+            Args: { limit_count?: number; p_test_type_id?: string }
+            Returns: {
+              id: string
+              level: number
+              study_streak: number
+              total_xp: number
+              username: string
+            }[]
+          }
       validate_dictation_game_submission: {
         Args: {
           p_answers: Json
