@@ -66,7 +66,7 @@ export const ReadingGame = ({ unitId, unitTitle, onComplete, onBack }: ReadingGa
     setError(null);
     
     try {
-      // Fetch a random passage for this unit
+      // Fetch all passages for this unit
       const { data: passages, error: passageError } = await supabase
         .from('reading_passages')
         .select('*')
@@ -75,9 +75,32 @@ export const ReadingGame = ({ unitId, unitTitle, onComplete, onBack }: ReadingGa
       if (passageError) throw passageError;
       
       if (!passages || passages.length === 0) {
-        setError("No passages available for this unit yet.");
-        setLoading(false);
+        // No passages at all - need to generate one
+        console.log('No passages available, generating new one...');
+        await generateNewPassage();
         return;
+      }
+
+      // Get user's completed passage IDs to avoid repetition
+      let completedPassageIds: string[] = [];
+      if (user) {
+        const { data: attempts } = await supabase
+          .from('game_attempts')
+          .select('unit_id')
+          .eq('user_id', user.id)
+          .eq('unit_id', unitId)
+          .eq('completed', true);
+        
+        // Track question IDs the user has seen
+        const { data: previousAttempts } = await supabase
+          .from('attempt_incorrect_answers')
+          .select('question_id, game_attempts!inner(user_id, unit_id)')
+          .eq('game_attempts.user_id', user.id)
+          .eq('game_attempts.unit_id', unitId);
+
+        if (previousAttempts) {
+          previousAttempts.forEach(a => attemptedQuestionIdsRef.current.add(a.question_id));
+        }
       }
 
       // Select a random passage
@@ -98,47 +121,69 @@ export const ReadingGame = ({ unitId, unitTitle, onComplete, onBack }: ReadingGa
 
       if (questionsError) throw questionsError;
 
-      // Get user's previously attempted question IDs for this passage
-      if (user) {
-        const { data: previousAttempts } = await supabase
-          .from('attempt_incorrect_answers')
-          .select('question_id, game_attempts!inner(user_id, unit_id)')
-          .eq('game_attempts.user_id', user.id)
-          .eq('game_attempts.unit_id', unitId);
-
-        const { data: correctAttempts } = await supabase
-          .from('game_attempts')
-          .select('id')
-          .eq('user_id', user.id)
-          .eq('unit_id', unitId);
-
-        // Track all attempted questions (we'll mark them as attempted)
-        if (previousAttempts) {
-          previousAttempts.forEach(a => attemptedQuestionIdsRef.current.add(a.question_id));
-        }
-      }
-
       // Filter to get unattempted questions
       const unattemptedQuestions = questionsData?.filter(
         q => !attemptedQuestionIdsRef.current.has(q.id)
       ) || [];
 
-      // If all questions have been attempted, generate new ones
-      if (unattemptedQuestions.length === 0 && questionsData && questionsData.length > 0) {
-        console.log('All questions attempted, generating new ones...');
-        await generateNewQuestions(randomPassage);
-        return;
+      // If all questions in ALL passages have been attempted, offer to generate a new passage
+      if (unattemptedQuestions.length === 0) {
+        // Check if there are any unattempted questions in other passages
+        const { data: allQuestions } = await supabase
+          .from('question_bank')
+          .select('id, passage_id')
+          .eq('unit_id', unitId)
+          .eq('game_type', 'reading');
+
+        const allUnattempted = allQuestions?.filter(
+          q => !attemptedQuestionIdsRef.current.has(q.id)
+        ) || [];
+
+        if (allUnattempted.length === 0) {
+          // All questions exhausted - generate a new passage
+          console.log('All questions in unit exhausted, generating new passage...');
+          await generateNewPassage();
+          return;
+        } else {
+          // Find a passage with unattempted questions
+          const passageWithQuestions = passages.find(p => 
+            allUnattempted.some(q => q.passage_id === p.id)
+          );
+          if (passageWithQuestions) {
+            setPassage({
+              id: passageWithQuestions.id,
+              title: passageWithQuestions.title,
+              content: passageWithQuestions.content,
+              highlighted_words: passageWithQuestions.highlighted_words || []
+            });
+            
+            const { data: passageQuestions } = await supabase
+              .from('question_bank')
+              .select('*')
+              .eq('passage_id', passageWithQuestions.id)
+              .eq('game_type', 'reading');
+
+            const filtered = passageQuestions?.filter(
+              q => !attemptedQuestionIdsRef.current.has(q.id)
+            ) || [];
+
+            const formattedQuestions: Question[] = filtered.map(q => ({
+              id: q.id,
+              question_text: q.question_text,
+              options: Array.isArray(q.options) ? q.options : JSON.parse(q.options as string),
+              correct_answer: q.correct_answer
+            }));
+
+            const shuffled = formattedQuestions.sort(() => Math.random() - 0.5);
+            setQuestions(shuffled.slice(0, Math.min(10, shuffled.length)));
+            setLoading(false);
+            return;
+          }
+        }
       }
 
-      // If no questions at all, generate some
-      if (!questionsData || questionsData.length === 0) {
-        console.log('No questions available, generating new ones...');
-        await generateNewQuestions(randomPassage);
-        return;
-      }
-
-      // Use unattempted questions if available, otherwise use all questions
-      const questionsToUse = unattemptedQuestions.length > 0 ? unattemptedQuestions : questionsData;
+      // Use the questions we have
+      const questionsToUse = unattemptedQuestions.length > 0 ? unattemptedQuestions : (questionsData || []);
 
       const formattedQuestions: Question[] = questionsToUse.map(q => ({
         id: q.id,
@@ -147,9 +192,9 @@ export const ReadingGame = ({ unitId, unitTitle, onComplete, onBack }: ReadingGa
         correct_answer: q.correct_answer
       }));
 
-      // Shuffle and take up to 5 questions
+      // Shuffle and take up to 10 questions
       const shuffled = formattedQuestions.sort(() => Math.random() - 0.5);
-      setQuestions(shuffled.slice(0, Math.min(5, shuffled.length)));
+      setQuestions(shuffled.slice(0, Math.min(10, shuffled.length)));
     } catch (err) {
       console.error('Error fetching reading game data:', err);
       setError("Failed to load game data. Please try again.");
@@ -158,37 +203,72 @@ export const ReadingGame = ({ unitId, unitTitle, onComplete, onBack }: ReadingGa
     }
   };
 
-  const generateNewQuestions = async (passageData: { id: string; title: string; content: string }) => {
+  const generateNewPassage = async () => {
     setGeneratingQuestions(true);
     
     try {
+      // Check remaining generations first
+      const { data: existingGenerated } = await supabase
+        .from('reading_passages')
+        .select('id')
+        .eq('generated_by', user?.id)
+        .eq('is_generated', true);
+
+      const remaining = 5 - (existingGenerated?.length || 0);
+
+      if (remaining <= 0) {
+        toast({
+          title: "Generation limit reached",
+          description: "You've used all 5 passage generations. Try existing passages!",
+          variant: "destructive",
+        });
+        // Fall back to any existing passage
+        const { data: anyPassages } = await supabase
+          .from('reading_passages')
+          .select('*')
+          .eq('unit_id', unitId)
+          .limit(1);
+
+        if (anyPassages && anyPassages.length > 0) {
+          await loadPassageWithQuestions(anyPassages[0]);
+        } else {
+          setError("No passages available for this unit.");
+        }
+        return;
+      }
+
       toast({
-        title: "Generating new questions",
-        description: "Using AI to create fresh questions for you...",
+        title: "Generating new passage",
+        description: `Creating a new reading passage with 10 questions... (${remaining} generations remaining)`,
       });
 
-      const { data, error } = await supabase.functions.invoke('generate-questions', {
+      const { data, error } = await supabase.functions.invoke('generate-passage', {
         body: {
-          passage_id: passageData.id,
-          passage_title: passageData.title,
-          passage_content: passageData.content,
           unit_id: unitId,
-          num_questions: 5
+          unit_title: unitTitle
         }
       });
 
       if (error) {
-        console.error('Error generating questions:', error);
+        console.error('Error generating passage:', error);
         throw error;
       }
 
       if (!data.success) {
-        throw new Error(data.error || 'Failed to generate questions');
+        throw new Error(data.error || 'Failed to generate passage');
       }
 
       toast({
-        title: "New questions ready!",
-        description: `Generated ${data.count} new questions for you.`,
+        title: "New passage ready!",
+        description: `Generated a new passage with ${data.questions_count} questions. ${data.remaining_generations} generations remaining.`,
+      });
+
+      // Set the new passage
+      setPassage({
+        id: data.passage.id,
+        title: data.passage.title,
+        content: data.passage.content,
+        highlighted_words: data.passage.highlighted_words || []
       });
 
       // Format and set the new questions
@@ -199,11 +279,11 @@ export const ReadingGame = ({ unitId, unitTitle, onComplete, onBack }: ReadingGa
         correct_answer: q.correct_answer
       }));
 
-      setQuestions(formattedQuestions);
+      setQuestions(formattedQuestions.slice(0, 10));
     } catch (err: any) {
-      console.error('Error generating questions:', err);
+      console.error('Error generating passage:', err);
       
-      // Handle rate limit errors
+      // Handle specific errors
       if (err.message?.includes('Rate limit') || err.message?.includes('429')) {
         toast({
           title: "Rate limit exceeded",
@@ -213,39 +293,65 @@ export const ReadingGame = ({ unitId, unitTitle, onComplete, onBack }: ReadingGa
       } else if (err.message?.includes('402') || err.message?.includes('credits')) {
         toast({
           title: "AI credits needed",
-          description: "Please add credits to continue generating questions.",
+          description: "Please add credits to continue generating content.",
+          variant: "destructive",
+        });
+      } else if (err.message?.includes('maximum')) {
+        toast({
+          title: "Generation limit reached",
+          description: err.message,
           variant: "destructive",
         });
       } else {
         toast({
           title: "Generation failed",
-          description: "Could not generate new questions. Using existing ones.",
+          description: "Could not generate new passage. Using existing ones.",
           variant: "destructive",
         });
       }
 
-      // Fall back to existing questions
-      const { data: existingQuestions } = await supabase
-        .from('question_bank')
+      // Fall back to existing passages
+      const { data: existingPassages } = await supabase
+        .from('reading_passages')
         .select('*')
-        .eq('passage_id', passageData.id)
-        .eq('game_type', 'reading');
+        .eq('unit_id', unitId);
 
-      if (existingQuestions && existingQuestions.length > 0) {
-        const formattedQuestions: Question[] = existingQuestions.map(q => ({
-          id: q.id,
-          question_text: q.question_text,
-          options: Array.isArray(q.options) ? q.options : JSON.parse(q.options as string),
-          correct_answer: q.correct_answer
-        }));
-        const shuffled = formattedQuestions.sort(() => Math.random() - 0.5);
-        setQuestions(shuffled.slice(0, Math.min(5, shuffled.length)));
+      if (existingPassages && existingPassages.length > 0) {
+        await loadPassageWithQuestions(existingPassages[0]);
       } else {
-        setError("No questions available for this passage.");
+        setError("No passages available for this unit.");
       }
     } finally {
       setGeneratingQuestions(false);
       setLoading(false);
+    }
+  };
+
+  const loadPassageWithQuestions = async (passageData: any) => {
+    setPassage({
+      id: passageData.id,
+      title: passageData.title,
+      content: passageData.content,
+      highlighted_words: passageData.highlighted_words || []
+    });
+
+    const { data: questionsData } = await supabase
+      .from('question_bank')
+      .select('*')
+      .eq('passage_id', passageData.id)
+      .eq('game_type', 'reading');
+
+    if (questionsData && questionsData.length > 0) {
+      const formattedQuestions: Question[] = questionsData.map(q => ({
+        id: q.id,
+        question_text: q.question_text,
+        options: Array.isArray(q.options) ? q.options : JSON.parse(q.options as string),
+        correct_answer: q.correct_answer
+      }));
+      const shuffled = formattedQuestions.sort(() => Math.random() - 0.5);
+      setQuestions(shuffled.slice(0, Math.min(10, shuffled.length)));
+    } else {
+      setError("No questions available for this passage.");
     }
   };
 
