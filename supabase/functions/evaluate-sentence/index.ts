@@ -49,6 +49,28 @@ serve(async (req) => {
       );
     }
 
+    // Input length validation to prevent resource exhaustion
+    if (typeof word !== 'string' || typeof sentence !== 'string') {
+      return new Response(
+        JSON.stringify({ error: 'Word and sentence must be strings' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (word.length > 100) {
+      return new Response(
+        JSON.stringify({ error: 'Word must be 100 characters or less' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (sentence.length > 1000) {
+      return new Response(
+        JSON.stringify({ error: 'Sentence must be 1000 characters or less' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
       throw new Error('LOVABLE_API_KEY is not configured');
