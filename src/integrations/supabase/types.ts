@@ -53,6 +53,38 @@ export type Database = {
           },
         ]
       }
+      attempt_incorrect_answers_dictation: {
+        Row: {
+          attempt_id: string
+          created_at: string
+          id: string
+          incorrect_word: string
+          user_answer: string
+        }
+        Insert: {
+          attempt_id: string
+          created_at?: string
+          id?: string
+          incorrect_word: string
+          user_answer: string
+        }
+        Update: {
+          attempt_id?: string
+          created_at?: string
+          id?: string
+          incorrect_word?: string
+          user_answer?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attempt_incorrect_answers_dictation_attempt_id_fkey"
+            columns: ["attempt_id"]
+            isOneToOne: false
+            referencedRelation: "game_attempts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       game_attempts: {
         Row: {
           completed: boolean
