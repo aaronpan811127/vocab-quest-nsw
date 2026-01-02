@@ -364,7 +364,7 @@ Total XP = Sum of all games' XP
       description: "Speak clearly and accurately to unlock achievements",
       gameType: "speaking" as const,
       ...getGameData("speaking"),
-      isLocked: true,
+      isLocked: false,
     },
     {
       title: "Story Creator",
