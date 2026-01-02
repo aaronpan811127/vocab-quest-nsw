@@ -318,26 +318,20 @@ Total XP = Sum of all games' XP
 
   const stats = [
     { 
-      title: "Total XP", 
-      value: profile?.total_xp?.toLocaleString() || "0", 
-      icon: Zap, 
+      title: `Level ${currentLevel}`, 
+      value: `${currentXp.toLocaleString()} XP`, 
+      icon: Crown, 
       variant: "primary" as const, 
       trend: "up" as const,
-      tooltip: xpTooltip
-    },
-    { title: "Units Completed", value: `${userStats.unitsCompleted}/${units.length}`, icon: Target, variant: "secondary" as const },
-    { title: "Study Streak", value: `${profile?.study_streak || 0} days`, icon: Trophy, variant: "success" as const, trend: "up" as const },
-    { 
-      title: "Level", 
-      value: `${currentLevel}`, 
-      icon: Crown, 
-      variant: "warning" as const,
+      tooltip: xpTooltip,
       progress: {
         current: xpInCurrentLevel,
         max: xpNeededForNextLevel,
         label: `${xpInCurrentLevel}/${xpNeededForNextLevel} XP to level ${currentLevel + 1}`
       }
     },
+    { title: "Units Completed", value: `${userStats.unitsCompleted}/${units.length}`, icon: Target, variant: "secondary" as const },
+    { title: "Study Streak", value: `${profile?.study_streak || 0} days`, icon: Trophy, variant: "success" as const, trend: "up" as const },
   ];
 
   const currentUnit = selectedUnit || units[0];
@@ -394,7 +388,7 @@ Total XP = Sum of all games' XP
         </div>
 
         {/* Stats Overview */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {stats.map((stat, index) => (
             <StatsCard key={stat.title} {...stat} />
           ))}
