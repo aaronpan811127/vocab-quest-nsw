@@ -3,6 +3,7 @@ import { StatsCard } from "./StatsCard";
 import { StreakChart } from "./StreakChart";
 import { UnitCard } from "./UnitCard";
 import { GameCard } from "./GameCard";
+import { DashboardLeaderboard } from "./DashboardLeaderboard";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Target, Crown, ArrowRight, Layers, ArrowLeft } from "lucide-react";
@@ -468,6 +469,9 @@ Total XP = Sum of all games' XP
             ))}
           </div>
         </div>
+
+        {/* Leaderboard Section */}
+        <DashboardLeaderboard />
       </div>
     </div>
   );

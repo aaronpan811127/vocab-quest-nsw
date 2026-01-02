@@ -1,10 +1,10 @@
 import { Button } from "@/components/ui/button";
-import { Home, Trophy, Users, Gamepad2 } from "lucide-react";
+import { Home, Gamepad2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface MobileNavProps {
-  currentView: "hero" | "dashboard" | "game" | "leaderboard";
-  onViewChange: (view: "hero" | "dashboard" | "game" | "leaderboard") => void;
+  currentView: "hero" | "dashboard" | "game";
+  onViewChange: (view: "hero" | "dashboard" | "game") => void;
 }
 
 export const MobileNav = ({ currentView, onViewChange }: MobileNavProps) => {
@@ -13,7 +13,6 @@ export const MobileNav = ({ currentView, onViewChange }: MobileNavProps) => {
   const navItems = [
     { view: "hero" as const, icon: Home, label: "Home" },
     ...(user ? [{ view: "dashboard" as const, icon: Gamepad2, label: "Play" }] : []),
-    { view: "leaderboard" as const, icon: Users, label: "Ranks" },
   ];
 
   return (

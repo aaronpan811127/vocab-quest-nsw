@@ -8,7 +8,6 @@ import { ListeningGame } from "@/components/ListeningGame";
 import { VoiceMasterGame } from "@/components/VoiceMasterGame";
 import { StoryCreatorGame } from "@/components/StoryCreatorGame";
 import { FlashcardGame } from "@/components/FlashcardGame";
-import { Leaderboard } from "@/components/Leaderboard";
 import { useAuth } from "@/contexts/AuthContext";
 import { TestType } from "@/contexts/TestTypeContext";
 
@@ -19,7 +18,7 @@ interface GameState {
 }
 
 const Index = () => {
-  const [currentView, setCurrentView] = useState<"hero" | "dashboard" | "game" | "leaderboard">("hero");
+  const [currentView, setCurrentView] = useState<"hero" | "dashboard" | "game">("hero");
   const [gameState, setGameState] = useState<GameState | null>(null);
   const { user } = useAuth();
 
@@ -66,8 +65,6 @@ const Index = () => {
         return <Dashboard onStartGame={handleStartGame} onBack={() => setCurrentView("hero")} />;
       case "game":
         return renderGameComponent();
-      case "leaderboard":
-        return <Leaderboard onBack={() => setCurrentView("hero")} />;
       default:
         return <Hero onSelectTestType={handleSelectTestType} />;
     }

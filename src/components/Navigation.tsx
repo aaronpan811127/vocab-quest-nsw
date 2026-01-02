@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Home, Trophy, Users, Gamepad2, LogOut, LogIn, Sun, Moon } from "lucide-react";
+import { Home, Trophy, Gamepad2, LogOut, LogIn, Sun, Moon } from "lucide-react";
 import { ProfileSettings } from "@/components/ProfileSettings";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/useProfile";
@@ -9,8 +9,8 @@ import { useTheme } from "next-themes";
 import { Badge } from "@/components/ui/badge";
 
 interface NavigationProps {
-  currentView: "hero" | "dashboard" | "game" | "leaderboard";
-  onViewChange: (view: "hero" | "dashboard" | "game" | "leaderboard") => void;
+  currentView: "hero" | "dashboard" | "game";
+  onViewChange: (view: "hero" | "dashboard" | "game") => void;
 }
 
 export const Navigation = ({
@@ -57,10 +57,6 @@ export const Navigation = ({
                 Dashboard
               </Button>
             )}
-            <Button variant={currentView === "leaderboard" ? "default" : "ghost"} className="gap-2" onClick={() => onViewChange("leaderboard")}>
-              <Users className="h-4 w-4" />
-              Leaderboard
-            </Button>
             <Button variant="ghost" size="icon" onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
               {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </Button>
