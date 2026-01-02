@@ -513,7 +513,7 @@ export const ListeningGame = ({ unitId, unitTitle, onComplete, onBack }: Listeni
                 ? 'bg-success/10 border-2 border-success/30' 
                 : 'bg-destructive/10 border-2 border-destructive/30'
             }`}>
-              <div className="flex items-center justify-center gap-2 mb-2">
+              <div className="flex items-center justify-center gap-2">
                 {currentFeedback.isCorrect ? (
                   <>
                     <Check className="h-8 w-8 text-success" />
@@ -522,18 +522,10 @@ export const ListeningGame = ({ unitId, unitTitle, onComplete, onBack }: Listeni
                 ) : (
                   <>
                     <X className="h-8 w-8 text-destructive" />
-                    <span className="text-2xl font-bold text-destructive">Not quite!</span>
+                    <span className="text-2xl font-bold text-destructive">Try again next time!</span>
                   </>
                 )}
               </div>
-              <p className="text-lg">
-                The word was: <strong className="text-primary">{currentFeedback.correctWord}</strong>
-              </p>
-              {!currentFeedback.isCorrect && (
-                <p className="text-sm text-muted-foreground mt-1">
-                  You typed: "{userInput}"
-                </p>
-              )}
             </div>
           ) : (
             <div className="space-y-4">
