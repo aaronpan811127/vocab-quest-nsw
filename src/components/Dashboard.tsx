@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { StatsCard } from "./StatsCard";
 import { UnitCard } from "./UnitCard";
 import { GameCard } from "./GameCard";
@@ -14,72 +15,75 @@ import {
 } from "lucide-react";
 import { useProfile } from "@/hooks/useProfile";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 interface DashboardProps {
-  onStartGame?: (gameType: string) => void;
+  onStartGame?: (gameType: string, unitId: string, unitTitle: string) => void;
+}
+
+interface Unit {
+  id: string;
+  unitNumber: number;
+  title: string;
+  description: string;
+  totalWords: number;
+  completedGames: number;
+  totalGames: number;
+  averageScore: number;
+  timeSpent: string;
+  isUnlocked: boolean;
 }
 
 export const Dashboard = ({ onStartGame }: DashboardProps) => {
   const { user } = useAuth();
   const { profile, loading } = useProfile();
+  const [units, setUnits] = useState<Unit[]>([]);
+  const [selectedUnit, setSelectedUnit] = useState<Unit | null>(null);
+
+  useEffect(() => {
+    fetchUnits();
+  }, []);
+
+  const fetchUnits = async () => {
+    const { data, error } = await supabase
+      .from('units')
+      .select('*')
+      .order('unit_number');
+
+    if (error) {
+      console.error('Error fetching units:', error);
+      return;
+    }
+
+    const formattedUnits: Unit[] = data.map((unit, index) => ({
+      id: unit.id,
+      unitNumber: unit.unit_number,
+      title: unit.title,
+      description: unit.description || "Master vocabulary through interactive games",
+      totalWords: Array.isArray(unit.words) ? unit.words.length : 10,
+      completedGames: 0,
+      totalGames: 4,
+      averageScore: 0,
+      timeSpent: "0m",
+      isUnlocked: index < 3, // First 3 units unlocked
+    }));
+
+    setUnits(formattedUnits);
+    if (formattedUnits.length > 0 && !selectedUnit) {
+      setSelectedUnit(formattedUnits[0]);
+    }
+  };
 
   const displayName = profile?.username || user?.email?.split('@')[0] || 'Player';
 
   const stats = [
     { title: "Total XP", value: profile?.total_xp?.toLocaleString() || "0", icon: Zap, variant: "primary" as const, trend: "up" as const },
-    { title: "Units Completed", value: "0/10", icon: Target, variant: "secondary" as const },
+    { title: "Units Completed", value: `0/${units.length}`, icon: Target, variant: "secondary" as const },
     { title: "Study Streak", value: `${profile?.study_streak || 0} days`, icon: Trophy, variant: "success" as const, trend: "up" as const },
     { title: "Avg Score", value: "0%", icon: Crown, variant: "warning" as const },
   ];
 
-  const units = [
-    {
-      unitNumber: 1,
-      title: "Foundation Words",
-      description: "Essential vocabulary building blocks for academic success",
-      totalWords: 10,
-      completedGames: 4,
-      totalGames: 4,
-      averageScore: 92,
-      timeSpent: "45m",
-      isUnlocked: true,
-    },
-    {
-      unitNumber: 2,
-      title: "Academic Excellence",
-      description: "Advanced terms used in scholarly contexts and examinations",
-      totalWords: 10,
-      completedGames: 3,
-      totalGames: 4,
-      averageScore: 85,
-      timeSpent: "32m",
-      isUnlocked: true,
-    },
-    {
-      unitNumber: 3,
-      title: "Literary Mastery",
-      description: "Sophisticated vocabulary from classic and modern literature",
-      totalWords: 10,
-      completedGames: 0,
-      totalGames: 4,
-      averageScore: 0,
-      timeSpent: "0m",
-      isUnlocked: true,
-    },
-    {
-      unitNumber: 4,
-      title: "Scientific Terms",
-      description: "Specialized vocabulary for science and mathematics",
-      totalWords: 10,
-      completedGames: 0,
-      totalGames: 4,
-      averageScore: 0,
-      timeSpent: "0m",
-      isUnlocked: false,
-    },
-  ];
-
-  const currentUnit = units[1]; // Unit 2 is in progress
+  const currentUnit = selectedUnit || units[0];
 
   const games = [
     {
@@ -164,8 +168,8 @@ export const Dashboard = ({ onStartGame }: DashboardProps) => {
                 key={game.title} 
                 {...game} 
                 onPlay={() => {
-                  if (game.gameType === "reading" && onStartGame) {
-                    onStartGame("reading");
+                  if (game.gameType === "reading" && onStartGame && currentUnit) {
+                    onStartGame("reading", currentUnit.id, currentUnit.title);
                   } else {
                     console.log(`${game.title} coming soon!`);
                   }
