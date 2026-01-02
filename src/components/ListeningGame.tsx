@@ -139,14 +139,14 @@ export const ListeningGame = ({ unitId, unitTitle, onComplete, onBack }: Listeni
         }
       }
 
-      // Create word selection: prioritize previously incorrect words
+      // Create word selection: prioritize ALL previously incorrect words
       const shuffledPriority = [...priorityWords].sort(() => Math.random() - 0.5);
       const remainingWords = wordList.filter(w => !priorityWords.includes(w));
       const shuffledRemaining = [...remainingWords].sort(() => Math.random() - 0.5);
       
-      // Take priority words first, then fill with remaining
+      // Take ALL priority words first (up to maxWords), then fill with remaining
       const maxWords = Math.min(10, wordList.length);
-      const selectedPriority = shuffledPriority.slice(0, Math.min(5, maxWords, shuffledPriority.length));
+      const selectedPriority = shuffledPriority.slice(0, maxWords);
       const selectedRemaining = shuffledRemaining.slice(0, maxWords - selectedPriority.length);
       const selectedWords = [...selectedPriority, ...selectedRemaining];
       
