@@ -5,6 +5,7 @@ import { Dashboard } from "@/components/Dashboard";
 import { ReadingGame } from "@/components/ReadingGame";
 import { ListeningGame } from "@/components/ListeningGame";
 import { VoiceMasterGame } from "@/components/VoiceMasterGame";
+import { StoryCreatorGame } from "@/components/StoryCreatorGame";
 import { Leaderboard } from "@/components/Leaderboard";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -41,6 +42,8 @@ const Index = () => {
         return <ListeningGame {...commonProps} />;
       case "speaking":
         return <VoiceMasterGame {...commonProps} />;
+      case "writing":
+        return <StoryCreatorGame {...commonProps} />;
       default:
         return <ReadingGame {...commonProps} />;
     }

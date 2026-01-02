@@ -371,7 +371,7 @@ Total XP = Sum of all games' XP
       description: "Craft creative sentences using your new vocabulary",
       gameType: "writing" as const,
       ...getGameData("writing"),
-      isLocked: true,
+      isLocked: false,
     },
   ];
 
