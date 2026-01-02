@@ -54,7 +54,6 @@ export const ReadingGame = ({ unitId, unitTitle, onComplete, onBack }: ReadingGa
   const { user } = useAuth();
   const { toast } = useToast();
   const startTimeRef = useRef<number>(Date.now());
-  const attemptedQuestionIdsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     fetchPassageAndQuestions();
@@ -81,104 +80,58 @@ export const ReadingGame = ({ unitId, unitTitle, onComplete, onBack }: ReadingGa
         return;
       }
 
-      // Fetch ALL questions for this unit
-      const { data: allQuestions, error: questionsError } = await supabase
+      // Get passage IDs the user has already attempted
+      const attemptedPassageIds = new Set<string>();
+      if (user) {
+        const { data: attempts } = await supabase
+          .from('game_attempts')
+          .select('passage_id')
+          .eq('user_id', user.id)
+          .eq('unit_id', unitId)
+          .eq('game_type', 'reading')
+          .not('passage_id', 'is', null);
+
+        attempts?.forEach(a => {
+          if (a.passage_id) attemptedPassageIds.add(a.passage_id);
+        });
+      }
+
+      // Find unattempted passages
+      const unattemptedPassages = passages.filter(p => !attemptedPassageIds.has(p.id));
+
+      // If all passages attempted, generate new or fallback
+      if (unattemptedPassages.length === 0) {
+        console.log('All passages attempted, generating new one...');
+        await generateNewPassage();
+        return;
+      }
+
+      // Pick a random unattempted passage
+      const selectedPassage = unattemptedPassages[Math.floor(Math.random() * unattemptedPassages.length)];
+
+      // Fetch questions for this passage
+      const { data: questionsData, error: questionsError } = await supabase
         .from('question_bank')
         .select('*')
-        .eq('unit_id', unitId)
+        .eq('passage_id', selectedPassage.id)
         .eq('game_type', 'reading');
 
       if (questionsError) throw questionsError;
 
-      // Get question IDs the user has already attempted (from game_attempts)
-      const attemptedQuestionIds = new Set<string>();
-      if (user) {
-        // Get all question IDs from previous game attempts by checking attempt_incorrect_answers
-        // AND get questions that were answered correctly (not in incorrect_answers but were in an attempt)
-        const { data: gameAttempts } = await supabase
-          .from('game_attempts')
-          .select('id')
-          .eq('user_id', user.id)
-          .eq('unit_id', unitId)
-          .eq('game_type', 'reading');
-
-        if (gameAttempts && gameAttempts.length > 0) {
-          // For simplicity, mark all questions from passages that have been used in completed games
-          // Get passage IDs from completed attempts
-          const { data: usedPassages } = await supabase
-            .from('game_attempts')
-            .select('id')
-            .eq('user_id', user.id)
-            .eq('unit_id', unitId)
-            .eq('game_type', 'reading')
-            .eq('completed', true);
-
-          if (usedPassages) {
-            // Get all incorrect answer question IDs
-            const attemptIds = usedPassages.map(a => a.id);
-            if (attemptIds.length > 0) {
-              const { data: incorrectAnswers } = await supabase
-                .from('attempt_incorrect_answers')
-                .select('question_id')
-                .in('attempt_id', attemptIds);
-
-              incorrectAnswers?.forEach(a => attemptedQuestionIds.add(a.question_id));
-            }
-          }
-        }
-
-        attemptedQuestionIdsRef.current = attemptedQuestionIds;
-      }
-
-      // Group questions by passage and count unattempted
-      const passageQuestionCounts = new Map<string, { passage: any; unattemptedCount: number; questions: any[] }>();
-      
-      passages.forEach(p => {
-        const passageQuestions = allQuestions?.filter(q => q.passage_id === p.id) || [];
-        const unattempted = passageQuestions.filter(q => !attemptedQuestionIds.has(q.id));
-        passageQuestionCounts.set(p.id, {
-          passage: p,
-          unattemptedCount: unattempted.length,
-          questions: unattempted
-        });
-      });
-
-      // Find the passage with the most unattempted questions (prefer 10+ questions)
-      let bestPassage: any = null;
-      let bestQuestions: any[] = [];
-      let maxUnattempted = 0;
-
-      passageQuestionCounts.forEach(({ passage, unattemptedCount, questions }) => {
-        if (unattemptedCount > maxUnattempted) {
-          maxUnattempted = unattemptedCount;
-          bestPassage = passage;
-          bestQuestions = questions;
-        }
-      });
-
-      // If no unattempted questions found, generate new passage or fallback
-      if (maxUnattempted === 0) {
-        console.log('All questions in unit exhausted, generating new passage...');
-        await generateNewPassage();
+      if (!questionsData || questionsData.length === 0) {
+        setError("No questions available for this passage.");
         return;
       }
 
-      // If best passage has fewer than 10 questions, try to generate new passage
-      if (maxUnattempted < 10) {
-        console.log(`Best passage only has ${maxUnattempted} unattempted questions, trying to generate new...`);
-        await generateNewPassage();
-        return;
-      }
-
-      // Use the best passage
+      // Set the passage
       setPassage({
-        id: bestPassage.id,
-        title: bestPassage.title,
-        content: bestPassage.content,
-        highlighted_words: bestPassage.highlighted_words || []
+        id: selectedPassage.id,
+        title: selectedPassage.title,
+        content: selectedPassage.content,
+        highlighted_words: selectedPassage.highlighted_words || []
       });
 
-      const formattedQuestions: Question[] = bestQuestions.map(q => ({
+      const formattedQuestions: Question[] = questionsData.map(q => ({
         id: q.id,
         question_text: q.question_text,
         options: Array.isArray(q.options) ? q.options : JSON.parse(q.options as string),
