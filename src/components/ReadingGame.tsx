@@ -143,8 +143,17 @@ export const ReadingGame = ({ unitId, unitTitle, onComplete, onBack }: ReadingGa
       
       setGameCompleted(isPerfect);
 
-      // Calculate XP earned (base 10 XP + bonus for score)
-      const xpEarned = Math.round(10 + (score / 10));
+      // Calculate XP earned
+      // Base XP from score (0-100 score = 0-20 XP)
+      const scoreXp = Math.round(score * 0.2);
+      
+      // Time bonus: faster = more XP (max 10 XP bonus for under 30 seconds, scales down)
+      // Average expected time is ~60 seconds, so under 30s gets full bonus
+      const avgTimePerQuestion = timeSpentSeconds / questions.length;
+      const timeBonus = Math.max(0, Math.round(10 - (avgTimePerQuestion / 3)));
+      
+      // Total XP = score XP + time bonus (minimum 5 XP for completing)
+      const xpEarned = Math.max(5, scoreXp + timeBonus);
       setEarnedXp(xpEarned);
       
       // Trigger XP animation after a short delay
