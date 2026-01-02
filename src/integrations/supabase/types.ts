@@ -51,6 +51,13 @@ export type Database = {
             referencedRelation: "question_bank"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "attempt_incorrect_answers_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "questions_for_play"
+            referencedColumns: ["id"]
+          },
         ]
       }
       attempt_incorrect_answers_dictation: {
@@ -382,7 +389,51 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      questions_for_play: {
+        Row: {
+          created_at: string | null
+          game_type: string | null
+          id: string | null
+          options: Json | null
+          passage_id: string | null
+          question_text: string | null
+          unit_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          game_type?: string | null
+          id?: string | null
+          options?: Json | null
+          passage_id?: string | null
+          question_text?: string | null
+          unit_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          game_type?: string | null
+          id?: string | null
+          options?: Json | null
+          passage_id?: string | null
+          question_text?: string | null
+          unit_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "question_bank_passage_id_fkey"
+            columns: ["passage_id"]
+            isOneToOne: false
+            referencedRelation: "reading_passages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "question_bank_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "units"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       get_leaderboard: {
