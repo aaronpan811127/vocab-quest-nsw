@@ -7,12 +7,15 @@ import {
   Gamepad2,
   Crown,
   LogOut,
-  LogIn
+  LogIn,
+  Sun,
+  Moon
 } from "lucide-react";
 import { ProfileSettings } from "@/components/ProfileSettings";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/useProfile";
 import { useNavigate } from "react-router-dom";
+import { useTheme } from "next-themes";
 
 interface NavigationProps {
   currentView: "hero" | "dashboard" | "game" | "leaderboard";
@@ -23,6 +26,7 @@ export const Navigation = ({ currentView, onViewChange }: NavigationProps) => {
   const { user, signOut } = useAuth();
   const { profile } = useProfile();
   const navigate = useNavigate();
+  const { theme, setTheme } = useTheme();
 
   const handleSignOut = async () => {
     await signOut();
@@ -73,6 +77,18 @@ export const Navigation = ({ currentView, onViewChange }: NavigationProps) => {
               Leaderboard
             </Button>
             {user && <ProfileSettings />}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              className="ml-2"
+            >
+              {theme === "dark" ? (
+                <Sun className="h-4 w-4" />
+              ) : (
+                <Moon className="h-4 w-4" />
+              )}
+            </Button>
           </div>
 
           {/* User Stats / Auth */}
