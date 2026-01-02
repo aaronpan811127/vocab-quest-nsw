@@ -4,12 +4,12 @@ import {
   Home, 
   Trophy, 
   Users, 
-  Settings,
   Gamepad2,
   Crown,
   LogOut,
   LogIn
 } from "lucide-react";
+import { ProfileSettings } from "@/components/ProfileSettings";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/useProfile";
 import { useNavigate } from "react-router-dom";
@@ -72,12 +72,7 @@ export const Navigation = ({ currentView, onViewChange }: NavigationProps) => {
               <Users className="h-4 w-4" />
               Leaderboard
             </Button>
-            {user && (
-              <Button variant="ghost" className="gap-2">
-                <Settings className="h-4 w-4" />
-                Settings
-              </Button>
-            )}
+            {user && <ProfileSettings />}
           </div>
 
           {/* User Stats / Auth */}
