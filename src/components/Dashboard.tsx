@@ -12,18 +12,24 @@ import {
   Users,
   ArrowRight
 } from "lucide-react";
+import { useProfile } from "@/hooks/useProfile";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface DashboardProps {
   onStartGame?: (gameType: string) => void;
 }
 
 export const Dashboard = ({ onStartGame }: DashboardProps) => {
-  // Mock data for demonstration
+  const { user } = useAuth();
+  const { profile, loading } = useProfile();
+
+  const displayName = profile?.username || user?.email?.split('@')[0] || 'Player';
+
   const stats = [
-    { title: "Total XP", value: "2,450", icon: Zap, variant: "primary" as const, trend: "up" as const },
-    { title: "Units Completed", value: "3/10", icon: Target, variant: "secondary" as const },
-    { title: "Study Streak", value: "7 days", icon: Trophy, variant: "success" as const, trend: "up" as const },
-    { title: "Avg Score", value: "87%", icon: Crown, variant: "warning" as const },
+    { title: "Total XP", value: profile?.total_xp?.toLocaleString() || "0", icon: Zap, variant: "primary" as const, trend: "up" as const },
+    { title: "Units Completed", value: "0/10", icon: Target, variant: "secondary" as const },
+    { title: "Study Streak", value: `${profile?.study_streak || 0} days`, icon: Trophy, variant: "success" as const, trend: "up" as const },
+    { title: "Avg Score", value: "0%", icon: Crown, variant: "warning" as const },
   ];
 
   const units = [
@@ -120,13 +126,13 @@ export const Dashboard = ({ onStartGame }: DashboardProps) => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold">Welcome back, Alex! 🎮</h1>
+            <h1 className="text-3xl font-bold">Welcome back, {displayName}! 🎮</h1>
             <p className="text-muted-foreground mt-1">Ready to level up your vocabulary skills?</p>
           </div>
           <div className="flex items-center gap-4">
             <Badge className="bg-gradient-success text-success-foreground">
               <Crown className="h-4 w-4 mr-2" />
-              Level 12
+              Level {profile?.level || 1}
             </Badge>
             <Button variant="gaming">
               <Users className="h-4 w-4 mr-2" />
