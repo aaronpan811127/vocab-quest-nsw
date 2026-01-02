@@ -52,12 +52,12 @@ export const StatsCard = ({
         <div className="flex items-center gap-1">
           {tooltip && (
             <TooltipProvider>
-              <Tooltip>
+              <Tooltip delayDuration={100}>
                 <TooltipTrigger asChild>
-                  <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
+                  <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help hover:text-primary transition-colors" />
                 </TooltipTrigger>
-                <TooltipContent className="max-w-xs">
-                  <p className="text-sm">{tooltip}</p>
+                <TooltipContent className="max-w-sm p-4" side="bottom" align="end">
+                  <div className="text-sm space-y-2 whitespace-pre-line">{tooltip}</div>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
