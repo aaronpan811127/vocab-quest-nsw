@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,7 +11,7 @@ import {
   Trophy
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-
+import { useAuth } from "@/contexts/AuthContext";
 interface Question {
   id: string;
   question_text: string;
@@ -42,9 +42,13 @@ export const ReadingGame = ({ unitId, unitTitle, onComplete, onBack }: ReadingGa
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const { user } = useAuth();
+  const startTimeRef = useRef<number>(Date.now());
 
   useEffect(() => {
     fetchPassageAndQuestions();
+    startTimeRef.current = Date.now();
   }, [unitId]);
 
   const fetchPassageAndQuestions = async () => {
@@ -112,22 +116,74 @@ export const ReadingGame = ({ unitId, unitTitle, onComplete, onBack }: ReadingGa
     setSelectedAnswers(newAnswers);
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (currentQuestion < questions.length - 1) {
       setCurrentQuestion(currentQuestion + 1);
     } else {
       setShowResults(true);
-      checkGameCompletion();
+      await saveGameAttempt();
     }
   };
 
-  const checkGameCompletion = () => {
-    const correctAnswers = selectedAnswers.filter((answer, index) => 
-      questions[index].options[answer] === questions[index].correct_answer
-    ).length;
+  const saveGameAttempt = async () => {
+    if (!user) return;
     
-    if (correctAnswers === questions.length) {
-      setGameCompleted(true);
+    setSaving(true);
+    try {
+      const correctCount = selectedAnswers.filter((answer, index) => 
+        questions[index].options[answer] === questions[index].correct_answer
+      ).length;
+      
+      const timeSpentSeconds = Math.round((Date.now() - startTimeRef.current) / 1000);
+      const score = Math.round((correctCount / questions.length) * 100);
+      const isPerfect = correctCount === questions.length;
+      
+      setGameCompleted(isPerfect);
+
+      // Insert game attempt
+      const { data: attempt, error: attemptError } = await supabase
+        .from('game_attempts')
+        .insert({
+          user_id: user.id,
+          unit_id: unitId,
+          game_type: 'reading',
+          score,
+          correct_answers: correctCount,
+          total_questions: questions.length,
+          time_spent_seconds: timeSpentSeconds,
+          completed: true
+        })
+        .select()
+        .single();
+
+      if (attemptError) throw attemptError;
+
+      // Save incorrect answers
+      const incorrectAnswers = selectedAnswers
+        .map((answer, index) => ({
+          questionIndex: index,
+          userAnswer: questions[index].options[answer],
+          isCorrect: questions[index].options[answer] === questions[index].correct_answer
+        }))
+        .filter(a => !a.isCorrect);
+
+      if (incorrectAnswers.length > 0 && attempt) {
+        const incorrectRecords = incorrectAnswers.map(a => ({
+          attempt_id: attempt.id,
+          question_id: questions[a.questionIndex].id,
+          user_answer: a.userAnswer
+        }));
+
+        const { error: incorrectError } = await supabase
+          .from('attempt_incorrect_answers')
+          .insert(incorrectRecords);
+
+        if (incorrectError) console.error('Error saving incorrect answers:', incorrectError);
+      }
+    } catch (err) {
+      console.error('Error saving game attempt:', err);
+    } finally {
+      setSaving(false);
     }
   };
 
