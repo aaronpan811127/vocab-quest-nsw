@@ -54,6 +54,9 @@ export const VoiceMasterGame = ({ unitId, unitTitle, onComplete, onBack }: Voice
   const startTimeRef = useRef<number>(Date.now());
   const synthRef = useRef<SpeechSynthesis | null>(null);
   const recognitionRef = useRef<any>(null);
+  const wordsRef = useRef<string[]>([]);
+  const currentIndexRef = useRef<number>(0);
+  const questionsRef = useRef<WordQuestion[]>([]);
 
   useEffect(() => {
     synthRef.current = window.speechSynthesis;
@@ -81,6 +84,19 @@ export const VoiceMasterGame = ({ unitId, unitTitle, onComplete, onBack }: Voice
       }
     };
   }, [unitId]);
+
+  // Keep refs in sync with state
+  useEffect(() => {
+    wordsRef.current = words;
+  }, [words]);
+
+  useEffect(() => {
+    currentIndexRef.current = currentIndex;
+  }, [currentIndex]);
+
+  useEffect(() => {
+    questionsRef.current = questions;
+  }, [questions]);
 
   const fetchWords = async () => {
     setLoading(true);
@@ -228,12 +244,21 @@ export const VoiceMasterGame = ({ unitId, unitTitle, onComplete, onBack }: Voice
     setIsListening(false);
   }, []);
 
-  const handleSpeechResult = (transcript: string) => {
-    const currentWord = words[currentIndex];
+  const handleSpeechResult = useCallback((transcript: string) => {
+    const currentWord = wordsRef.current[currentIndexRef.current];
+    
+    if (!currentWord) {
+      console.error('No current word found', { 
+        wordsLength: wordsRef.current.length, 
+        currentIndex: currentIndexRef.current 
+      });
+      return;
+    }
+    
     const isCorrect = transcript.toLowerCase() === currentWord.toLowerCase();
     
-    const updatedQuestions = [...questions];
-    updatedQuestions[currentIndex] = {
+    const updatedQuestions = [...questionsRef.current];
+    updatedQuestions[currentIndexRef.current] = {
       word: currentWord,
       userAnswer: transcript,
       isCorrect
@@ -242,7 +267,7 @@ export const VoiceMasterGame = ({ unitId, unitTitle, onComplete, onBack }: Voice
     
     setCurrentFeedback({ isCorrect, correctWord: currentWord, userSaid: transcript });
     setShowFeedback(true);
-  };
+  }, []);
 
   const handleNext = async () => {
     setShowFeedback(false);
