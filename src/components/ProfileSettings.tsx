@@ -77,6 +77,9 @@ export const ProfileSettings = ({ trigger }: ProfileSettingsProps) => {
         throw new Error(data.error || "Failed to upload avatar");
       }
 
+      // Update the profile with the new avatar URL
+      await updateProfile({ avatar_url: data.avatar_url });
+      
       setAvatarPreview(data.avatar_url);
       toast({
         title: "Success",
