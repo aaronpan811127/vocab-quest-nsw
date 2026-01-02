@@ -364,7 +364,7 @@ Total XP = Sum of all games' XP
       description: "Listen and spell words perfectly to advance",
       gameType: "listening" as const,
       ...getGameData("listening"),
-      isLocked: true,
+      isLocked: false,
     },
     {
       title: "Voice Master",
@@ -415,9 +415,9 @@ Total XP = Sum of all games' XP
                 key={game.title} 
                 {...game} 
                 onPlay={() => {
-                  if (game.gameType === "reading" && onStartGame && currentUnit) {
-                    onStartGame("reading", currentUnit.id, currentUnit.title);
-                  } else {
+                  if (!game.isLocked && onStartGame && currentUnit) {
+                    onStartGame(game.gameType, currentUnit.id, currentUnit.title);
+                  } else if (game.isLocked) {
                     console.log(`${game.title} coming soon!`);
                   }
                 }}

@@ -3,6 +3,7 @@ import { Navigation } from "@/components/Navigation";
 import { Hero } from "@/components/Hero";
 import { Dashboard } from "@/components/Dashboard";
 import { ReadingGame } from "@/components/ReadingGame";
+import { ListeningGame } from "@/components/ListeningGame";
 import { Leaderboard } from "@/components/Leaderboard";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -22,6 +23,26 @@ const Index = () => {
     setCurrentView("game");
   };
 
+  const renderGameComponent = () => {
+    if (!gameState) return null;
+    
+    const commonProps = {
+      unitId: gameState.unitId,
+      unitTitle: gameState.unitTitle,
+      onComplete: () => setCurrentView("dashboard"),
+      onBack: () => setCurrentView("dashboard"),
+    };
+
+    switch (gameState.gameType) {
+      case "reading":
+        return <ReadingGame {...commonProps} />;
+      case "listening":
+        return <ListeningGame {...commonProps} />;
+      default:
+        return <ReadingGame {...commonProps} />;
+    }
+  };
+
   const renderContent = () => {
     switch (currentView) {
       case "hero":
@@ -34,14 +55,7 @@ const Index = () => {
       case "dashboard":
         return <Dashboard onStartGame={handleStartGame} />;
       case "game":
-        return gameState ? (
-          <ReadingGame 
-            unitId={gameState.unitId}
-            unitTitle={gameState.unitTitle}
-            onComplete={() => setCurrentView("dashboard")}
-            onBack={() => setCurrentView("dashboard")}
-          />
-        ) : null;
+        return renderGameComponent();
       case "leaderboard":
         return <Leaderboard onBack={() => setCurrentView("hero")} />;
       default:
