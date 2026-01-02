@@ -395,6 +395,16 @@ export type Database = {
           username: string
         }[]
       }
+      validate_dictation_game_submission: {
+        Args: {
+          p_answers: Json
+          p_game_type: string
+          p_time_spent_seconds: number
+          p_unit_id: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
       validate_game_submission: {
         Args: {
           p_answers: Json

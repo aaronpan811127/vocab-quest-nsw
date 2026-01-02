@@ -240,131 +240,57 @@ export const StoryCreatorGame = ({ unitId, unitTitle, onComplete, onBack }: Stor
     setSaving(true);
     try {
       const timeSpentSeconds = Math.round((Date.now() - startTimeRef.current) / 1000);
-      const correctCount = questions.filter(q => q.isCorrect).length;
-      const score = Math.round((correctCount / questions.length) * 100);
       
-      const { data: attempt, error: attemptError } = await supabase
-        .from('game_attempts')
-        .insert({
-          user_id: user.id,
+      // For writing game, we use the isCorrect flag from evaluate-sentence
+      // But the final score/XP calculation is done server-side
+      // We send the word and the correctness result from evaluate-sentence
+      const answers = questions.map(q => ({
+        word: q.word,
+        // For writing game, use the word as user_answer if correct, otherwise a placeholder
+        // The server will use this for correct counting
+        user_answer: q.isCorrect ? q.word : `[incorrect]${q.userSentence.substring(0, 50)}`
+      }));
+
+      const { data, error } = await supabase.functions.invoke('submit-dictation-game', {
+        body: {
           unit_id: unitId,
           game_type: 'writing',
-          score,
-          correct_answers: correctCount,
-          total_questions: questions.length,
-          time_spent_seconds: timeSpentSeconds,
-          completed: true
-        })
-        .select()
-        .single();
-
-      if (attemptError) throw attemptError;
-
-      // Save incorrect answers
-      const incorrectQuestions = questions.filter(q => !q.isCorrect);
-      if (incorrectQuestions.length > 0 && attempt) {
-        const incorrectInserts = incorrectQuestions.map(q => ({
-          attempt_id: attempt.id,
-          incorrect_word: q.word,
-          user_answer: q.userSentence
-        }));
-
-        await supabase
-          .from('attempt_incorrect_answers_dictation')
-          .insert(incorrectInserts);
-      }
-
-      // Calculate XP
-      const baseXp = Math.round(score * 0.5);
-      const avgTimePerQuestion = timeSpentSeconds / questions.length;
-      let timeBonus = 0;
-      if (avgTimePerQuestion <= 30) timeBonus = 25;
-      else if (avgTimePerQuestion < 60) timeBonus = Math.max(0, Math.round(25 - (avgTimePerQuestion - 30) / 2));
-      
-      const gameXp = baseXp + timeBonus;
-
-      // Update or insert user progress
-      const { data: existingProgress } = await supabase
-        .from('user_progress')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('unit_id', unitId)
-        .eq('game_type', 'writing')
-        .maybeSingle();
-
-      if (existingProgress) {
-        await supabase
-          .from('user_progress')
-          .update({
-            attempts: existingProgress.attempts + 1,
-            total_time_seconds: existingProgress.total_time_seconds + timeSpentSeconds,
-            total_xp: gameXp,
-            best_score: Math.max(existingProgress.best_score, score),
-            completed: existingProgress.completed || score === 100,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', existingProgress.id);
-      } else {
-        await supabase
-          .from('user_progress')
-          .insert({
-            user_id: user.id,
-            unit_id: unitId,
-            game_type: 'writing',
-            best_score: score,
-            total_xp: gameXp,
-            total_time_seconds: timeSpentSeconds,
-            attempts: 1,
-            completed: score === 100
-          });
-      }
-
-      // Update profile XP
-      const { data: allProgress } = await supabase
-        .from('user_progress')
-        .select('total_xp')
-        .eq('user_id', user.id);
-
-      const totalXp = allProgress?.reduce((sum, p) => sum + (p.total_xp || 0), 0) || 0;
-      const newLevel = Math.floor(totalXp / 100) + 1;
-
-      // Calculate streak
-      const today = new Date().toISOString().split('T')[0];
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('study_streak, last_study_date')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      let newStreak = profile?.study_streak || 0;
-      if (profile?.last_study_date !== today) {
-        const yesterday = new Date();
-        yesterday.setDate(yesterday.getDate() - 1);
-        const yesterdayStr = yesterday.toISOString().split('T')[0];
-        
-        if (profile?.last_study_date === yesterdayStr) {
-          newStreak += 1;
-        } else {
-          newStreak = 1;
+          answers,
+          time_spent_seconds: timeSpentSeconds
         }
+      });
+
+      if (error) {
+        console.error('Server submission error:', error);
+        toast({
+          title: "Failed to save results",
+          description: "Your progress could not be saved.",
+          variant: "destructive",
+        });
+        return;
       }
 
-      await supabase
-        .from('profiles')
-        .update({
-          total_xp: totalXp,
-          level: newLevel,
-          last_study_date: today,
-          study_streak: newStreak,
-          updated_at: new Date().toISOString()
-        })
-        .eq('user_id', user.id);
+      if (!data.success) {
+        console.error('Submission failed:', data.error);
+        toast({
+          title: "Failed to save results",
+          description: data.error || "Your progress could not be saved.",
+          variant: "destructive",
+        });
+        return;
+      }
 
-      setEarnedXp(gameXp);
+      // Use server-calculated XP
+      setEarnedXp(data.game_xp);
       setTimeout(() => setShowXpAnimation(true), 300);
 
     } catch (err) {
       console.error('Error saving game attempt:', err);
+      toast({
+        title: "Failed to save results",
+        description: "An unexpected error occurred.",
+        variant: "destructive",
+      });
     } finally {
       setSaving(false);
     }
