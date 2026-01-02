@@ -86,6 +86,7 @@ export const ListeningGame = ({ unitId, unitTitle, onComplete, onBack }: Listeni
   }, [hasPlayed, showFeedback]);
 
   const fetchWords = async (playAllWords: boolean = false) => {
+    console.log('ListeningGame fetchWords called with playAllWords:', playAllWords);
     setLoading(true);
     
     try {
@@ -118,6 +119,7 @@ export const ListeningGame = ({ unitId, unitTitle, onComplete, onBack }: Listeni
       if (playAllWords) {
         // Play Again: shuffle all words randomly
         finalWords = [...wordList].sort(() => Math.random() - 0.5);
+        console.log('ListeningGame: Playing ALL words, count:', finalWords.length);
       } else {
         // Initial play: prioritize incorrect words from last 3 attempts
         if (user) {

@@ -99,6 +99,7 @@ export const VoiceMasterGame = ({ unitId, unitTitle, onComplete, onBack }: Voice
   }, [questions]);
 
   const fetchWords = async (playAllWords: boolean = false) => {
+    console.log('VoiceMasterGame fetchWords called with playAllWords:', playAllWords);
     setLoading(true);
     
     try {
@@ -130,6 +131,7 @@ export const VoiceMasterGame = ({ unitId, unitTitle, onComplete, onBack }: Voice
       if (playAllWords) {
         // Play Again: shuffle all words randomly
         finalWords = [...wordList].sort(() => Math.random() - 0.5);
+        console.log('VoiceMasterGame: Playing ALL words, count:', finalWords.length);
       } else {
         // Initial play: prioritize incorrect words from last 3 attempts
         if (user) {
