@@ -147,9 +147,16 @@ export const ListeningGame = ({ unitId, unitTitle, onComplete, onBack }: Listeni
           }
         }
 
-        // If there are priority words, ONLY test those; otherwise test all words
+        // If there are priority words, put them first but still include ALL words
         if (priorityWords.length > 0) {
-          finalWords = [...priorityWords].sort(() => Math.random() - 0.5);
+          const nonPriorityWords = wordList.filter(
+            (word) => !priorityWords.some((p) => p.toLowerCase() === word.toLowerCase())
+          );
+
+          finalWords = [
+            ...[...priorityWords].sort(() => Math.random() - 0.5),
+            ...[...nonPriorityWords].sort(() => Math.random() - 0.5),
+          ];
         } else {
           finalWords = [...wordList].sort(() => Math.random() - 0.5);
         }
