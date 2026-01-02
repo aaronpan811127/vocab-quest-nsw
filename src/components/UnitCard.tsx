@@ -69,10 +69,8 @@ export const UnitCard = ({
         {/* Header */}
         <div className="space-y-1">
           <div className="flex items-center gap-1.5">
-            <BookOpen className="h-4 w-4 text-primary" />
             {isCompleted && <Trophy className="h-4 w-4 text-success fill-current" />}
           </div>
-          <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">{description}</p>
         </div>
 
         {/* Stats */}
