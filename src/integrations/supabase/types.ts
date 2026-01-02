@@ -191,24 +191,30 @@ export type Database = {
         Row: {
           content: string
           created_at: string
+          generated_by: string | null
           highlighted_words: string[] | null
           id: string
+          is_generated: boolean
           title: string
           unit_id: string
         }
         Insert: {
           content: string
           created_at?: string
+          generated_by?: string | null
           highlighted_words?: string[] | null
           id?: string
+          is_generated?: boolean
           title: string
           unit_id: string
         }
         Update: {
           content?: string
           created_at?: string
+          generated_by?: string | null
           highlighted_words?: string[] | null
           id?: string
+          is_generated?: boolean
           title?: string
           unit_id?: string
         }
