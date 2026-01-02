@@ -85,7 +85,7 @@ export const ListeningGame = ({ unitId, unitTitle, onComplete, onBack }: Listeni
     }
   }, [hasPlayed, showFeedback]);
 
-  const fetchWords = async () => {
+  const fetchWords = async (playAllWords: boolean = false) => {
     setLoading(true);
     
     try {
@@ -112,42 +112,48 @@ export const ListeningGame = ({ unitId, unitTitle, onComplete, onBack }: Listeni
         ? unit.words 
         : JSON.parse(unit.words as string);
       
-      // Fetch previous incorrect answers from last 3 attempts for this user and unit
+      let finalWords: string[];
       let priorityWords: string[] = [];
-      if (user) {
-        const { data: prevAttempts } = await supabase
-          .from('game_attempts')
-          .select('id')
-          .eq('user_id', user.id)
-          .eq('unit_id', unitId)
-          .eq('game_type', 'listening')
-          .order('created_at', { ascending: false })
-          .limit(3);
+      
+      if (playAllWords) {
+        // Play Again: shuffle all words randomly
+        finalWords = [...wordList].sort(() => Math.random() - 0.5);
+      } else {
+        // Initial play: prioritize incorrect words from last 3 attempts
+        if (user) {
+          const { data: prevAttempts } = await supabase
+            .from('game_attempts')
+            .select('id')
+            .eq('user_id', user.id)
+            .eq('unit_id', unitId)
+            .eq('game_type', 'listening')
+            .order('created_at', { ascending: false })
+            .limit(3);
 
-        if (prevAttempts && prevAttempts.length > 0) {
-          const attemptIds = prevAttempts.map(a => a.id);
-          
-          // Get incorrect words from last 3 attempts only
-          const { data: incorrectAnswers } = await supabase
-            .from('attempt_incorrect_answers_dictation')
-            .select('incorrect_word')
-            .in('attempt_id', attemptIds);
+          if (prevAttempts && prevAttempts.length > 0) {
+            const attemptIds = prevAttempts.map(a => a.id);
+            
+            // Get incorrect words from last 3 attempts only
+            const { data: incorrectAnswers } = await supabase
+              .from('attempt_incorrect_answers_dictation')
+              .select('incorrect_word')
+              .in('attempt_id', attemptIds);
 
-          if (incorrectAnswers) {
-            // Get unique incorrect words that are still in the unit's word list
-            const incorrectSet = new Set(incorrectAnswers.map(a => a.incorrect_word.toLowerCase()));
-            priorityWords = wordList.filter(word => incorrectSet.has(word.toLowerCase()));
+            if (incorrectAnswers && incorrectAnswers.length > 0) {
+              // Get unique incorrect words that are still in the unit's word list
+              const incorrectSet = new Set(incorrectAnswers.map(a => a.incorrect_word.toLowerCase()));
+              priorityWords = wordList.filter(word => incorrectSet.has(word.toLowerCase()));
+            }
           }
         }
-      }
 
-      // Use ALL words from the unit (not limited to 10)
-      const shuffledPriority = [...priorityWords].sort(() => Math.random() - 0.5);
-      const remainingWords = wordList.filter(w => !priorityWords.includes(w));
-      const shuffledRemaining = [...remainingWords].sort(() => Math.random() - 0.5);
-      
-      // Combine: priority words first, then remaining words
-      const finalWords = [...shuffledPriority, ...shuffledRemaining];
+        // If there are priority words, ONLY test those; otherwise test all words
+        if (priorityWords.length > 0) {
+          finalWords = [...priorityWords].sort(() => Math.random() - 0.5);
+        } else {
+          finalWords = [...wordList].sort(() => Math.random() - 0.5);
+        }
+      }
       
       setWords(finalWords);
       setQuestions(finalWords.map(word => ({
@@ -397,7 +403,7 @@ export const ListeningGame = ({ unitId, unitTitle, onComplete, onBack }: Listeni
     setEarnedXp(0);
     setShowXpAnimation(false);
     startTimeRef.current = Date.now();
-    fetchWords();
+    fetchWords(true); // Play Again: use all words from unit
   };
 
   if (loading) {
