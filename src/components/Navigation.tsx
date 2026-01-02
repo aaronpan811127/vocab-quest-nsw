@@ -1,11 +1,9 @@
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { 
   Home, 
   Trophy, 
   Users, 
   Gamepad2,
-  Crown,
   LogOut,
   LogIn,
   Sun,
@@ -93,13 +91,6 @@ export const Navigation = ({ currentView, onViewChange }: NavigationProps) => {
           <div className="flex items-center gap-3">
             {user && profile ? (
               <>
-                <Badge className="bg-gradient-success text-success-foreground hidden sm:flex">
-                  <Crown className="h-3 w-3 mr-1" />
-                  Level {profile.level}
-                </Badge>
-                <Badge variant="outline" className="hidden sm:flex">
-                  {profile.total_xp.toLocaleString()} XP
-                </Badge>
                 <ProfileSettings
                   trigger={
                     <button className="w-8 h-8 rounded-full bg-gradient-primary flex items-center justify-center text-primary-foreground font-bold text-sm overflow-hidden cursor-pointer hover:ring-2 hover:ring-primary transition-all">
