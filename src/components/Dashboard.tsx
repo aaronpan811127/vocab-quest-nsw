@@ -7,7 +7,7 @@ import { Leaderboard } from "./Leaderboard";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Target, Clock, Crown, ArrowRight, BookOpen, Calendar, Layers } from "lucide-react";
+import { Target, Crown, ArrowRight, Layers } from "lucide-react";
 import { useProfile } from "@/hooks/useProfile";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -44,16 +44,9 @@ export const Dashboard = ({ onStartGame }: DashboardProps) => {
   const [userStats, setUserStats] = useState({ avgScore: 0, unitsCompleted: 0 });
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [showAllUnits, setShowAllUnits] = useState(false);
-  const [showHistory, setShowHistory] = useState(false);
-  const [studyHistory, setStudyHistory] = useState<
-    Array<{
-      id: string;
-      game_type: string;
-      score: number;
-      created_at: string;
-      unit_title: string;
-    }>
-  >([]);
+  const [gameHistory, setGameHistory] = useState<
+    Record<string, Array<{ id: string; score: number; created_at: string }>>
+  >({});
 
   useEffect(() => {
     if (user) {
@@ -67,6 +60,7 @@ export const Dashboard = ({ onStartGame }: DashboardProps) => {
   useEffect(() => {
     if (user && selectedUnit) {
       fetchGameProgress(selectedUnit.id);
+      fetchGameHistory(selectedUnit.id);
     }
   }, [user, selectedUnit]);
 
@@ -119,39 +113,35 @@ export const Dashboard = ({ onStartGame }: DashboardProps) => {
     setUserStats({ avgScore, unitsCompleted });
   };
 
-  const fetchStudyHistory = async () => {
+  const fetchGameHistory = async (unitId: string) => {
     if (!user) return;
 
     const { data, error } = await supabase
       .from("game_attempts")
-      .select("id, game_type, score, created_at, unit_id")
+      .select("id, game_type, score, created_at")
       .eq("user_id", user.id)
-      .order("created_at", { ascending: false })
-      .limit(20);
+      .eq("unit_id", unitId)
+      .order("created_at", { ascending: false });
 
     if (error) {
-      console.error("Error fetching study history:", error);
+      console.error("Error fetching game history:", error);
       return;
     }
 
-    // Map unit IDs to titles
-    const historyWithTitles = data.map((attempt) => {
-      const unit = units.find((u) => u.id === attempt.unit_id);
-      return {
+    // Group by game_type
+    const historyByGame: Record<string, Array<{ id: string; score: number; created_at: string }>> = {};
+    data?.forEach((attempt) => {
+      if (!historyByGame[attempt.game_type]) {
+        historyByGame[attempt.game_type] = [];
+      }
+      historyByGame[attempt.game_type].push({
         id: attempt.id,
-        game_type: attempt.game_type,
         score: attempt.score,
         created_at: attempt.created_at,
-        unit_title: unit?.title || "Unknown Unit",
-      };
+      });
     });
 
-    setStudyHistory(historyWithTitles);
-  };
-
-  const handleShowHistory = () => {
-    fetchStudyHistory();
-    setShowHistory(true);
+    setGameHistory(historyByGame);
   };
 
   const fetchUnits = async () => {
@@ -393,30 +383,25 @@ Total XP = Sum of all games' XP
         {/* Current Unit Progress */}
         {currentUnit && (
           <div className="space-y-3 sm:space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
-                <h2 className="text-lg sm:text-2xl font-bold">Current Unit: {currentUnit.unitNumber}</h2>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => onStartGame && onStartGame("flashcards", currentUnit.id, currentUnit.title)}
-                  className="gap-2 w-fit"
-                >
-                  <Layers className="h-4 w-4" />
-                  Flashcards
-                </Button>
-              </div>
-              <Button variant="outline" size="sm" onClick={handleShowHistory} className="w-fit">
-                <Clock className="h-4 w-4 mr-2" />
-                History
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+              <h2 className="text-lg sm:text-2xl font-bold">Current Unit: {currentUnit.unitNumber}</h2>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onStartGame && onStartGame("flashcards", currentUnit.id, currentUnit.title)}
+                className="gap-2 w-fit"
+              >
+                <Layers className="h-4 w-4" />
+                Flashcards
               </Button>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-6">
-              {games.map((game, index) => (
+              {games.map((game) => (
                 <GameCard
                   key={game.title}
                   {...game}
+                  history={gameHistory[game.gameType] || []}
                   onPlay={() => {
                     if (!game.isLocked && onStartGame && currentUnit) {
                       onStartGame(game.gameType, currentUnit.id, currentUnit.title);
@@ -469,48 +454,6 @@ Total XP = Sum of all games' XP
         </div>
       )}
 
-      {/* Study History Dialog */}
-      <Dialog open={showHistory} onOpenChange={setShowHistory}>
-        <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Clock className="h-5 w-5" />
-              Study History
-            </DialogTitle>
-          </DialogHeader>
-
-          {studyHistory.length === 0 ? (
-            <div className="text-center py-8">
-              <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-3 opacity-50" />
-              <p className="text-muted-foreground">No study sessions yet</p>
-              <p className="text-sm text-muted-foreground">Complete a game to see your history</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {studyHistory.map((entry) => (
-                <div key={entry.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                      <BookOpen className="h-5 w-5 text-primary" />
-                    </div>
-                    <div>
-                      <p className="font-medium capitalize">{entry.game_type} Quest</p>
-                      <p className="text-sm text-muted-foreground">{entry.unit_title}</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-bold text-lg">{entry.score}%</p>
-                    <p className="text-xs text-muted-foreground flex items-center gap-1">
-                      <Calendar className="h-3 w-3" />
-                      {new Date(entry.created_at).toLocaleDateString()}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
