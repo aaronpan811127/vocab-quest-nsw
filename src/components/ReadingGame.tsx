@@ -9,10 +9,14 @@ import {
   ArrowRight,
   RotateCcw,
   Trophy,
-  Zap
+  Zap,
+  Sparkles,
+  Loader2
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
+
 interface Question {
   id: string;
   question_text: string;
@@ -46,8 +50,11 @@ export const ReadingGame = ({ unitId, unitTitle, onComplete, onBack }: ReadingGa
   const [saving, setSaving] = useState(false);
   const [earnedXp, setEarnedXp] = useState(0);
   const [showXpAnimation, setShowXpAnimation] = useState(false);
+  const [generatingQuestions, setGeneratingQuestions] = useState(false);
   const { user } = useAuth();
+  const { toast } = useToast();
   const startTimeRef = useRef<number>(Date.now());
+  const attemptedQuestionIdsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     fetchPassageAndQuestions();
@@ -91,13 +98,101 @@ export const ReadingGame = ({ unitId, unitTitle, onComplete, onBack }: ReadingGa
 
       if (questionsError) throw questionsError;
 
-      if (!questionsData || questionsData.length === 0) {
-        setError("No questions available for this passage.");
-        setLoading(false);
+      // Get user's previously attempted question IDs for this passage
+      if (user) {
+        const { data: previousAttempts } = await supabase
+          .from('attempt_incorrect_answers')
+          .select('question_id, game_attempts!inner(user_id, unit_id)')
+          .eq('game_attempts.user_id', user.id)
+          .eq('game_attempts.unit_id', unitId);
+
+        const { data: correctAttempts } = await supabase
+          .from('game_attempts')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('unit_id', unitId);
+
+        // Track all attempted questions (we'll mark them as attempted)
+        if (previousAttempts) {
+          previousAttempts.forEach(a => attemptedQuestionIdsRef.current.add(a.question_id));
+        }
+      }
+
+      // Filter to get unattempted questions
+      const unattemptedQuestions = questionsData?.filter(
+        q => !attemptedQuestionIdsRef.current.has(q.id)
+      ) || [];
+
+      // If all questions have been attempted, generate new ones
+      if (unattemptedQuestions.length === 0 && questionsData && questionsData.length > 0) {
+        console.log('All questions attempted, generating new ones...');
+        await generateNewQuestions(randomPassage);
         return;
       }
 
-      const formattedQuestions: Question[] = questionsData.map(q => ({
+      // If no questions at all, generate some
+      if (!questionsData || questionsData.length === 0) {
+        console.log('No questions available, generating new ones...');
+        await generateNewQuestions(randomPassage);
+        return;
+      }
+
+      // Use unattempted questions if available, otherwise use all questions
+      const questionsToUse = unattemptedQuestions.length > 0 ? unattemptedQuestions : questionsData;
+
+      const formattedQuestions: Question[] = questionsToUse.map(q => ({
+        id: q.id,
+        question_text: q.question_text,
+        options: Array.isArray(q.options) ? q.options : JSON.parse(q.options as string),
+        correct_answer: q.correct_answer
+      }));
+
+      // Shuffle and take up to 5 questions
+      const shuffled = formattedQuestions.sort(() => Math.random() - 0.5);
+      setQuestions(shuffled.slice(0, Math.min(5, shuffled.length)));
+    } catch (err) {
+      console.error('Error fetching reading game data:', err);
+      setError("Failed to load game data. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const generateNewQuestions = async (passageData: { id: string; title: string; content: string }) => {
+    setGeneratingQuestions(true);
+    
+    try {
+      toast({
+        title: "Generating new questions",
+        description: "Using AI to create fresh questions for you...",
+      });
+
+      const { data, error } = await supabase.functions.invoke('generate-questions', {
+        body: {
+          passage_id: passageData.id,
+          passage_title: passageData.title,
+          passage_content: passageData.content,
+          unit_id: unitId,
+          num_questions: 5
+        }
+      });
+
+      if (error) {
+        console.error('Error generating questions:', error);
+        throw error;
+      }
+
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to generate questions');
+      }
+
+      toast({
+        title: "New questions ready!",
+        description: `Generated ${data.count} new questions for you.`,
+      });
+
+      // Format and set the new questions
+      const formattedQuestions: Question[] = data.questions.map((q: any) => ({
         id: q.id,
         question_text: q.question_text,
         options: Array.isArray(q.options) ? q.options : JSON.parse(q.options as string),
@@ -105,10 +200,51 @@ export const ReadingGame = ({ unitId, unitTitle, onComplete, onBack }: ReadingGa
       }));
 
       setQuestions(formattedQuestions);
-    } catch (err) {
-      console.error('Error fetching reading game data:', err);
-      setError("Failed to load game data. Please try again.");
+    } catch (err: any) {
+      console.error('Error generating questions:', err);
+      
+      // Handle rate limit errors
+      if (err.message?.includes('Rate limit') || err.message?.includes('429')) {
+        toast({
+          title: "Rate limit exceeded",
+          description: "Please wait a moment before trying again.",
+          variant: "destructive",
+        });
+      } else if (err.message?.includes('402') || err.message?.includes('credits')) {
+        toast({
+          title: "AI credits needed",
+          description: "Please add credits to continue generating questions.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Generation failed",
+          description: "Could not generate new questions. Using existing ones.",
+          variant: "destructive",
+        });
+      }
+
+      // Fall back to existing questions
+      const { data: existingQuestions } = await supabase
+        .from('question_bank')
+        .select('*')
+        .eq('passage_id', passageData.id)
+        .eq('game_type', 'reading');
+
+      if (existingQuestions && existingQuestions.length > 0) {
+        const formattedQuestions: Question[] = existingQuestions.map(q => ({
+          id: q.id,
+          question_text: q.question_text,
+          options: Array.isArray(q.options) ? q.options : JSON.parse(q.options as string),
+          correct_answer: q.correct_answer
+        }));
+        const shuffled = formattedQuestions.sort(() => Math.random() - 0.5);
+        setQuestions(shuffled.slice(0, Math.min(5, shuffled.length)));
+      } else {
+        setError("No questions available for this passage.");
+      }
     } finally {
+      setGeneratingQuestions(false);
       setLoading(false);
     }
   };
@@ -212,7 +348,7 @@ export const ReadingGame = ({ unitId, unitTitle, onComplete, onBack }: ReadingGa
     );
   };
 
-  if (loading) {
+  if (loading || generatingQuestions) {
     return (
       <div className="min-h-screen bg-gradient-hero p-6">
         <div className="max-w-4xl mx-auto space-y-6">
@@ -220,6 +356,15 @@ export const ReadingGame = ({ unitId, unitTitle, onComplete, onBack }: ReadingGa
             <Skeleton className="h-8 w-64" />
             <Skeleton className="h-10 w-32" />
           </div>
+          {generatingQuestions && (
+            <Card className="p-6 bg-card/50 backdrop-blur-sm border-2 border-primary/30">
+              <div className="flex items-center justify-center gap-3">
+                <Sparkles className="h-6 w-6 text-primary animate-pulse" />
+                <span className="text-lg font-medium">Generating new questions with AI...</span>
+                <Loader2 className="h-5 w-5 animate-spin text-primary" />
+              </div>
+            </Card>
+          )}
           <Skeleton className="h-4 w-full" />
           <Skeleton className="h-48 w-full" />
           <Skeleton className="h-64 w-full" />
