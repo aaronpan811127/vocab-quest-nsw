@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { StatsCard } from "./StatsCard";
+import { StreakChart } from "./StreakChart";
 import { UnitCard } from "./UnitCard";
 import { GameCard } from "./GameCard";
 import { Leaderboard } from "./Leaderboard";
@@ -12,12 +13,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { 
-  Trophy, 
   Target, 
   Clock, 
-  Zap,
   Crown,
-  Users,
   ArrowRight,
   BookOpen,
   Calendar
@@ -331,7 +329,6 @@ Total XP = Sum of all games' XP
       }
     },
     { title: "Units Completed", value: `${userStats.unitsCompleted}/${units.length}`, icon: Target, variant: "secondary" as const },
-    { title: "Study Streak", value: `${profile?.study_streak || 0} days`, icon: Trophy, variant: "success" as const, trend: "up" as const },
   ];
 
   const currentUnit = selectedUnit || units[0];
@@ -389,9 +386,10 @@ Total XP = Sum of all games' XP
 
         {/* Stats Overview */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          {stats.map((stat, index) => (
+          {stats.map((stat) => (
             <StatsCard key={stat.title} {...stat} />
           ))}
+          <StreakChart />
         </div>
 
         {/* Current Unit Progress */}
