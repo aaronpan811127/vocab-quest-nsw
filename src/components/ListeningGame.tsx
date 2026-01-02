@@ -112,7 +112,7 @@ export const ListeningGame = ({ unitId, unitTitle, onComplete, onBack }: Listeni
         ? unit.words 
         : JSON.parse(unit.words as string);
       
-      // Fetch previous incorrect answers for this user and unit (listening game)
+      // Fetch previous incorrect answers from dictation table for this user and unit
       let priorityWords: string[] = [];
       if (user) {
         const { data: prevAttempts } = await supabase
@@ -125,57 +125,16 @@ export const ListeningGame = ({ unitId, unitTitle, onComplete, onBack }: Listeni
         if (prevAttempts && prevAttempts.length > 0) {
           const attemptIds = prevAttempts.map(a => a.id);
           
-          // Get incorrect answers from all previous attempts
+          // Get incorrect words from all previous attempts
           const { data: incorrectAnswers } = await supabase
-            .from('attempt_incorrect_answers')
-            .select('user_answer')
+            .from('attempt_incorrect_answers_dictation')
+            .select('incorrect_word')
             .in('attempt_id', attemptIds);
 
           if (incorrectAnswers) {
-            // Extract unique words that were answered incorrectly
-            // The user_answer contains what they typed, but we need the actual words
-            // We'll match against the word list to find words they got wrong
-            const incorrectSet = new Set(incorrectAnswers.map(a => a.user_answer.toLowerCase()));
-            
-            // Find words from the unit that match or are similar to incorrect attempts
-            // Since we stored user_answer (what they typed), we need to check the actual correct words
-            // Let's fetch the correct words from previous incorrect attempts
-            const { data: incorrectWithQuestions } = await supabase
-              .from('attempt_incorrect_answers')
-              .select(`
-                user_answer,
-                attempt_id
-              `)
-              .in('attempt_id', attemptIds);
-
-            // For listening game, the "question" is the word itself
-            // We need to track which words were spelled incorrectly
-            // Since we don't have question_id for listening (words aren't in question_bank),
-            // we'll store the correct word in a different way
-            // For now, let's look at what words exist in unit that user got wrong
-            
-            // Actually, for listening games, we can infer the correct word
-            // by looking at the game_attempts and cross-referencing
-            // But simpler approach: store the correct word as question_id reference
-            
-            // Let's fetch based on stored data - we'll store correct word in user_answer field
-            // and the actual typed answer separately. For now, use the words from unit.
-            
-            // Priority: words that appear in incorrect answers (fuzzy match)
-            priorityWords = wordList.filter(word => {
-              // Check if this word was likely attempted incorrectly
-              // by seeing if any incorrect answer is similar but not exact
-              return incorrectAnswers.some(ia => {
-                const typed = ia.user_answer.toLowerCase();
-                const correct = word.toLowerCase();
-                // The word was wrong if typed doesn't match correct
-                return typed !== correct && (
-                  typed.includes(correct.slice(0, 3)) || 
-                  correct.includes(typed.slice(0, 3)) ||
-                  Math.abs(typed.length - correct.length) <= 2
-                );
-              });
-            });
+            // Get unique incorrect words that are still in the unit's word list
+            const incorrectSet = new Set(incorrectAnswers.map(a => a.incorrect_word.toLowerCase()));
+            priorityWords = wordList.filter(word => incorrectSet.has(word.toLowerCase()));
           }
         }
       }
@@ -317,49 +276,18 @@ export const ListeningGame = ({ unitId, unitTitle, onComplete, onBack }: Listeni
 
       if (attemptError) throw attemptError;
 
-      // Save incorrect answers to attempt_incorrect_answers table
+      // Save incorrect answers to dictation table
       const incorrectQuestions = questions.filter(q => !q.isCorrect);
       if (incorrectQuestions.length > 0 && attempt) {
-        // For listening game, we don't have question_bank entries
-        // We need to create placeholder question entries or use a workaround
-        // Let's insert questions into question_bank first for tracking
-        
-        for (const q of incorrectQuestions) {
-          // Check if question exists for this word in listening game
-          const { data: existingQuestion } = await supabase
-            .from('question_bank')
-            .select('id')
-            .eq('unit_id', unitId)
-            .eq('game_type', 'listening')
-            .eq('correct_answer', q.word)
-            .maybeSingle();
+        const incorrectInserts = incorrectQuestions.map(q => ({
+          attempt_id: attempt.id,
+          incorrect_word: q.word,
+          user_answer: q.userAnswer
+        }));
 
-          let questionId = existingQuestion?.id;
-
-          // If no question exists, we can't insert (RLS requires passage for insert)
-          // So we'll store the word info in user_answer field as "correct_word|typed_answer"
-          // This is a workaround since listening game doesn't use question_bank
-
-          if (questionId) {
-            // Insert incorrect answer record
-            await supabase
-              .from('attempt_incorrect_answers')
-              .insert({
-                attempt_id: attempt.id,
-                question_id: questionId,
-                user_answer: q.userAnswer
-              });
-          } else {
-            // For listening game without question_bank entries,
-            // we'll create a composite user_answer to track both correct and typed
-            // Format: store as "CORRECT_WORD::TYPED_ANSWER" to parse later
-            // But this requires a question_id... 
-            
-            // Alternative: Create a dummy question entry via RPC or skip
-            // For now, let's use a simpler approach - store in a way we can query
-            console.log(`Could not save incorrect answer for word "${q.word}" - no question_id`);
-          }
-        }
+        await supabase
+          .from('attempt_incorrect_answers_dictation')
+          .insert(incorrectInserts);
       }
 
       // Calculate XP
