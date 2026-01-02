@@ -31,16 +31,15 @@ export const Hero = ({ onStartPlaying, onViewLeaderboard }: HeroProps) => {
 
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-      {/* Background Image */}
-      <div 
-        className="absolute inset-0 z-0"
-        style={{
-          backgroundImage: `url(${heroImage})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          backgroundRepeat: 'no-repeat',
-        }}
-      >
+      {/* Background Image - Using img tag for LCP optimization */}
+      <div className="absolute inset-0 z-0">
+        <img 
+          src={heroImage}
+          alt=""
+          fetchPriority="high"
+          decoding="async"
+          className="w-full h-full object-cover object-center"
+        />
         <div className="absolute inset-0 bg-background/90 backdrop-blur-sm" />
       </div>
 
