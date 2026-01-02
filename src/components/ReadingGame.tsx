@@ -140,6 +140,9 @@ export const ReadingGame = ({ unitId, unitTitle, onComplete, onBack }: ReadingGa
       
       setGameCompleted(isPerfect);
 
+      // Calculate XP earned (base 10 XP + bonus for score)
+      const xpEarned = Math.round(10 + (score / 10));
+
       // Insert game attempt
       const { data: attempt, error: attemptError } = await supabase
         .from('game_attempts')
@@ -179,6 +182,84 @@ export const ReadingGame = ({ unitId, unitTitle, onComplete, onBack }: ReadingGa
           .insert(incorrectRecords);
 
         if (incorrectError) console.error('Error saving incorrect answers:', incorrectError);
+      }
+
+      // Update user profile XP and level
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('total_xp, level, last_study_date, study_streak')
+        .eq('user_id', user.id)
+        .single();
+
+      if (profile) {
+        const newXp = (profile.total_xp || 0) + xpEarned;
+        const newLevel = Math.floor(newXp / 100) + 1; // Level up every 100 XP
+        
+        // Calculate streak
+        const today = new Date().toISOString().split('T')[0];
+        const lastStudy = profile.last_study_date;
+        let newStreak = profile.study_streak || 0;
+        
+        if (lastStudy !== today) {
+          const yesterday = new Date();
+          yesterday.setDate(yesterday.getDate() - 1);
+          const yesterdayStr = yesterday.toISOString().split('T')[0];
+          
+          if (lastStudy === yesterdayStr) {
+            newStreak += 1;
+          } else if (lastStudy !== today) {
+            newStreak = 1;
+          }
+        }
+
+        await supabase
+          .from('profiles')
+          .update({
+            total_xp: newXp,
+            level: newLevel,
+            last_study_date: today,
+            study_streak: newStreak
+          })
+          .eq('user_id', user.id);
+      }
+
+      // Update or create user_progress for this unit
+      const { data: existingProgress } = await supabase
+        .from('user_progress')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('unit_id', unitId)
+        .maybeSingle();
+
+      if (existingProgress) {
+        const updates: Record<string, unknown> = {
+          attempts: (existingProgress.attempts || 0) + 1,
+          time_spent_minutes: (existingProgress.time_spent_minutes || 0) + Math.ceil(timeSpentSeconds / 60)
+        };
+        
+        // Update reading score if better
+        if (score > (existingProgress.reading_score || 0)) {
+          updates.reading_score = score;
+        }
+        if (isPerfect) {
+          updates.reading_completed = true;
+        }
+
+        await supabase
+          .from('user_progress')
+          .update(updates)
+          .eq('id', existingProgress.id);
+      } else {
+        await supabase
+          .from('user_progress')
+          .insert({
+            user_id: user.id,
+            unit_id: unitId,
+            reading_score: score,
+            reading_completed: isPerfect,
+            attempts: 1,
+            time_spent_minutes: Math.ceil(timeSpentSeconds / 60)
+          });
       }
     } catch (err) {
       console.error('Error saving game attempt:', err);
