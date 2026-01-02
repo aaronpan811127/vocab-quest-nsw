@@ -347,13 +347,6 @@ Total XP = Sum of all games' XP
 
   const games = [
     {
-      title: "Flashcards",
-      description: "Learn vocabulary with interactive flip cards",
-      gameType: "flashcards" as const,
-      ...getGameData("flashcards"),
-      isLocked: false,
-    },
-    {
       title: "Reading Quest",
       description: "Embark on reading adventures with comprehension challenges",
       gameType: "reading" as const,
@@ -402,8 +395,19 @@ Total XP = Sum of all games' XP
         {/* Current Unit Progress */}
         {currentUnit && (
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold">Current Unit: {currentUnit.title}</h2>
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <div className="flex items-center gap-3">
+              <h2 className="text-2xl font-bold">Current Unit: {currentUnit.title}</h2>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => onStartGame && onStartGame("flashcards", currentUnit.id, currentUnit.title)}
+                className="gap-2"
+              >
+                <Layers className="h-4 w-4" />
+                Flashcards
+              </Button>
+            </div>
             <Button variant="outline" onClick={handleShowHistory}>
               <Clock className="h-4 w-4 mr-2" />
               Study History
