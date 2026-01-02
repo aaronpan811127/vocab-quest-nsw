@@ -6,21 +6,8 @@ import { GameCard } from "./GameCard";
 import { Leaderboard } from "./Leaderboard";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { 
-  Target, 
-  Clock, 
-  Crown,
-  ArrowRight,
-  BookOpen,
-  Calendar,
-  Layers
-} from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Target, Clock, Crown, ArrowRight, BookOpen, Calendar, Layers } from "lucide-react";
 import { useProfile } from "@/hooks/useProfile";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -48,18 +35,25 @@ export const Dashboard = ({ onStartGame }: DashboardProps) => {
   const { toast } = useToast();
   const [units, setUnits] = useState<Unit[]>([]);
   const [selectedUnit, setSelectedUnit] = useState<Unit | null>(null);
-  const [gameProgress, setGameProgress] = useState<Record<string, { bestScore: number; completed: boolean; totalXp: number; totalTimeSeconds: number; attempts: number }>>({});
+  const [gameProgress, setGameProgress] = useState<
+    Record<
+      string,
+      { bestScore: number; completed: boolean; totalXp: number; totalTimeSeconds: number; attempts: number }
+    >
+  >({});
   const [userStats, setUserStats] = useState({ avgScore: 0, unitsCompleted: 0 });
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [showAllUnits, setShowAllUnits] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
-  const [studyHistory, setStudyHistory] = useState<Array<{
-    id: string;
-    game_type: string;
-    score: number;
-    created_at: string;
-    unit_title: string;
-  }>>([]);
+  const [studyHistory, setStudyHistory] = useState<
+    Array<{
+      id: string;
+      game_type: string;
+      score: number;
+      created_at: string;
+      unit_title: string;
+    }>
+  >([]);
 
   useEffect(() => {
     if (user) {
@@ -81,12 +75,12 @@ export const Dashboard = ({ onStartGame }: DashboardProps) => {
 
     // Fetch all game attempts for average score
     const { data: attempts, error: attemptsError } = await supabase
-      .from('game_attempts')
-      .select('score')
-      .eq('user_id', user.id);
+      .from("game_attempts")
+      .select("score")
+      .eq("user_id", user.id);
 
     if (attemptsError) {
-      console.error('Error fetching attempts:', attemptsError);
+      console.error("Error fetching attempts:", attemptsError);
       return;
     }
 
@@ -99,26 +93,26 @@ export const Dashboard = ({ onStartGame }: DashboardProps) => {
 
     // Fetch user progress to count completed units (now at game level)
     const { data: progress, error: progressError } = await supabase
-      .from('user_progress')
-      .select('unit_id, completed')
-      .eq('user_id', user.id);
+      .from("user_progress")
+      .select("unit_id, completed")
+      .eq("user_id", user.id);
 
     if (progressError) {
-      console.error('Error fetching progress:', progressError);
+      console.error("Error fetching progress:", progressError);
       return;
     }
 
     // Group by unit and count units where all 4 games are completed
     const unitCompletionMap = new Map<string, number>();
-    progress?.forEach(p => {
+    progress?.forEach((p) => {
       if (p.completed) {
         unitCompletionMap.set(p.unit_id, (unitCompletionMap.get(p.unit_id) || 0) + 1);
       }
     });
-    
+
     // Count units with 4 completed games
     let unitsCompleted = 0;
-    unitCompletionMap.forEach(count => {
+    unitCompletionMap.forEach((count) => {
       if (count >= 4) unitsCompleted++;
     });
 
@@ -129,26 +123,26 @@ export const Dashboard = ({ onStartGame }: DashboardProps) => {
     if (!user) return;
 
     const { data, error } = await supabase
-      .from('game_attempts')
-      .select('id, game_type, score, created_at, unit_id')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
+      .from("game_attempts")
+      .select("id, game_type, score, created_at, unit_id")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
       .limit(20);
 
     if (error) {
-      console.error('Error fetching study history:', error);
+      console.error("Error fetching study history:", error);
       return;
     }
 
     // Map unit IDs to titles
-    const historyWithTitles = data.map(attempt => {
-      const unit = units.find(u => u.id === attempt.unit_id);
+    const historyWithTitles = data.map((attempt) => {
+      const unit = units.find((u) => u.id === attempt.unit_id);
       return {
         id: attempt.id,
         game_type: attempt.game_type,
         score: attempt.score,
         created_at: attempt.created_at,
-        unit_title: unit?.title || 'Unknown Unit'
+        unit_title: unit?.title || "Unknown Unit",
       };
     });
 
@@ -161,13 +155,10 @@ export const Dashboard = ({ onStartGame }: DashboardProps) => {
   };
 
   const fetchUnits = async () => {
-    const { data, error } = await supabase
-      .from('units')
-      .select('*')
-      .order('unit_number');
+    const { data, error } = await supabase.from("units").select("*").order("unit_number");
 
     if (error) {
-      console.error('Error fetching units:', error);
+      console.error("Error fetching units:", error);
       return;
     }
 
@@ -193,29 +184,26 @@ export const Dashboard = ({ onStartGame }: DashboardProps) => {
     if (!user) return;
 
     // Fetch units
-    const { data: unitsData, error: unitsError } = await supabase
-      .from('units')
-      .select('*')
-      .order('unit_number');
+    const { data: unitsData, error: unitsError } = await supabase.from("units").select("*").order("unit_number");
 
     if (unitsError) {
-      console.error('Error fetching units:', unitsError);
+      console.error("Error fetching units:", unitsError);
       return;
     }
 
     // Fetch user progress for all units (now at game level)
     const { data: progressData, error: progressError } = await supabase
-      .from('user_progress')
-      .select('*')
-      .eq('user_id', user.id);
+      .from("user_progress")
+      .select("*")
+      .eq("user_id", user.id);
 
     if (progressError) {
-      console.error('Error fetching progress:', progressError);
+      console.error("Error fetching progress:", progressError);
     }
 
     // Group progress by unit_id
     const unitProgressMap = new Map<string, typeof progressData>();
-    progressData?.forEach(p => {
+    progressData?.forEach((p) => {
       const existing = unitProgressMap.get(p.unit_id) || [];
       existing.push(p);
       unitProgressMap.set(p.unit_id, existing);
@@ -223,9 +211,9 @@ export const Dashboard = ({ onStartGame }: DashboardProps) => {
 
     const formattedUnits: Unit[] = unitsData.map((unit, index) => {
       const unitProgress = unitProgressMap.get(unit.id) || [];
-      
+
       // Count completed games from progress records
-      const completedGames = unitProgress.filter(p => p.completed).length;
+      const completedGames = unitProgress.filter((p) => p.completed).length;
 
       // Calculate total XP from progress records
       const totalXp = unitProgress.reduce((sum, p) => sum + (p.total_xp || 0), 0);
@@ -235,7 +223,7 @@ export const Dashboard = ({ onStartGame }: DashboardProps) => {
       if (index > 0) {
         const prevUnitId = unitsData[index - 1].id;
         const prevProgress = unitProgressMap.get(prevUnitId) || [];
-        const prevCompletedGames = prevProgress.filter(p => p.completed).length;
+        const prevCompletedGames = prevProgress.filter((p) => p.completed).length;
         isUnlocked = prevCompletedGames >= 4;
       }
 
@@ -263,19 +251,22 @@ export const Dashboard = ({ onStartGame }: DashboardProps) => {
 
     // Fetch from user_progress table (game-level data)
     const { data, error } = await supabase
-      .from('user_progress')
-      .select('game_type, best_score, completed, total_xp, total_time_seconds, attempts')
-      .eq('user_id', user.id)
-      .eq('unit_id', unitId);
+      .from("user_progress")
+      .select("game_type, best_score, completed, total_xp, total_time_seconds, attempts")
+      .eq("user_id", user.id)
+      .eq("unit_id", unitId);
 
     if (error) {
-      console.error('Error fetching game progress:', error);
+      console.error("Error fetching game progress:", error);
       return;
     }
 
-    const progress: Record<string, { bestScore: number; completed: boolean; totalXp: number; totalTimeSeconds: number; attempts: number }> = {};
-    
-    data?.forEach(record => {
+    const progress: Record<
+      string,
+      { bestScore: number; completed: boolean; totalXp: number; totalTimeSeconds: number; attempts: number }
+    > = {};
+
+    data?.forEach((record) => {
       progress[record.game_type] = {
         bestScore: record.best_score || 0,
         completed: record.completed || false,
@@ -288,7 +279,7 @@ export const Dashboard = ({ onStartGame }: DashboardProps) => {
     setGameProgress(progress);
   };
 
-  const displayName = profile?.username || user?.email?.split('@')[0] || 'Player';
+  const displayName = profile?.username || user?.email?.split("@")[0] || "Player";
 
   const xpTooltip = `📊 XP Calculation (Per Game):
 
@@ -316,20 +307,25 @@ Total XP = Sum of all games' XP
   const xpNeededForNextLevel = 100;
 
   const stats = [
-    { 
-      title: `Level ${currentLevel}`, 
-      value: `${currentXp.toLocaleString()} XP`, 
-      icon: Crown, 
-      variant: "primary" as const, 
+    {
+      title: `Level ${currentLevel}`,
+      value: `${currentXp.toLocaleString()} XP`,
+      icon: Crown,
+      variant: "primary" as const,
       trend: "up" as const,
       tooltip: xpTooltip,
       progress: {
         current: xpInCurrentLevel,
         max: xpNeededForNextLevel,
-        label: `${xpInCurrentLevel}/${xpNeededForNextLevel} XP to level ${currentLevel + 1}`
-      }
+        label: `${xpInCurrentLevel}/${xpNeededForNextLevel} XP to level ${currentLevel + 1}`,
+      },
     },
-    { title: "Units Completed", value: `${userStats.unitsCompleted}/${units.length}`, icon: Target, variant: "secondary" as const },
+    {
+      title: "Units Completed",
+      value: `${userStats.unitsCompleted}/${units.length}`,
+      icon: Target,
+      variant: "secondary" as const,
+    },
   ];
 
   const currentUnit = selectedUnit || units[0];
@@ -396,42 +392,42 @@ Total XP = Sum of all games' XP
 
         {/* Current Unit Progress */}
         {currentUnit && (
-        <div className="space-y-3 sm:space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
-              <h2 className="text-lg sm:text-2xl font-bold">Current: {currentUnit.title}</h2>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => onStartGame && onStartGame("flashcards", currentUnit.id, currentUnit.title)}
-                className="gap-2 w-fit"
-              >
-                <Layers className="h-4 w-4" />
-                Flashcards
+          <div className="space-y-3 sm:space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+                <h2 className="text-lg sm:text-2xl font-bold">Current Unit: {currentUnit.unitNumber}</h2>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onStartGame && onStartGame("flashcards", currentUnit.id, currentUnit.title)}
+                  className="gap-2 w-fit"
+                >
+                  <Layers className="h-4 w-4" />
+                  Flashcards
+                </Button>
+              </div>
+              <Button variant="outline" size="sm" onClick={handleShowHistory} className="w-fit">
+                <Clock className="h-4 w-4 mr-2" />
+                History
               </Button>
             </div>
-            <Button variant="outline" size="sm" onClick={handleShowHistory} className="w-fit">
-              <Clock className="h-4 w-4 mr-2" />
-              History
-            </Button>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-6">
+              {games.map((game, index) => (
+                <GameCard
+                  key={game.title}
+                  {...game}
+                  onPlay={() => {
+                    if (!game.isLocked && onStartGame && currentUnit) {
+                      onStartGame(game.gameType, currentUnit.id, currentUnit.title);
+                    } else if (game.isLocked) {
+                      console.log(`${game.title} coming soon!`);
+                    }
+                  }}
+                />
+              ))}
+            </div>
           </div>
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-6">
-            {games.map((game, index) => (
-              <GameCard 
-                key={game.title} 
-                {...game} 
-                onPlay={() => {
-                  if (!game.isLocked && onStartGame && currentUnit) {
-                    onStartGame(game.gameType, currentUnit.id, currentUnit.title);
-                  } else if (game.isLocked) {
-                    console.log(`${game.title} coming soon!`);
-                  }
-                }}
-              />
-            ))}
-          </div>
-        </div>
         )}
 
         {/* Units Grid */}
@@ -439,21 +435,21 @@ Total XP = Sum of all games' XP
           <div className="flex items-center justify-between">
             <h2 className="text-lg sm:text-2xl font-bold">All Units</h2>
             <Button variant="ghost" size="sm" onClick={() => setShowAllUnits(!showAllUnits)}>
-              {showAllUnits ? 'Less' : 'View All'}
-              <ArrowRight className={`h-4 w-4 ml-1 sm:ml-2 transition-transform ${showAllUnits ? 'rotate-90' : ''}`} />
+              {showAllUnits ? "Less" : "View All"}
+              <ArrowRight className={`h-4 w-4 ml-1 sm:ml-2 transition-transform ${showAllUnits ? "rotate-90" : ""}`} />
             </Button>
           </div>
-          
+
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
             {(showAllUnits ? units : units.slice(0, 3)).map((unit) => (
-              <UnitCard 
-                key={unit.unitNumber} 
-                {...unit} 
+              <UnitCard
+                key={unit.unitNumber}
+                {...unit}
                 isSelected={selectedUnit?.id === unit.id}
                 onEnter={() => {
                   if (unit.isUnlocked) {
                     setSelectedUnit(unit);
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    window.scrollTo({ top: 0, behavior: "smooth" });
                     toast({
                       title: `Unit ${unit.unitNumber} Selected`,
                       description: `Now studying: ${unit.title}`,
@@ -482,7 +478,7 @@ Total XP = Sum of all games' XP
               Study History
             </DialogTitle>
           </DialogHeader>
-          
+
           {studyHistory.length === 0 ? (
             <div className="text-center py-8">
               <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-3 opacity-50" />
@@ -492,10 +488,7 @@ Total XP = Sum of all games' XP
           ) : (
             <div className="space-y-3">
               {studyHistory.map((entry) => (
-                <div 
-                  key={entry.id} 
-                  className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border"
-                >
+                <div key={entry.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
                       <BookOpen className="h-5 w-5 text-primary" />
