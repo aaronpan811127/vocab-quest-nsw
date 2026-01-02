@@ -326,7 +326,7 @@ export const Dashboard = ({ onStartGame }: DashboardProps) => {
     { title: "Total XP", value: profile?.total_xp?.toLocaleString() || "0", icon: Zap, variant: "primary" as const, trend: "up" as const },
     { title: "Units Completed", value: `${userStats.unitsCompleted}/${units.length}`, icon: Target, variant: "secondary" as const },
     { title: "Study Streak", value: `${profile?.study_streak || 0} days`, icon: Trophy, variant: "success" as const, trend: "up" as const },
-    { title: "Avg Score", value: `${userStats.avgScore}%`, icon: Crown, variant: "warning" as const },
+    { title: "Level", value: `${profile?.level || 1}`, icon: Crown, variant: "warning" as const },
   ];
 
   const currentUnit = selectedUnit || units[0];
