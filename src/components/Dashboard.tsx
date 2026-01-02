@@ -61,12 +61,11 @@ export const Dashboard = ({ onStartGame }: DashboardProps) => {
   }>>([]);
 
   useEffect(() => {
-    fetchUnits();
-  }, []);
-
-  useEffect(() => {
     if (user) {
+      fetchUnitsWithProgress();
       fetchUserStats();
+    } else {
+      fetchUnits();
     }
   }, [user]);
 
@@ -176,8 +175,112 @@ export const Dashboard = ({ onStartGame }: DashboardProps) => {
       totalGames: 4,
       averageScore: 0,
       timeSpent: "0m",
-      isUnlocked: index < 3, // First 3 units unlocked
+      isUnlocked: index === 0, // Only first unit unlocked for guests
     }));
+
+    setUnits(formattedUnits);
+    if (formattedUnits.length > 0 && !selectedUnit) {
+      setSelectedUnit(formattedUnits[0]);
+    }
+  };
+
+  const fetchUnitsWithProgress = async () => {
+    if (!user) return;
+
+    // Fetch units
+    const { data: unitsData, error: unitsError } = await supabase
+      .from('units')
+      .select('*')
+      .order('unit_number');
+
+    if (unitsError) {
+      console.error('Error fetching units:', unitsError);
+      return;
+    }
+
+    // Fetch user progress for all units
+    const { data: progressData, error: progressError } = await supabase
+      .from('user_progress')
+      .select('*')
+      .eq('user_id', user.id);
+
+    if (progressError) {
+      console.error('Error fetching progress:', progressError);
+    }
+
+    // Fetch game attempts for time spent calculation
+    const { data: attemptsData, error: attemptsError } = await supabase
+      .from('game_attempts')
+      .select('unit_id, time_spent_seconds, score, game_type')
+      .eq('user_id', user.id);
+
+    if (attemptsError) {
+      console.error('Error fetching attempts:', attemptsError);
+    }
+
+    // Create progress map
+    const progressMap = new Map(progressData?.map(p => [p.unit_id, p]) || []);
+    
+    // Create attempts map for time and scores
+    const unitAttemptsMap = new Map<string, { totalTime: number; scores: number[] }>();
+    attemptsData?.forEach(a => {
+      const existing = unitAttemptsMap.get(a.unit_id) || { totalTime: 0, scores: [] };
+      existing.totalTime += a.time_spent_seconds || 0;
+      existing.scores.push(a.score);
+      unitAttemptsMap.set(a.unit_id, existing);
+    });
+
+    const formattedUnits: Unit[] = unitsData.map((unit, index) => {
+      const progress = progressMap.get(unit.id);
+      const attempts = unitAttemptsMap.get(unit.id);
+      
+      // Count completed games
+      let completedGames = 0;
+      if (progress) {
+        if (progress.reading_completed) completedGames++;
+        if (progress.listening_completed) completedGames++;
+        if (progress.speaking_completed) completedGames++;
+        if (progress.writing_completed) completedGames++;
+      }
+
+      // Calculate average score for this unit
+      let averageScore = 0;
+      if (attempts && attempts.scores.length > 0) {
+        averageScore = Math.round(attempts.scores.reduce((a, b) => a + b, 0) / attempts.scores.length);
+      }
+
+      // Format time spent
+      const totalMinutes = Math.round((attempts?.totalTime || 0) / 60);
+      const timeSpent = totalMinutes > 60 
+        ? `${Math.floor(totalMinutes / 60)}h ${totalMinutes % 60}m`
+        : `${totalMinutes}m`;
+
+      // Check if previous unit is completed (all 4 games done)
+      let isUnlocked = index === 0; // First unit always unlocked
+      if (index > 0) {
+        const prevUnitId = unitsData[index - 1].id;
+        const prevProgress = progressMap.get(prevUnitId);
+        if (prevProgress) {
+          isUnlocked = prevProgress.reading_completed && 
+                       prevProgress.listening_completed && 
+                       prevProgress.speaking_completed && 
+                       prevProgress.writing_completed;
+        }
+      }
+
+      return {
+        id: unit.id,
+        unitNumber: unit.unit_number,
+        title: unit.title,
+        description: unit.description || "Master vocabulary through interactive games",
+        totalWords: Array.isArray(unit.words) ? unit.words.length : 10,
+        completedGames,
+        totalGames: 4,
+        averageScore,
+        timeSpent,
+        isUnlocked,
+      };
+    });
 
     setUnits(formattedUnits);
     if (formattedUnits.length > 0 && !selectedUnit) {
