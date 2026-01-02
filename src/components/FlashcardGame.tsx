@@ -301,27 +301,27 @@ export const FlashcardGame = ({ unitId, unitTitle, onComplete, onBack }: Flashca
   }
 
   return (
-    <div className="min-h-screen bg-gradient-hero p-6">
-      <div className="max-w-2xl mx-auto space-y-6">
+    <div className="min-h-screen bg-gradient-hero p-4 sm:p-6">
+      <div className="max-w-2xl mx-auto space-y-4 sm:space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <BookOpen className="h-6 w-6 text-primary" />
-              Flashcards: {unitTitle}
+        <div className="flex items-start sm:items-center justify-between gap-2">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-lg sm:text-2xl font-bold flex items-center gap-2">
+              <BookOpen className="h-5 w-5 sm:h-6 sm:w-6 text-primary flex-shrink-0" />
+              <span className="truncate">{unitTitle}</span>
             </h1>
-            <p className="text-muted-foreground">
+            <p className="text-sm text-muted-foreground">
               Card {currentIndex + 1} of {words.length}
             </p>
           </div>
-          <Button variant="outline" onClick={onBack}>
+          <Button variant="outline" onClick={onBack} size="sm">
             Back
           </Button>
         </div>
 
         {/* Progress */}
         <div className="space-y-2">
-          <div className="flex justify-between text-sm">
+          <div className="flex justify-between text-xs sm:text-sm">
             <span>Learned: {learnedWords.size} / {words.length}</span>
             <span>{Math.round(progress)}%</span>
           </div>
@@ -335,7 +335,7 @@ export const FlashcardGame = ({ unitId, unitTitle, onComplete, onBack }: Flashca
         >
           <div 
             className={`
-              relative w-full min-h-[400px] transition-transform duration-500 transform-style-3d
+              relative w-full min-h-[300px] sm:min-h-[400px] transition-transform duration-500 transform-style-3d
               ${isFlipped ? 'rotate-y-180' : ''}
             `}
             style={{
@@ -346,7 +346,7 @@ export const FlashcardGame = ({ unitId, unitTitle, onComplete, onBack }: Flashca
             {/* Front of card (Word) */}
             <Card 
               className={`
-                absolute w-full h-full p-8 flex flex-col items-center justify-center
+                absolute w-full h-full p-4 sm:p-8 flex flex-col items-center justify-center
                 bg-gradient-to-br from-card to-card/80 border-2 border-primary/20
                 ${isFlipped ? 'opacity-0' : 'opacity-100'}
                 transition-opacity duration-300
@@ -354,7 +354,7 @@ export const FlashcardGame = ({ unitId, unitTitle, onComplete, onBack }: Flashca
               style={{ backfaceVisibility: 'hidden' }}
             >
               {learnedWords.has(currentWord.id) && (
-                <Badge className="absolute top-4 right-4 bg-green-500/20 text-green-500 border-green-500/30">
+                <Badge className="absolute top-3 right-3 sm:top-4 sm:right-4 bg-green-500/20 text-green-500 border-green-500/30 text-xs">
                   <Check className="h-3 w-3 mr-1" />
                   Learned
                 </Badge>
@@ -362,24 +362,24 @@ export const FlashcardGame = ({ unitId, unitTitle, onComplete, onBack }: Flashca
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className="absolute top-4 left-4"
+                className="absolute top-3 left-3 sm:top-4 sm:left-4 h-8 w-8 sm:h-9 sm:w-9"
                 onClick={(e) => {
                   e.stopPropagation();
                   speakWord();
                 }}
               >
-                <Volume2 className="h-5 w-5" />
+                <Volume2 className="h-4 w-4 sm:h-5 sm:w-5" />
               </Button>
-              <h2 className="text-5xl font-bold text-primary mb-4">
+              <h2 className="text-3xl sm:text-5xl font-bold text-primary mb-3 sm:mb-4 text-center px-8">
                 {currentWord.word}
               </h2>
-              <p className="text-muted-foreground">Tap to reveal definition</p>
+              <p className="text-sm text-muted-foreground">Tap to reveal definition</p>
             </Card>
 
             {/* Back of card (Definition, Synonyms, Antonyms, Examples) */}
             <Card 
               className={`
-                absolute w-full min-h-[400px] p-6 
+                absolute w-full min-h-[300px] sm:min-h-[400px] p-4 sm:p-6 overflow-y-auto
                 bg-gradient-to-br from-primary/10 to-card border-2 border-primary/30
                 ${isFlipped ? 'opacity-100' : 'opacity-0'}
                 transition-opacity duration-300
@@ -389,33 +389,34 @@ export const FlashcardGame = ({ unitId, unitTitle, onComplete, onBack }: Flashca
                 transform: 'rotateY(180deg)'
               }}
             >
-              <div className="space-y-4 h-full">
+              <div className="space-y-3 sm:space-y-4 h-full">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-2xl font-bold text-primary">{currentWord.word}</h3>
+                  <h3 className="text-xl sm:text-2xl font-bold text-primary">{currentWord.word}</h3>
                   <Button 
                     variant="ghost" 
                     size="icon"
+                    className="h-8 w-8 sm:h-9 sm:w-9"
                     onClick={(e) => {
                       e.stopPropagation();
                       speakWord();
                     }}
                   >
-                    <Volume2 className="h-5 w-5" />
+                    <Volume2 className="h-4 w-4 sm:h-5 sm:w-5" />
                   </Button>
                 </div>
 
-                <div className="space-y-3">
+                <div className="space-y-2 sm:space-y-3">
                   <div>
-                    <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Definition</h4>
-                    <p className="text-lg">{currentWord.definition}</p>
+                    <h4 className="text-xs sm:text-sm font-semibold text-muted-foreground uppercase tracking-wide">Definition</h4>
+                    <p className="text-sm sm:text-lg">{currentWord.definition}</p>
                   </div>
 
                   {currentWord.synonyms.length > 0 && (
                     <div>
-                      <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Synonyms</h4>
-                      <div className="flex flex-wrap gap-2 mt-1">
+                      <h4 className="text-xs sm:text-sm font-semibold text-muted-foreground uppercase tracking-wide">Synonyms</h4>
+                      <div className="flex flex-wrap gap-1.5 sm:gap-2 mt-1">
                         {currentWord.synonyms.map((syn, i) => (
-                          <Badge key={i} variant="secondary">{syn}</Badge>
+                          <Badge key={i} variant="secondary" className="text-xs">{syn}</Badge>
                         ))}
                       </div>
                     </div>
@@ -423,10 +424,10 @@ export const FlashcardGame = ({ unitId, unitTitle, onComplete, onBack }: Flashca
 
                   {currentWord.antonyms.length > 0 && (
                     <div>
-                      <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Antonyms</h4>
-                      <div className="flex flex-wrap gap-2 mt-1">
+                      <h4 className="text-xs sm:text-sm font-semibold text-muted-foreground uppercase tracking-wide">Antonyms</h4>
+                      <div className="flex flex-wrap gap-1.5 sm:gap-2 mt-1">
                         {currentWord.antonyms.map((ant, i) => (
-                          <Badge key={i} variant="outline">{ant}</Badge>
+                          <Badge key={i} variant="outline" className="text-xs">{ant}</Badge>
                         ))}
                       </div>
                     </div>
@@ -434,17 +435,17 @@ export const FlashcardGame = ({ unitId, unitTitle, onComplete, onBack }: Flashca
 
                   {currentWord.examples.length > 0 && (
                     <div>
-                      <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Examples</h4>
+                      <h4 className="text-xs sm:text-sm font-semibold text-muted-foreground uppercase tracking-wide">Examples</h4>
                       <ul className="list-disc list-inside space-y-1 mt-1">
-                        {currentWord.examples.map((ex, i) => (
-                          <li key={i} className="text-muted-foreground italic">{ex}</li>
+                        {currentWord.examples.slice(0, 2).map((ex, i) => (
+                          <li key={i} className="text-xs sm:text-sm text-muted-foreground italic">{ex}</li>
                         ))}
                       </ul>
                     </div>
                   )}
                 </div>
 
-                <p className="text-xs text-muted-foreground text-center pt-2">
+                <p className="text-xs text-muted-foreground text-center pt-1">
                   Tap to flip back
                 </p>
               </div>
@@ -453,22 +454,24 @@ export const FlashcardGame = ({ unitId, unitTitle, onComplete, onBack }: Flashca
         </div>
 
         {/* Controls */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-2">
           <Button 
             variant="outline" 
             onClick={handlePrevious}
             disabled={currentIndex === 0}
+            size="sm"
+            className="px-2 sm:px-4"
           >
-            <ArrowLeft className="h-5 w-5 mr-2" />
-            Previous
+            <ArrowLeft className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Previous</span>
           </Button>
 
-          <div className="flex gap-2">
-            <Button variant="ghost" size="icon" onClick={handleShuffle}>
-              <Shuffle className="h-5 w-5" />
+          <div className="flex gap-1 sm:gap-2">
+            <Button variant="ghost" size="icon" onClick={handleShuffle} className="h-8 w-8 sm:h-9 sm:w-9">
+              <Shuffle className="h-4 w-4 sm:h-5 sm:w-5" />
             </Button>
-            <Button variant="ghost" size="icon" onClick={handleReset}>
-              <RotateCcw className="h-5 w-5" />
+            <Button variant="ghost" size="icon" onClick={handleReset} className="h-8 w-8 sm:h-9 sm:w-9">
+              <RotateCcw className="h-4 w-4 sm:h-5 sm:w-5" />
             </Button>
           </div>
 
@@ -476,18 +479,23 @@ export const FlashcardGame = ({ unitId, unitTitle, onComplete, onBack }: Flashca
             <Button 
               variant="hero" 
               onClick={handleMarkLearned}
+              size="sm"
+              className="px-2 sm:px-4"
             >
-              <Check className="h-5 w-5 mr-2" />
-              Mark Learned
+              <Check className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Mark Learned</span>
+              <span className="sm:hidden">Done</span>
             </Button>
           ) : (
             <Button 
               variant="outline" 
               onClick={handleNext}
               disabled={currentIndex === words.length - 1}
+              size="sm"
+              className="px-2 sm:px-4"
             >
-              Next
-              <ArrowRight className="h-5 w-5 ml-2" />
+              <span className="hidden sm:inline">Next</span>
+              <ArrowRight className="h-4 w-4 sm:ml-2" />
             </Button>
           )}
         </div>

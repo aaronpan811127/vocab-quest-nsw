@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Navigation } from "@/components/Navigation";
+import { MobileNav } from "@/components/MobileNav";
 import { Hero } from "@/components/Hero";
 import { Dashboard } from "@/components/Dashboard";
 import { ReadingGame } from "@/components/ReadingGame";
@@ -72,15 +73,24 @@ const Index = () => {
     }
   };
 
+  // Hide bottom nav during game
+  const showMobileNav = currentView !== "game";
+
   return (
     <div className="min-h-screen">
       <Navigation 
         currentView={currentView} 
         onViewChange={setCurrentView} 
       />
-      <div className="pt-20">
+      <div className={`pt-16 sm:pt-20 ${showMobileNav ? 'pb-20 md:pb-0' : ''}`}>
         {renderContent()}
       </div>
+      {showMobileNav && (
+        <MobileNav 
+          currentView={currentView} 
+          onViewChange={setCurrentView} 
+        />
+      )}
     </div>
   );
 };
