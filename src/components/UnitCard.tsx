@@ -103,12 +103,6 @@ export const UnitCard = ({
             <span className="text-sm text-muted-foreground">
               Games: {completedGames}/{totalGames}
             </span>
-            {averageScore > 0 && (
-              <Badge variant="outline" className="gap-1">
-                <Star className="h-3 w-3 fill-current text-warning" />
-                {averageScore}%
-              </Badge>
-            )}
           </div>
           <Progress 
             value={progress} 
