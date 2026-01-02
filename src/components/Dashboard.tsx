@@ -333,12 +333,6 @@ Total XP = Sum of all games' XP
         label: `${xpInCurrentLevel}/${xpNeededForNextLevel} XP to level ${currentLevel + 1}`,
       },
     },
-    {
-      title: "Units Completed",
-      value: `${userStats.unitsCompleted}/${units.length}`,
-      icon: Target,
-      variant: "secondary" as const,
-    },
   ];
 
   const currentUnit = selectedUnit || units[0];
@@ -425,12 +419,9 @@ Total XP = Sum of all games' XP
         </div>
 
         {/* Stats Overview */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4">
           <StatsCard {...stats[0]} />
-          <div className="col-span-2 sm:col-span-1 order-last sm:order-none">
-            <StreakChart />
-          </div>
-          <StatsCard {...stats[1]} />
+          <StreakChart />
         </div>
 
         {/* Current Unit Progress */}
@@ -471,7 +462,13 @@ Total XP = Sum of all games' XP
         {/* Units Grid */}
         <div className="space-y-3 sm:space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg sm:text-2xl font-bold">All Units</h2>
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg sm:text-2xl font-bold">All Units</h2>
+              <Badge variant="secondary" className="gap-1">
+                <Target className="h-3 w-3" />
+                {userStats.unitsCompleted}/{units.length}
+              </Badge>
+            </div>
             <Button variant="ghost" size="sm" onClick={() => setShowAllUnits(!showAllUnits)}>
               {showAllUnits ? "Less" : "View All"}
               <ArrowRight className={`h-4 w-4 ml-1 sm:ml-2 transition-transform ${showAllUnits ? "rotate-90" : ""}`} />
