@@ -1,1 +1,10 @@
 project_id = "xepfrqhuoeijhphkcovz"
+
+[functions.submit-game]
+verify_jwt = false
+
+[functions.generate-passage]
+verify_jwt = false
+
+[functions.upload-avatar]
+verify_jwt = false
