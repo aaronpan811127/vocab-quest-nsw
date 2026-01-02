@@ -375,7 +375,7 @@ export const StoryCreatorGame = ({ unitId, unitTitle, onComplete, onBack }: Stor
     return Math.round((correct / questions.length) * 100);
   };
 
-  const resetGame = () => {
+  const resetGame = (playAllWords: boolean = false) => {
     setCurrentIndex(0);
     setQuestions([]);
     setUserInput("");
@@ -385,7 +385,7 @@ export const StoryCreatorGame = ({ unitId, unitTitle, onComplete, onBack }: Stor
     setEarnedXp(0);
     setShowXpAnimation(false);
     startTimeRef.current = Date.now();
-    fetchWords(true); // Play Again: use all words from unit
+    fetchWords(playAllWords);
   };
 
   if (loading) {
@@ -473,9 +473,9 @@ export const StoryCreatorGame = ({ unitId, unitTitle, onComplete, onBack }: Stor
             </div>
 
             <div className="flex justify-center gap-4 pt-4">
-              <Button variant="game" onClick={resetGame} size="lg">
+              <Button variant="game" onClick={() => resetGame(isPerfect)} size="lg">
                 <RotateCcw className="h-5 w-5 mr-2" />
-                Play Again
+                {isPerfect ? 'Play Again' : 'Try Again'}
               </Button>
               <Button variant="outline" onClick={onBack} size="lg">
                 Back to Dashboard

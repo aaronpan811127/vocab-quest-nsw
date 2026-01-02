@@ -434,7 +434,7 @@ export const VoiceMasterGame = ({ unitId, unitTitle, onComplete, onBack }: Voice
     return Math.round((correct / questions.length) * 100);
   };
 
-  const resetGame = () => {
+  const resetGame = (playAllWords: boolean = false) => {
     setCurrentIndex(0);
     setQuestions([]);
     setShowResults(false);
@@ -443,7 +443,7 @@ export const VoiceMasterGame = ({ unitId, unitTitle, onComplete, onBack }: Voice
     setEarnedXp(0);
     setShowXpAnimation(false);
     startTimeRef.current = Date.now();
-    fetchWords(true); // Play Again: use all words from unit
+    fetchWords(playAllWords);
   };
 
   if (!speechSupported) {
@@ -552,9 +552,9 @@ export const VoiceMasterGame = ({ unitId, unitTitle, onComplete, onBack }: Voice
             </div>
 
             <div className="flex justify-center gap-4 pt-4">
-              <Button variant="game" onClick={resetGame} size="lg">
+              <Button variant="game" onClick={() => resetGame(isPerfect)} size="lg">
                 <RotateCcw className="h-5 w-5 mr-2" />
-                Play Again
+                {isPerfect ? 'Play Again' : 'Try Again'}
               </Button>
               <Button variant="outline" onClick={onBack} size="lg">
                 Back to Dashboard
