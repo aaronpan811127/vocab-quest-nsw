@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,9 +10,11 @@ import {
   Shuffle,
   BookOpen,
   Volume2,
-  Check
+  Check,
+  Loader2
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface Word {
   id: string;
@@ -36,11 +38,87 @@ export const FlashcardGame = ({ unitId, unitTitle, onComplete, onBack }: Flashca
   const [isFlipped, setIsFlipped] = useState(false);
   const [learnedWords, setLearnedWords] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
+  const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const femaleVoiceRef = useRef<SpeechSynthesisVoice | null>(null);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    // Find a female voice
+    const loadVoices = () => {
+      const voices = speechSynthesis.getVoices();
+      const femaleVoice = voices.find(voice => 
+        voice.lang.startsWith('en') && 
+        (voice.name.toLowerCase().includes('female') ||
+         voice.name.toLowerCase().includes('samantha') ||
+         voice.name.toLowerCase().includes('victoria') ||
+         voice.name.toLowerCase().includes('karen') ||
+         voice.name.toLowerCase().includes('moira') ||
+         voice.name.toLowerCase().includes('tessa') ||
+         voice.name.toLowerCase().includes('fiona') ||
+         voice.name.includes('Google US English') ||
+         voice.name.includes('Microsoft Zira'))
+      ) || voices.find(voice => voice.lang.startsWith('en'));
+      
+      femaleVoiceRef.current = femaleVoice || null;
+    };
+
+    loadVoices();
+    speechSynthesis.onvoiceschanged = loadVoices;
+
+    return () => {
+      speechSynthesis.onvoiceschanged = null;
+    };
+  }, []);
 
   useEffect(() => {
     fetchVocabulary();
   }, [unitId]);
+
+  const generateVocabulary = async (unitWords: string[]) => {
+    setGenerating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-vocabulary', {
+        body: { unit_id: unitId, words: unitWords }
+      });
+
+      if (error) throw error;
+
+      if (data.success && data.vocabulary) {
+        setWords(data.vocabulary);
+        toast({
+          title: "Vocabulary Generated",
+          description: `Created flashcards for ${data.vocabulary.length} words.`,
+        });
+      } else {
+        throw new Error(data.error || "Failed to generate vocabulary");
+      }
+    } catch (err: any) {
+      console.error('Error generating vocabulary:', err);
+      
+      if (err.message?.includes('429') || err.message?.includes('Rate limit')) {
+        toast({
+          title: "Rate limit exceeded",
+          description: "Please wait a moment before trying again.",
+          variant: "destructive",
+        });
+      } else if (err.message?.includes('402')) {
+        toast({
+          title: "AI credits needed",
+          description: "Please add credits to continue generating content.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Generation failed",
+          description: "Could not generate vocabulary. Using basic words.",
+          variant: "destructive",
+        });
+      }
+    } finally {
+      setGenerating(false);
+    }
+  };
 
   const fetchVocabulary = async () => {
     setLoading(true);
@@ -55,7 +133,7 @@ export const FlashcardGame = ({ unitId, unitTitle, onComplete, onBack }: Flashca
       if (fetchError) throw fetchError;
 
       if (!data || data.length === 0) {
-        // Fallback: fetch words from units table
+        // Fetch words from units table and generate vocabulary
         const { data: unitData, error: unitError } = await supabase
           .from('units')
           .select('words')
@@ -64,17 +142,22 @@ export const FlashcardGame = ({ unitId, unitTitle, onComplete, onBack }: Flashca
 
         if (unitError) throw unitError;
 
-        // Create basic vocabulary from unit words
-        const basicWords: Word[] = (unitData.words as string[]).map((word, index) => ({
+        const unitWords = unitData.words as string[];
+        
+        // Create temporary basic words while generating
+        const basicWords: Word[] = unitWords.map((word, index) => ({
           id: `temp-${index}`,
           word,
-          definition: "Definition not available yet",
+          definition: "Generating definition...",
           synonyms: [],
           antonyms: [],
           examples: []
         }));
-
         setWords(basicWords);
+        setLoading(false);
+        
+        // Generate vocabulary in background
+        await generateVocabulary(unitWords);
       } else {
         setWords(data as Word[]);
       }
@@ -125,9 +208,15 @@ export const FlashcardGame = ({ unitId, unitTitle, onComplete, onBack }: Flashca
   };
 
   const speakWord = () => {
-    if ('speechSynthesis' in window) {
+    if ('speechSynthesis' in window && words[currentIndex]) {
+      speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(words[currentIndex].word);
       utterance.lang = 'en-US';
+      utterance.rate = 0.9;
+      utterance.pitch = 1.1;
+      if (femaleVoiceRef.current) {
+        utterance.voice = femaleVoiceRef.current;
+      }
       speechSynthesis.speak(utterance);
     }
   };
@@ -142,6 +231,20 @@ export const FlashcardGame = ({ unitId, unitTitle, onComplete, onBack }: Flashca
           <div className="text-center space-y-4">
             <div className="animate-spin h-12 w-12 border-4 border-primary border-t-transparent rounded-full mx-auto" />
             <p className="text-muted-foreground">Loading flashcards...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (generating) {
+    return (
+      <div className="min-h-screen bg-gradient-hero p-6">
+        <div className="max-w-2xl mx-auto flex items-center justify-center h-[60vh]">
+          <div className="text-center space-y-4">
+            <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
+            <p className="text-lg font-medium">Generating vocabulary...</p>
+            <p className="text-muted-foreground">Creating definitions, synonyms, and examples</p>
           </div>
         </div>
       </div>
