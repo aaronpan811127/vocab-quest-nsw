@@ -34,23 +34,23 @@ export const UnitCard = ({
 
   return (
     <Card
-      className={`group relative overflow-hidden border-2 bg-card/50 backdrop-blur-sm transition-all duration-300 hover:shadow-card animate-slide-up ${
+      className={`group relative overflow-hidden border bg-card/50 backdrop-blur-sm transition-all duration-300 hover:shadow-card animate-slide-up ${
         isSelected
-          ? "border-primary shadow-lg shadow-primary/20 ring-2 ring-primary/30"
+          ? "border-primary shadow-md shadow-primary/20 ring-1 ring-primary/30"
           : "border-border/50 hover:border-primary/30"
       }`}
     >
       {/* Selected indicator */}
-      {isSelected && <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-primary" />}
+      {isSelected && <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-primary" />}
 
       {/* Animated background gradient */}
       <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-secondary/5 to-accent/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
       {/* Unit number badge */}
-      <div className="absolute -top-2 -right-2">
+      <div className="absolute -top-1.5 -right-1.5">
         <div
           className={`
-          w-12 h-12 rounded-full flex items-center justify-center text-xs font-bold
+          w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold
           ${
             isCompleted
               ? "bg-gradient-success text-success-foreground"
@@ -58,45 +58,45 @@ export const UnitCard = ({
                 ? "bg-gradient-primary text-primary-foreground"
                 : "bg-muted text-muted-foreground"
           }
-          shadow-lg
+          shadow-md
         `}
         >
           {unitNumber}
         </div>
       </div>
 
-      <div className="relative p-6 space-y-4">
+      <div className="relative p-4 space-y-3">
         {/* Header */}
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <BookOpen className="h-5 w-5 text-primary" />
-            {isCompleted && <Trophy className="h-5 w-5 text-success fill-current" />}
+        <div className="space-y-1">
+          <div className="flex items-center gap-1.5">
+            <BookOpen className="h-4 w-4 text-primary" />
+            {isCompleted && <Trophy className="h-4 w-4 text-success fill-current" />}
           </div>
-          <p className="text-sm text-muted-foreground leading-relaxed">{description}</p>
+          <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">{description}</p>
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-2 gap-4 text-sm">
-          <div className="flex items-center gap-2">
-            <Target className="h-4 w-4 text-accent" />
+        <div className="grid grid-cols-2 gap-2 text-xs">
+          <div className="flex items-center gap-1">
+            <Target className="h-3 w-3 text-accent" />
             <span className="text-muted-foreground">Words:</span>
             <span className="font-medium">{totalWords}</span>
           </div>
-          <div className="flex items-center gap-2">
-            <Zap className="h-4 w-4 text-primary" />
+          <div className="flex items-center gap-1">
+            <Zap className="h-3 w-3 text-primary" />
             <span className="text-muted-foreground">XP:</span>
             <span className="font-medium">{totalXp}</span>
           </div>
         </div>
 
         {/* Progress */}
-        <div className="space-y-3">
+        <div className="space-y-1.5">
           <div className="flex justify-between items-center">
-            <span className="text-sm text-muted-foreground">
+            <span className="text-xs text-muted-foreground">
               Games: {completedGames}/{totalGames}
             </span>
           </div>
-          <Progress value={progress} className="h-3 bg-muted/50" />
+          <Progress value={progress} className="h-2 bg-muted/50" />
         </div>
 
         {/* Action Button */}
@@ -105,13 +105,13 @@ export const UnitCard = ({
           disabled={!isUnlocked}
           variant={isCompleted ? "success" : isUnlocked ? "hero" : "ghost"}
           className="w-full"
-          size="lg"
+          size="sm"
         >
           {!isUnlocked ? (
             "🔒 Locked"
           ) : isCompleted ? (
             <>
-              <Trophy className="h-4 w-4 mr-2" />
+              <Trophy className="h-3.5 w-3.5 mr-1.5" />
               Review Unit
             </>
           ) : progress > 0 ? (

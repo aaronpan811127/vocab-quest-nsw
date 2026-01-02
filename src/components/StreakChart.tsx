@@ -124,22 +124,22 @@ export const StreakChart = () => {
   };
 
   return (
-    <Card className="p-4 space-y-3 border-2 backdrop-blur-sm transition-all duration-300 hover:shadow-card hover:scale-105 animate-slide-up border-success/20 bg-success/5">
+    <Card className="p-3 space-y-2 border backdrop-blur-sm transition-all duration-300 hover:shadow-card hover:scale-[1.02] animate-slide-up border-success/20 bg-success/5">
       <div className="flex items-center justify-between">
-        <Trophy className="h-5 w-5 text-success" />
-        <span className="text-xs font-medium text-muted-foreground">
+        <Trophy className="h-4 w-4 text-success" />
+        <span className="text-[10px] font-medium text-muted-foreground">
           Last 7 days
         </span>
       </div>
 
-      <div className="space-y-1">
-        <p className="text-2xl font-bold tracking-tight">{streak} day streak</p>
-        <p className="text-xs text-muted-foreground font-medium">
+      <div>
+        <p className="text-xl font-bold tracking-tight">{streak} day streak</p>
+        <p className="text-[10px] text-muted-foreground font-medium">
           Study Activity
         </p>
       </div>
 
-      <ChartContainer config={chartConfig} className="h-[80px] w-full">
+      <ChartContainer config={chartConfig} className="h-[60px] w-full">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data} margin={{ top: 4, right: 4, bottom: 0, left: 4 }}>
             <XAxis
