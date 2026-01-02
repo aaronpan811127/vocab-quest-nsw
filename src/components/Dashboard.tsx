@@ -3,7 +3,7 @@ import { StatsCard } from "./StatsCard";
 import { StreakChart } from "./StreakChart";
 import { UnitCard } from "./UnitCard";
 import { GameCard } from "./GameCard";
-import { DashboardLeaderboard } from "./DashboardLeaderboard";
+import { LeaderboardDialog } from "./LeaderboardDialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Target, Crown, ArrowRight, Layers, ArrowLeft } from "lucide-react";
@@ -393,6 +393,7 @@ Total XP = Sum of all games' XP
             <h1 className="text-xl sm:text-3xl font-bold">Welcome back, {displayName}! 🎮</h1>
             <p className="text-sm sm:text-base text-muted-foreground mt-1">Ready to level up your vocabulary skills?</p>
           </div>
+          <LeaderboardDialog />
         </div>
 
         {/* Stats Overview */}
@@ -469,9 +470,6 @@ Total XP = Sum of all games' XP
             ))}
           </div>
         </div>
-
-        {/* Leaderboard Section */}
-        <DashboardLeaderboard />
       </div>
     </div>
   );
