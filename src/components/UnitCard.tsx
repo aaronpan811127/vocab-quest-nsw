@@ -70,7 +70,7 @@ export const UnitCard = ({
         <div className="space-y-2">
           <div className="flex items-center gap-2">
             <BookOpen className="h-5 w-5 text-primary" />
-            <h3 className="font-bold text-xl">{title}</h3>
+            <h3 className="font-bold text-xl">{unitNumber}</h3>
             {isCompleted && <Trophy className="h-5 w-5 text-success fill-current" />}
           </div>
           <p className="text-sm text-muted-foreground leading-relaxed">{description}</p>
