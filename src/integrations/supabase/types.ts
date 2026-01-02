@@ -60,6 +60,7 @@ export type Database = {
           created_at: string
           game_type: string
           id: string
+          passage_id: string | null
           score: number
           time_spent_seconds: number
           total_questions: number
@@ -72,6 +73,7 @@ export type Database = {
           created_at?: string
           game_type: string
           id?: string
+          passage_id?: string | null
           score?: number
           time_spent_seconds?: number
           total_questions?: number
@@ -84,6 +86,7 @@ export type Database = {
           created_at?: string
           game_type?: string
           id?: string
+          passage_id?: string | null
           score?: number
           time_spent_seconds?: number
           total_questions?: number
@@ -91,6 +94,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "game_attempts_passage_id_fkey"
+            columns: ["passage_id"]
+            isOneToOne: false
+            referencedRelation: "reading_passages"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "game_attempts_unit_id_fkey"
             columns: ["unit_id"]
