@@ -39,10 +39,17 @@ export const Dashboard = ({ onStartGame }: DashboardProps) => {
   const { profile, loading } = useProfile();
   const [units, setUnits] = useState<Unit[]>([]);
   const [selectedUnit, setSelectedUnit] = useState<Unit | null>(null);
+  const [gameProgress, setGameProgress] = useState<Record<string, { bestScore: number; completed: boolean }>>({});
 
   useEffect(() => {
     fetchUnits();
   }, []);
+
+  useEffect(() => {
+    if (user && selectedUnit) {
+      fetchGameProgress(selectedUnit.id);
+    }
+  }, [user, selectedUnit]);
 
   const fetchUnits = async () => {
     const { data, error } = await supabase
@@ -74,6 +81,35 @@ export const Dashboard = ({ onStartGame }: DashboardProps) => {
     }
   };
 
+  const fetchGameProgress = async (unitId: string) => {
+    if (!user) return;
+
+    const { data, error } = await supabase
+      .from('game_attempts')
+      .select('game_type, score, completed')
+      .eq('user_id', user.id)
+      .eq('unit_id', unitId);
+
+    if (error) {
+      console.error('Error fetching game progress:', error);
+      return;
+    }
+
+    const progress: Record<string, { bestScore: number; completed: boolean }> = {};
+    
+    data?.forEach(attempt => {
+      const existing = progress[attempt.game_type];
+      if (!existing || attempt.score > existing.bestScore) {
+        progress[attempt.game_type] = {
+          bestScore: attempt.score,
+          completed: attempt.score === 100 || existing?.completed || false
+        };
+      }
+    });
+
+    setGameProgress(progress);
+  };
+
   const displayName = profile?.username || user?.email?.split('@')[0] || 'Player';
 
   const stats = [
@@ -85,13 +121,20 @@ export const Dashboard = ({ onStartGame }: DashboardProps) => {
 
   const currentUnit = selectedUnit || units[0];
 
+  const getGameData = (gameType: string) => {
+    const progress = gameProgress[gameType];
+    return {
+      progress: progress?.bestScore || 0,
+      isCompleted: progress?.completed || false,
+    };
+  };
+
   const games = [
     {
       title: "Reading Quest",
       description: "Embark on reading adventures with comprehension challenges",
       gameType: "reading" as const,
-      progress: 100,
-      isCompleted: true,
+      ...getGameData("reading"),
       isLocked: false,
       difficulty: "Medium" as const,
     },
@@ -99,26 +142,23 @@ export const Dashboard = ({ onStartGame }: DashboardProps) => {
       title: "Audio Challenge",
       description: "Listen and spell words perfectly to advance",
       gameType: "listening" as const,
-      progress: 100,
-      isCompleted: true,
-      isLocked: false,
+      ...getGameData("listening"),
+      isLocked: true,
       difficulty: "Easy" as const,
     },
     {
       title: "Voice Master",
       description: "Speak clearly and accurately to unlock achievements",
       gameType: "speaking" as const,
-      progress: 80,
-      isCompleted: false,
-      isLocked: false,
+      ...getGameData("speaking"),
+      isLocked: true,
       difficulty: "Hard" as const,
     },
     {
       title: "Story Creator",
       description: "Craft creative sentences using your new vocabulary",
       gameType: "writing" as const,
-      progress: 0,
-      isCompleted: false,
+      ...getGameData("writing"),
       isLocked: true,
       difficulty: "Medium" as const,
     },
