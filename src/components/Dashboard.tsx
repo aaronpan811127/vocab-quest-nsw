@@ -346,7 +346,6 @@ export const Dashboard = ({ onStartGame }: DashboardProps) => {
       gameType: "reading" as const,
       ...getGameData("reading"),
       isLocked: false,
-      difficulty: "Medium" as const,
     },
     {
       title: "Audio Challenge",
@@ -354,7 +353,6 @@ export const Dashboard = ({ onStartGame }: DashboardProps) => {
       gameType: "listening" as const,
       ...getGameData("listening"),
       isLocked: true,
-      difficulty: "Easy" as const,
     },
     {
       title: "Voice Master",
@@ -362,7 +360,6 @@ export const Dashboard = ({ onStartGame }: DashboardProps) => {
       gameType: "speaking" as const,
       ...getGameData("speaking"),
       isLocked: true,
-      difficulty: "Hard" as const,
     },
     {
       title: "Story Creator",
@@ -370,7 +367,6 @@ export const Dashboard = ({ onStartGame }: DashboardProps) => {
       gameType: "writing" as const,
       ...getGameData("writing"),
       isLocked: true,
-      difficulty: "Medium" as const,
     },
   ];
 

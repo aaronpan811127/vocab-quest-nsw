@@ -19,7 +19,6 @@ interface GameCardProps {
   progress: number;
   isCompleted: boolean;
   isLocked: boolean;
-  difficulty: "Easy" | "Medium" | "Hard";
   onPlay: () => void;
 }
 
@@ -30,12 +29,6 @@ const gameIcons = {
   writing: PenTool,
 };
 
-const difficultyColors = {
-  Easy: "success",
-  Medium: "warning", 
-  Hard: "destructive",
-} as const;
-
 export const GameCard = ({
   title,
   description,
@@ -43,7 +36,6 @@ export const GameCard = ({
   progress,
   isCompleted,
   isLocked,
-  difficulty,
   onPlay,
 }: GameCardProps) => {
   const Icon = gameIcons[gameType];
@@ -64,20 +56,7 @@ export const GameCard = ({
                 <Icon className="h-5 w-5 text-primary" />
               )}
             </div>
-            <div>
-              <h3 className="font-semibold text-lg">{title}</h3>
-              <Badge 
-                variant={isLocked ? "secondary" : "default"}
-                className={`text-xs ${
-                  !isLocked && difficultyColors[difficulty] === "success" ? "bg-success text-success-foreground" :
-                  !isLocked && difficultyColors[difficulty] === "warning" ? "bg-warning text-warning-foreground" :
-                  !isLocked && difficultyColors[difficulty] === "destructive" ? "bg-destructive text-destructive-foreground" :
-                  ""
-                }`}
-              >
-                {difficulty}
-              </Badge>
-            </div>
+            <h3 className="font-semibold text-lg">{title}</h3>
           </div>
           
           {isCompleted && (
