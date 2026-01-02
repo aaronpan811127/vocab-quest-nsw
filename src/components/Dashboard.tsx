@@ -309,6 +309,13 @@ Total XP = Sum of all games' XP
 
 💡 Example: Avg 80% in avg 4s/q = 40 + 25 = 65 XP`;
 
+  // Calculate XP progress to next level (100 XP per level)
+  const currentXp = profile?.total_xp || 0;
+  const currentLevel = profile?.level || 1;
+  const xpForCurrentLevel = (currentLevel - 1) * 100;
+  const xpInCurrentLevel = currentXp - xpForCurrentLevel;
+  const xpNeededForNextLevel = 100;
+
   const stats = [
     { 
       title: "Total XP", 
@@ -320,7 +327,17 @@ Total XP = Sum of all games' XP
     },
     { title: "Units Completed", value: `${userStats.unitsCompleted}/${units.length}`, icon: Target, variant: "secondary" as const },
     { title: "Study Streak", value: `${profile?.study_streak || 0} days`, icon: Trophy, variant: "success" as const, trend: "up" as const },
-    { title: "Level", value: `${profile?.level || 1}`, icon: Crown, variant: "warning" as const },
+    { 
+      title: "Level", 
+      value: `${currentLevel}`, 
+      icon: Crown, 
+      variant: "warning" as const,
+      progress: {
+        current: xpInCurrentLevel,
+        max: xpNeededForNextLevel,
+        label: `${xpInCurrentLevel}/${xpNeededForNextLevel} XP to level ${currentLevel + 1}`
+      }
+    },
   ];
 
   const currentUnit = selectedUnit || units[0];

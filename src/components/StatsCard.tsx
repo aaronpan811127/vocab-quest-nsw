@@ -1,5 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { LucideIcon, HelpCircle } from "lucide-react";
 import {
   Tooltip,
@@ -16,6 +17,11 @@ interface StatsCardProps {
   variant?: "primary" | "secondary" | "success" | "warning";
   trend?: "up" | "down" | "neutral";
   tooltip?: string;
+  progress?: {
+    current: number;
+    max: number;
+    label?: string;
+  };
 }
 
 export const StatsCard = ({
@@ -26,6 +32,7 @@ export const StatsCard = ({
   variant = "primary",
   trend = "neutral",
   tooltip,
+  progress,
 }: StatsCardProps) => {
   const variantClasses = {
     primary: "border-primary/20 bg-primary/5",
@@ -40,6 +47,8 @@ export const StatsCard = ({
     success: "text-success",
     warning: "text-warning",
   };
+
+  const progressPercent = progress ? (progress.current / progress.max) * 100 : 0;
 
   return (
     <Card className={`
@@ -77,6 +86,15 @@ export const StatsCard = ({
           <p className="text-xs text-muted-foreground">{subtitle}</p>
         )}
       </div>
+
+      {progress && (
+        <div className="space-y-1">
+          <Progress value={progressPercent} className="h-2" />
+          <p className="text-xs text-muted-foreground">
+            {progress.label || `${progress.current}/${progress.max} XP to next level`}
+          </p>
+        </div>
+      )}
     </Card>
   );
 };
