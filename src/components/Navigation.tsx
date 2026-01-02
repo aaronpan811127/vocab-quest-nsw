@@ -30,20 +30,17 @@ export const Navigation = ({
     onViewChange("hero");
   };
   return <nav className="fixed top-0 left-0 right-0 z-50 bg-card/80 backdrop-blur-md border-b border-border">
-      <div className="max-w-7xl mx-auto px-6 py-4">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4">
         <div className="flex items-center justify-between">
           {/* Logo */}
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-gradient-primary">
-              <Gamepad2 className="h-6 w-6 text-primary-foreground" />
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="p-1.5 sm:p-2 rounded-lg bg-gradient-primary">
+              <Gamepad2 className="h-5 w-5 sm:h-6 sm:w-6 text-primary-foreground" />
             </div>
-            <div className="py-0">
-              <h1 className="font-bold text-right py-0 text-2xl">VocabQuest</h1>
-              
-            </div>
+            <h1 className="font-bold text-lg sm:text-2xl">VocabQuest</h1>
           </div>
 
-          {/* Navigation Items */}
+          {/* Desktop Navigation Items */}
           <div className="hidden md:flex items-center gap-2">
             <Button variant={currentView === "hero" ? "default" : "ghost"} onClick={() => onViewChange("hero")} className="gap-2">
               <Home className="h-4 w-4" />
@@ -63,17 +60,22 @@ export const Navigation = ({
           </div>
 
           {/* User Stats / Auth */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
+            {/* Theme toggle for mobile */}
+            <Button variant="ghost" size="icon" onClick={() => setTheme(theme === "dark" ? "light" : "dark")} className="md:hidden h-8 w-8">
+              {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            </Button>
+            
             {user && profile ? <>
                 <ProfileSettings trigger={<button className="w-8 h-8 rounded-full bg-gradient-primary flex items-center justify-center text-primary-foreground font-bold text-sm overflow-hidden cursor-pointer hover:ring-2 hover:ring-primary transition-all">
                       {profile.avatar_url ? <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" /> : profile.username?.[0]?.toUpperCase() || user.email?.[0]?.toUpperCase() || "U"}
                     </button>} />
-                <Button variant="ghost" size="icon" onClick={handleSignOut}>
+                <Button variant="ghost" size="icon" onClick={handleSignOut} className="h-8 w-8 sm:h-9 sm:w-9">
                   <LogOut className="h-4 w-4" />
                 </Button>
-              </> : <Button variant="gaming" onClick={() => navigate("/auth")} className="gap-2">
+              </> : <Button variant="gaming" onClick={() => navigate("/auth")} className="gap-2 text-sm sm:text-base px-3 sm:px-4">
                 <LogIn className="h-4 w-4" />
-                Sign In
+                <span className="hidden sm:inline">Sign In</span>
               </Button>}
           </div>
         </div>

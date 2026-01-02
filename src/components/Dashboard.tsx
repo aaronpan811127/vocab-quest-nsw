@@ -378,43 +378,45 @@ Total XP = Sum of all games' XP
 
   return (
     <div className="min-h-screen bg-gradient-hero">
-      <div className="max-w-7xl mx-auto px-6 py-8 space-y-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-8 space-y-6 sm:space-y-8">
         {/* Header */}
         <div>
-          <h1 className="text-3xl font-bold">Welcome back, {displayName}! 🎮</h1>
-          <p className="text-muted-foreground mt-1">Ready to level up your vocabulary skills?</p>
+          <h1 className="text-xl sm:text-3xl font-bold">Welcome back, {displayName}! 🎮</h1>
+          <p className="text-sm sm:text-base text-muted-foreground mt-1">Ready to level up your vocabulary skills?</p>
         </div>
 
         {/* Stats Overview */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
           <StatsCard {...stats[0]} />
-          <StreakChart />
+          <div className="col-span-2 sm:col-span-1 order-last sm:order-none">
+            <StreakChart />
+          </div>
           <StatsCard {...stats[1]} />
         </div>
 
         {/* Current Unit Progress */}
         {currentUnit && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between flex-wrap gap-3">
-            <div className="flex items-center gap-3">
-              <h2 className="text-2xl font-bold">Current Unit: {currentUnit.title}</h2>
+        <div className="space-y-3 sm:space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+              <h2 className="text-lg sm:text-2xl font-bold">Current: {currentUnit.title}</h2>
               <Button 
                 variant="outline" 
                 size="sm"
                 onClick={() => onStartGame && onStartGame("flashcards", currentUnit.id, currentUnit.title)}
-                className="gap-2"
+                className="gap-2 w-fit"
               >
                 <Layers className="h-4 w-4" />
                 Flashcards
               </Button>
             </div>
-            <Button variant="outline" onClick={handleShowHistory}>
+            <Button variant="outline" size="sm" onClick={handleShowHistory} className="w-fit">
               <Clock className="h-4 w-4 mr-2" />
-              Study History
+              History
             </Button>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-6">
             {games.map((game, index) => (
               <GameCard 
                 key={game.title} 
@@ -433,16 +435,16 @@ Total XP = Sum of all games' XP
         )}
 
         {/* Units Grid */}
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold">All Units</h2>
-            <Button variant="ghost" onClick={() => setShowAllUnits(!showAllUnits)}>
-              {showAllUnits ? 'Show Less' : 'View All'}
-              <ArrowRight className={`h-4 w-4 ml-2 transition-transform ${showAllUnits ? 'rotate-90' : ''}`} />
+            <h2 className="text-lg sm:text-2xl font-bold">All Units</h2>
+            <Button variant="ghost" size="sm" onClick={() => setShowAllUnits(!showAllUnits)}>
+              {showAllUnits ? 'Less' : 'View All'}
+              <ArrowRight className={`h-4 w-4 ml-1 sm:ml-2 transition-transform ${showAllUnits ? 'rotate-90' : ''}`} />
             </Button>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
             {(showAllUnits ? units : units.slice(0, 3)).map((unit) => (
               <UnitCard 
                 key={unit.unitNumber} 
