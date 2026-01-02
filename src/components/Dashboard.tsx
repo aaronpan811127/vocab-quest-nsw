@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { useProfile } from "@/hooks/useProfile";
 import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
 interface DashboardProps {
@@ -46,6 +47,7 @@ interface Unit {
 export const Dashboard = ({ onStartGame }: DashboardProps) => {
   const { user } = useAuth();
   const { profile, loading } = useProfile();
+  const { toast } = useToast();
   const [units, setUnits] = useState<Unit[]>([]);
   const [selectedUnit, setSelectedUnit] = useState<Unit | null>(null);
   const [gameProgress, setGameProgress] = useState<Record<string, { bestScore: number; completed: boolean }>>({});
@@ -437,6 +439,10 @@ export const Dashboard = ({ onStartGame }: DashboardProps) => {
                   if (unit.isUnlocked) {
                     setSelectedUnit(unit);
                     window.scrollTo({ top: 0, behavior: 'smooth' });
+                    toast({
+                      title: `Unit ${unit.unitNumber} Selected`,
+                      description: `Now studying: ${unit.title}`,
+                    });
                   }
                 }}
               />
