@@ -5,9 +5,7 @@ import { Progress } from "@/components/ui/progress";
 import { 
   BookOpen, 
   Trophy, 
-  Star,
-  Users,
-  Clock,
+  Zap,
   Target
 } from "lucide-react";
 
@@ -18,8 +16,7 @@ interface UnitCardProps {
   totalWords: number;
   completedGames: number;
   totalGames: number;
-  averageScore: number;
-  timeSpent: string;
+  totalXp: number;
   isUnlocked: boolean;
   isSelected?: boolean;
   onEnter: () => void;
@@ -32,8 +29,7 @@ export const UnitCard = ({
   totalWords,
   completedGames,
   totalGames,
-  averageScore,
-  timeSpent,
+  totalXp,
   isUnlocked,
   isSelected,
   onEnter,
@@ -91,9 +87,9 @@ export const UnitCard = ({
             <span className="font-medium">{totalWords}</span>
           </div>
           <div className="flex items-center gap-2">
-            <Clock className="h-4 w-4 text-secondary" />
-            <span className="text-muted-foreground">Time:</span>
-            <span className="font-medium">{timeSpent}</span>
+            <Zap className="h-4 w-4 text-primary" />
+            <span className="text-muted-foreground">XP:</span>
+            <span className="font-medium">{totalXp}</span>
           </div>
         </div>
 

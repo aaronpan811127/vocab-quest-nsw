@@ -39,8 +39,7 @@ interface Unit {
   totalWords: number;
   completedGames: number;
   totalGames: number;
-  averageScore: number;
-  timeSpent: string;
+  totalXp: number;
   isUnlocked: boolean;
 }
 
@@ -181,8 +180,7 @@ export const Dashboard = ({ onStartGame }: DashboardProps) => {
       totalWords: Array.isArray(unit.words) ? unit.words.length : 10,
       completedGames: 0,
       totalGames: 4,
-      averageScore: 0,
-      timeSpent: "0m",
+      totalXp: 0,
       isUnlocked: index === 0, // Only first unit unlocked for guests
     }));
 
@@ -230,20 +228,8 @@ export const Dashboard = ({ onStartGame }: DashboardProps) => {
       // Count completed games from progress records
       const completedGames = unitProgress.filter(p => p.completed).length;
 
-      // Calculate average score and total time from progress records
-      let averageScore = 0;
-      let totalTimeSeconds = 0;
-      if (unitProgress.length > 0) {
-        const totalScore = unitProgress.reduce((sum, p) => sum + (p.best_score || 0), 0);
-        averageScore = Math.round(totalScore / unitProgress.length);
-        totalTimeSeconds = unitProgress.reduce((sum, p) => sum + (p.total_time_seconds || 0), 0);
-      }
-
-      // Format time spent
-      const totalMinutes = Math.round(totalTimeSeconds / 60);
-      const timeSpent = totalMinutes > 60 
-        ? `${Math.floor(totalMinutes / 60)}h ${totalMinutes % 60}m`
-        : `${totalMinutes}m`;
+      // Calculate total XP from progress records
+      const totalXp = unitProgress.reduce((sum, p) => sum + (p.total_xp || 0), 0);
 
       // Check if previous unit is completed (all 4 games done)
       let isUnlocked = index === 0; // First unit always unlocked
@@ -262,8 +248,7 @@ export const Dashboard = ({ onStartGame }: DashboardProps) => {
         totalWords: Array.isArray(unit.words) ? unit.words.length : 10,
         completedGames,
         totalGames: 4,
-        averageScore,
-        timeSpent,
+        totalXp,
         isUnlocked,
       };
     });
