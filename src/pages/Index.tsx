@@ -6,9 +6,21 @@ import { ReadingGame } from "@/components/ReadingGame";
 import { Leaderboard } from "@/components/Leaderboard";
 import { useAuth } from "@/contexts/AuthContext";
 
+interface GameState {
+  unitId: string;
+  unitTitle: string;
+  gameType: string;
+}
+
 const Index = () => {
   const [currentView, setCurrentView] = useState<"hero" | "dashboard" | "game" | "leaderboard">("hero");
+  const [gameState, setGameState] = useState<GameState | null>(null);
   const { user } = useAuth();
+
+  const handleStartGame = (gameType: string, unitId: string, unitTitle: string) => {
+    setGameState({ unitId, unitTitle, gameType });
+    setCurrentView("game");
+  };
 
   const renderContent = () => {
     switch (currentView) {
@@ -20,14 +32,16 @@ const Index = () => {
           />
         );
       case "dashboard":
-        return <Dashboard onStartGame={(gameType) => setCurrentView("game")} />;
+        return <Dashboard onStartGame={handleStartGame} />;
       case "game":
-        return (
+        return gameState ? (
           <ReadingGame 
+            unitId={gameState.unitId}
+            unitTitle={gameState.unitTitle}
             onComplete={() => setCurrentView("dashboard")}
             onBack={() => setCurrentView("dashboard")}
           />
-        );
+        ) : null;
       case "leaderboard":
         return <Leaderboard onBack={() => setCurrentView("hero")} />;
       default:

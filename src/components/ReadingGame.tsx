@@ -1,79 +1,110 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Skeleton } from "@/components/ui/skeleton";
 import { 
   BookOpen, 
-  CheckCircle, 
-  XCircle, 
   ArrowRight,
   RotateCcw,
   Trophy
 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Question {
-  id: number;
-  question: string;
+  id: string;
+  question_text: string;
   options: string[];
-  correctAnswer: number;
+  correct_answer: string;
+}
+
+interface Passage {
+  id: string;
+  title: string;
+  content: string;
+  highlighted_words: string[];
 }
 
 interface ReadingGameProps {
+  unitId: string;
+  unitTitle: string;
   onComplete: () => void;
   onBack: () => void;
 }
 
-export const ReadingGame = ({ onComplete, onBack }: ReadingGameProps) => {
+export const ReadingGame = ({ unitId, unitTitle, onComplete, onBack }: ReadingGameProps) => {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<number[]>([]);
   const [showResults, setShowResults] = useState(false);
   const [gameCompleted, setGameCompleted] = useState(false);
+  const [passage, setPassage] = useState<Passage | null>(null);
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Demo passage and questions for Unit 2: Academic Excellence
-  const passage = `
-    The phenomenon of technological advancement has been particularly **profound** in recent decades. 
-    Scientists and engineers have demonstrated remarkable **ingenuity** in developing solutions to complex problems. 
-    Their **meticulous** research methods ensure that innovations are both reliable and effective. 
-    The **comprehensive** nature of modern education has enabled students to become more **adept** at utilizing these technologies. 
-    However, some critics argue that this rapid progress has led to **complacency** among younger generations, 
-    who may lack the **tenacity** required for in-depth study. Nevertheless, the **prevalent** use of digital tools 
-    has made learning more accessible, helping students **discern** important information more efficiently. 
-    This **cohesive** integration of technology and education continues to shape our future.
-  `;
+  useEffect(() => {
+    fetchPassageAndQuestions();
+  }, [unitId]);
 
-  const questions: Question[] = [
-    {
-      id: 1,
-      question: "What does 'profound' mean in the context of technological advancement?",
-      options: ["Shallow", "Deep and significant", "Quick", "Expensive"],
-      correctAnswer: 1
-    },
-    {
-      id: 2,
-      question: "The word 'ingenuity' refers to:",
-      options: ["Laziness", "Creativity and cleverness", "Confusion", "Anger"],
-      correctAnswer: 1
-    },
-    {
-      id: 3,
-      question: "What does 'meticulous' describe about research methods?",
-      options: ["Careless", "Very careful and precise", "Fast", "Boring"],
-      correctAnswer: 1
-    },
-    {
-      id: 4,
-      question: "When someone is 'adept' at something, they are:",
-      options: ["Bad at it", "Confused by it", "Skilled at it", "Afraid of it"],
-      correctAnswer: 2
-    },
-    {
-      id: 5,
-      question: "What does 'complacency' suggest about younger generations?",
-      options: ["They are very active", "They are overly satisfied and less motivated", "They are angry", "They are helpful"],
-      correctAnswer: 1
+  const fetchPassageAndQuestions = async () => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      // Fetch a random passage for this unit
+      const { data: passages, error: passageError } = await supabase
+        .from('reading_passages')
+        .select('*')
+        .eq('unit_id', unitId);
+
+      if (passageError) throw passageError;
+      
+      if (!passages || passages.length === 0) {
+        setError("No passages available for this unit yet.");
+        setLoading(false);
+        return;
+      }
+
+      // Select a random passage
+      const randomPassage = passages[Math.floor(Math.random() * passages.length)];
+      setPassage({
+        id: randomPassage.id,
+        title: randomPassage.title,
+        content: randomPassage.content,
+        highlighted_words: randomPassage.highlighted_words || []
+      });
+
+      // Fetch questions for this passage
+      const { data: questionsData, error: questionsError } = await supabase
+        .from('question_bank')
+        .select('*')
+        .eq('passage_id', randomPassage.id)
+        .eq('game_type', 'reading');
+
+      if (questionsError) throw questionsError;
+
+      if (!questionsData || questionsData.length === 0) {
+        setError("No questions available for this passage.");
+        setLoading(false);
+        return;
+      }
+
+      const formattedQuestions: Question[] = questionsData.map(q => ({
+        id: q.id,
+        question_text: q.question_text,
+        options: Array.isArray(q.options) ? q.options : JSON.parse(q.options as string),
+        correct_answer: q.correct_answer
+      }));
+
+      setQuestions(formattedQuestions);
+    } catch (err) {
+      console.error('Error fetching reading game data:', err);
+      setError("Failed to load game data. Please try again.");
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
 
   const handleAnswerSelect = (answerIndex: number) => {
     const newAnswers = [...selectedAnswers];
@@ -92,7 +123,7 @@ export const ReadingGame = ({ onComplete, onBack }: ReadingGameProps) => {
 
   const checkGameCompletion = () => {
     const correctAnswers = selectedAnswers.filter((answer, index) => 
-      answer === questions[index].correctAnswer
+      questions[index].options[answer] === questions[index].correct_answer
     ).length;
     
     if (correctAnswers === questions.length) {
@@ -102,9 +133,15 @@ export const ReadingGame = ({ onComplete, onBack }: ReadingGameProps) => {
 
   const getScore = () => {
     const correctAnswers = selectedAnswers.filter((answer, index) => 
-      answer === questions[index].correctAnswer
+      questions[index].options[answer] === questions[index].correct_answer
     ).length;
     return Math.round((correctAnswers / questions.length) * 100);
+  };
+
+  const getCorrectCount = () => {
+    return selectedAnswers.filter((answer, index) => 
+      questions[index].options[answer] === questions[index].correct_answer
+    ).length;
   };
 
   const resetGame = () => {
@@ -112,7 +149,56 @@ export const ReadingGame = ({ onComplete, onBack }: ReadingGameProps) => {
     setSelectedAnswers([]);
     setShowResults(false);
     setGameCompleted(false);
+    fetchPassageAndQuestions();
   };
+
+  const renderHighlightedContent = (content: string) => {
+    // Split by ** markers for highlighted words
+    return content.split('**').map((part, index) => 
+      index % 2 === 0 ? (
+        <span key={index}>{part}</span>
+      ) : (
+        <strong key={index} className="text-primary font-bold bg-primary/10 px-1 rounded">
+          {part}
+        </strong>
+      )
+    );
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-hero p-6">
+        <div className="max-w-4xl mx-auto space-y-6">
+          <div className="flex items-center justify-between">
+            <Skeleton className="h-8 w-64" />
+            <Skeleton className="h-10 w-32" />
+          </div>
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-48 w-full" />
+          <Skeleton className="h-64 w-full" />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-hero p-6">
+        <div className="max-w-4xl mx-auto">
+          <Card className="p-8 text-center space-y-6 bg-card/50 backdrop-blur-sm border-2 border-border/50">
+            <div className="text-6xl mb-4">📚</div>
+            <h2 className="text-2xl font-bold">{error}</h2>
+            <p className="text-muted-foreground">
+              Please check back later or try a different unit.
+            </p>
+            <Button variant="outline" onClick={onBack} size="lg">
+              Back to Dashboard
+            </Button>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   if (showResults) {
     const score = getScore();
@@ -137,13 +223,13 @@ export const ReadingGame = ({ onComplete, onBack }: ReadingGameProps) => {
                 <div className="text-6xl mb-4">📚</div>
                 <h2 className="text-3xl font-bold">Good Effort!</h2>
                 <p className="text-lg text-muted-foreground">
-                  You got {selectedAnswers.filter((answer, index) => answer === questions[index].correctAnswer).length} out of {questions.length} correct.
+                  You got {getCorrectCount()} out of {questions.length} correct.
                 </p>
                 <Badge variant="outline" className="text-lg px-6 py-2">
                   Score: {score}%
                 </Badge>
                 <p className="text-sm text-muted-foreground">
-                  Don't worry! A new passage with your missed words will be generated for more practice.
+                  Try again with a new passage for more practice.
                 </p>
               </>
             )}
@@ -181,7 +267,7 @@ export const ReadingGame = ({ onComplete, onBack }: ReadingGameProps) => {
             <BookOpen className="h-6 w-6 text-primary" />
             <h1 className="text-2xl font-bold">Reading Quest</h1>
             <Badge className="bg-gradient-primary text-primary-foreground">
-              Unit 2: Academic Excellence
+              {unitTitle}
             </Badge>
           </div>
           <Button variant="outline" onClick={onBack}>
@@ -202,28 +288,20 @@ export const ReadingGame = ({ onComplete, onBack }: ReadingGameProps) => {
         <Card className="p-6 bg-card/50 backdrop-blur-sm border-2 border-border/50">
           <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
             <BookOpen className="h-5 w-5 text-primary" />
-            Reading Passage
+            {passage?.title || 'Reading Passage'}
           </h3>
           <div className="prose prose-sm max-w-none text-foreground leading-relaxed">
-            {passage.split('**').map((part, index) => 
-              index % 2 === 0 ? (
-                <span key={index}>{part}</span>
-              ) : (
-                <strong key={index} className="text-primary font-bold bg-primary/10 px-1 rounded">
-                  {part}
-                </strong>
-              )
-            )}
+            {passage && renderHighlightedContent(passage.content)}
           </div>
         </Card>
 
         {/* Question */}
         <Card className="p-6 bg-card/50 backdrop-blur-sm border-2 border-border/50">
           <h3 className="text-lg font-semibold mb-4">
-            {questions[currentQuestion].question}
+            {questions[currentQuestion]?.question_text}
           </h3>
           <div className="space-y-3">
-            {questions[currentQuestion].options.map((option, index) => (
+            {questions[currentQuestion]?.options.map((option, index) => (
               <button
                 key={index}
                 onClick={() => handleAnswerSelect(index)}
