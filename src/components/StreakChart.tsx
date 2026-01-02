@@ -131,7 +131,7 @@ export const StreakChart = () => {
             <ChartTooltip
               content={
                 <ChartTooltipContent
-                  formatter={(value) => [`${value} min`, "Time"]}
+                  formatter={(value) => [`${value} mins`, "Time"]}
                 />
               }
             />

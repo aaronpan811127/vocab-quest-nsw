@@ -386,10 +386,9 @@ Total XP = Sum of all games' XP
 
         {/* Stats Overview */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          {stats.map((stat) => (
-            <StatsCard key={stat.title} {...stat} />
-          ))}
+          <StatsCard {...stats[0]} />
           <StreakChart />
+          <StatsCard {...stats[1]} />
         </div>
 
         {/* Current Unit Progress */}
