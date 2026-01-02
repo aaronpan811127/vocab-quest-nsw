@@ -16,7 +16,11 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
-export const ProfileSettings = () => {
+interface ProfileSettingsProps {
+  trigger?: React.ReactNode;
+}
+
+export const ProfileSettings = ({ trigger }: ProfileSettingsProps) => {
   const { user } = useAuth();
   const { profile, updateProfile } = useProfile();
   const { toast } = useToast();
@@ -127,6 +131,13 @@ export const ProfileSettings = () => {
 
   const currentAvatar = avatarPreview || profile?.avatar_url;
 
+  const defaultTrigger = (
+    <Button variant="ghost" className="gap-2">
+      <Settings className="h-4 w-4" />
+      Settings
+    </Button>
+  );
+
   return (
     <Dialog open={open} onOpenChange={(isOpen) => {
       setOpen(isOpen);
@@ -136,10 +147,7 @@ export const ProfileSettings = () => {
       }
     }}>
       <DialogTrigger asChild>
-        <Button variant="ghost" className="gap-2">
-          <Settings className="h-4 w-4" />
-          Settings
-        </Button>
+        {trigger || defaultTrigger}
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
