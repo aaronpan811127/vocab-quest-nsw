@@ -153,6 +153,7 @@ export const Dashboard = ({ onStartGame }: DashboardProps) => {
         </div>
 
         {/* Current Unit Progress */}
+        {currentUnit && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-bold">Current Unit: {currentUnit.title}</h2>
@@ -178,6 +179,7 @@ export const Dashboard = ({ onStartGame }: DashboardProps) => {
             ))}
           </div>
         </div>
+        )}
 
         {/* Units Grid */}
         <div className="space-y-4">
