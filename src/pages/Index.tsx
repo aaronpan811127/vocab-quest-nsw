@@ -10,6 +10,7 @@ import { StoryCreatorGame } from "@/components/StoryCreatorGame";
 import { FlashcardGame } from "@/components/FlashcardGame";
 import { Leaderboard } from "@/components/Leaderboard";
 import { useAuth } from "@/contexts/AuthContext";
+import { TestType } from "@/contexts/TestTypeContext";
 
 interface GameState {
   unitId: string;
@@ -25,6 +26,10 @@ const Index = () => {
   const handleStartGame = (gameType: string, unitId: string, unitTitle: string) => {
     setGameState({ unitId, unitTitle, gameType });
     setCurrentView("game");
+  };
+
+  const handleSelectTestType = (testType: TestType) => {
+    setCurrentView("dashboard");
   };
 
   const renderGameComponent = () => {
@@ -56,20 +61,15 @@ const Index = () => {
   const renderContent = () => {
     switch (currentView) {
       case "hero":
-        return (
-          <Hero 
-            onStartPlaying={() => setCurrentView("dashboard")}
-            onViewLeaderboard={() => setCurrentView("leaderboard")}
-          />
-        );
+        return <Hero onSelectTestType={handleSelectTestType} />;
       case "dashboard":
-        return <Dashboard onStartGame={handleStartGame} />;
+        return <Dashboard onStartGame={handleStartGame} onBack={() => setCurrentView("hero")} />;
       case "game":
         return renderGameComponent();
       case "leaderboard":
         return <Leaderboard onBack={() => setCurrentView("hero")} />;
       default:
-        return <Hero />;
+        return <Hero onSelectTestType={handleSelectTestType} />;
     }
   };
 

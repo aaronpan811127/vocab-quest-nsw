@@ -1,16 +1,58 @@
-import { useLeaderboard } from "@/hooks/useLeaderboard";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTestType } from "@/contexts/TestTypeContext";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Trophy, Crown, Medal, Award, Zap, ArrowLeft } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface LeaderboardProps {
   onBack?: () => void;
 }
 
+interface LeaderboardEntry {
+  id: string;
+  username: string | null;
+  level: number;
+  total_xp: number;
+  study_streak: number;
+}
+
 export const Leaderboard = ({ onBack }: LeaderboardProps) => {
-  const { leaderboard, loading } = useLeaderboard(20);
   const { user } = useAuth();
+  const { testTypes, selectedTestType } = useTestType();
+  const [selectedTestTypeId, setSelectedTestTypeId] = useState<string>(selectedTestType?.id || "");
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (selectedTestType?.id && !selectedTestTypeId) {
+      setSelectedTestTypeId(selectedTestType.id);
+    }
+  }, [selectedTestType]);
+
+  useEffect(() => {
+    if (selectedTestTypeId) {
+      fetchLeaderboard();
+    }
+  }, [selectedTestTypeId]);
+
+  const fetchLeaderboard = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .rpc("get_leaderboard", { 
+        limit_count: 20,
+        p_test_type_id: selectedTestTypeId || null
+      });
+
+    if (error) {
+      console.error("Error fetching leaderboard:", error);
+    } else {
+      setLeaderboard(data || []);
+    }
+    setLoading(false);
+  };
 
   const getRankIcon = (index: number) => {
     switch (index) {
@@ -38,6 +80,8 @@ export const Leaderboard = ({ onBack }: LeaderboardProps) => {
     }
   };
 
+  const selectedTestTypeName = testTypes.find(t => t.id === selectedTestTypeId)?.name || "All";
+
   return (
     <div className="min-h-screen bg-gradient-hero py-8">
       <div className="max-w-3xl mx-auto px-6">
@@ -57,6 +101,22 @@ export const Leaderboard = ({ onBack }: LeaderboardProps) => {
           </div>
         </div>
 
+        {/* Test Type Filter */}
+        <div className="mb-6">
+          <Select value={selectedTestTypeId} onValueChange={setSelectedTestTypeId}>
+            <SelectTrigger className="w-full sm:w-64 bg-card">
+              <SelectValue placeholder="Select test type" />
+            </SelectTrigger>
+            <SelectContent className="bg-card border-border">
+              {testTypes.map((testType) => (
+                <SelectItem key={testType.id} value={testType.id}>
+                  {testType.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
         {/* Leaderboard List */}
         {loading ? (
           <div className="space-y-4">
@@ -68,7 +128,7 @@ export const Leaderboard = ({ onBack }: LeaderboardProps) => {
           <div className="text-center py-16">
             <Trophy className="h-16 w-16 text-muted-foreground mx-auto mb-4 opacity-50" />
             <h3 className="text-xl font-semibold mb-2">No players yet!</h3>
-            <p className="text-muted-foreground">Be the first to join the leaderboard</p>
+            <p className="text-muted-foreground">Be the first to join the {selectedTestTypeName} leaderboard</p>
           </div>
         ) : (
           <div className="space-y-3">

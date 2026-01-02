@@ -194,6 +194,7 @@ export type Database = {
         Row: {
           avatar_url: string | null
           created_at: string
+          default_test_type_id: string | null
           id: string
           last_study_date: string | null
           level: number
@@ -206,6 +207,7 @@ export type Database = {
         Insert: {
           avatar_url?: string | null
           created_at?: string
+          default_test_type_id?: string | null
           id?: string
           last_study_date?: string | null
           level?: number
@@ -218,6 +220,7 @@ export type Database = {
         Update: {
           avatar_url?: string | null
           created_at?: string
+          default_test_type_id?: string | null
           id?: string
           last_study_date?: string | null
           level?: number
@@ -227,7 +230,15 @@ export type Database = {
           user_id?: string
           username?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_default_test_type_id_fkey"
+            columns: ["default_test_type_id"]
+            isOneToOne: false
+            referencedRelation: "test_types"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       question_bank: {
         Row: {

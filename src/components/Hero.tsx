@@ -5,33 +5,52 @@ import {
   Zap, 
   Trophy, 
   Star,
-  ArrowRight,
-  LogIn
+  LogIn,
+  GraduationCap,
+  BookOpen,
+  Target,
+  Award
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTestType, TestType } from "@/contexts/TestTypeContext";
 import { useNavigate } from "react-router-dom";
 import heroImage from "@/assets/hero-gaming.jpg";
 
 interface HeroProps {
-  onStartPlaying?: () => void;
-  onViewLeaderboard?: () => void;
+  onSelectTestType?: (testType: TestType) => void;
 }
 
-export const Hero = ({ onStartPlaying, onViewLeaderboard }: HeroProps) => {
+const testTypeIcons: Record<string, typeof GraduationCap> = {
+  "SELECTIVE": GraduationCap,
+  "OC": Target,
+  "NAPLAN_Y3": BookOpen,
+  "NAPLAN_Y5": Award,
+};
+
+const testTypeColors: Record<string, string> = {
+  "SELECTIVE": "from-primary to-primary/80",
+  "OC": "from-secondary to-secondary/80",
+  "NAPLAN_Y3": "from-success to-success/80",
+  "NAPLAN_Y5": "from-warning to-warning/80",
+};
+
+export const Hero = ({ onSelectTestType }: HeroProps) => {
   const { user } = useAuth();
+  const { testTypes, selectedTestType, setSelectedTestType, loading } = useTestType();
   const navigate = useNavigate();
 
-  const handleStartPlaying = () => {
-    if (user) {
-      onStartPlaying?.();
-    } else {
+  const handleSelectTestType = (testType: TestType) => {
+    if (!user) {
       navigate("/auth");
+      return;
     }
+    setSelectedTestType(testType);
+    onSelectTestType?.(testType);
   };
 
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-      {/* Background Image - Using img tag for LCP optimization */}
+      {/* Background Image */}
       <div className="absolute inset-0 z-0">
         <img 
           src={heroImage}
@@ -43,7 +62,7 @@ export const Hero = ({ onStartPlaying, onViewLeaderboard }: HeroProps) => {
         <div className="absolute inset-0 bg-background/90 backdrop-blur-sm" />
       </div>
 
-      {/* Floating Elements - Hidden on mobile for cleaner look */}
+      {/* Floating Elements - Hidden on mobile */}
       <div className="absolute inset-0 z-1 hidden sm:block">
         <div className="absolute top-20 left-10 animate-float">
           <Badge className="bg-primary/20 text-primary border-primary/30">
@@ -70,7 +89,7 @@ export const Hero = ({ onStartPlaying, onViewLeaderboard }: HeroProps) => {
         {/* Badge */}
         <Badge className="bg-gradient-primary text-primary-foreground px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium">
           <Gamepad2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
-          NSW Selective School Prep
+          VocabQuest Learning
         </Badge>
 
         {/* Headline */}
@@ -83,7 +102,7 @@ export const Hero = ({ onStartPlaying, onViewLeaderboard }: HeroProps) => {
           </h1>
           <p className="text-base sm:text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto leading-relaxed px-2">
             Master words through epic gaming adventures. Four skill-building games, 
-            endless fun, and real results for your selective school test.
+            endless fun, and real results.
           </p>
         </div>
 
@@ -103,58 +122,65 @@ export const Hero = ({ onStartPlaying, onViewLeaderboard }: HeroProps) => {
           </div>
         </div>
 
-        {/* CTA Buttons */}
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
-          <Button 
-            variant="hero" 
-            size="lg" 
-            className="text-base sm:text-lg px-6 sm:px-8 py-5 sm:py-6 animate-glow-pulse w-full sm:w-auto"
-            onClick={handleStartPlaying}
-          >
-            {user ? (
-              <>
-                <Gamepad2 className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
-                Continue Playing
-                <ArrowRight className="h-4 w-4 sm:h-5 sm:w-5 ml-2" />
-              </>
-            ) : (
-              <>
-                <LogIn className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
-                Sign In to Play
-                <ArrowRight className="h-4 w-4 sm:h-5 sm:w-5 ml-2" />
-              </>
-            )}
-          </Button>
+        {/* Test Type Selection */}
+        <div className="space-y-4">
+          <h2 className="text-lg sm:text-xl font-semibold text-foreground">
+            {user ? "Select Your Test Type" : "Sign in to start learning"}
+          </h2>
           
-          <Button 
-            variant="gaming" 
-            size="lg" 
-            className="text-base sm:text-lg px-6 sm:px-8 py-5 sm:py-6 w-full sm:w-auto"
-            onClick={onViewLeaderboard}
-          >
-            <Trophy className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
-            View Leaderboard
-          </Button>
-        </div>
-
-        {/* Features Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6 mt-8 sm:mt-16 max-w-3xl mx-auto">
-          {[
-            { icon: "📖", label: "Reading", desc: "Comprehension" },
-            { icon: "🎧", label: "Listening", desc: "Dictation" },
-            { icon: "🎤", label: "Speaking", desc: "Pronunciation" },
-            { icon: "✍️", label: "Writing", desc: "Creativity" },
-          ].map((feature, index) => (
-            <div 
-              key={feature.label}
-              className="text-center p-3 sm:p-4 rounded-lg bg-card/30 backdrop-blur-sm border border-border/50 hover:border-primary/30 transition-all duration-300 hover:shadow-card"
-              style={{animationDelay: `${index * 0.1}s`}}
+          {!user ? (
+            <Button 
+              variant="hero" 
+              size="lg" 
+              className="text-base sm:text-lg px-6 sm:px-8 py-5 sm:py-6 animate-glow-pulse"
+              onClick={() => navigate("/auth")}
             >
-              <div className="text-2xl sm:text-3xl mb-1 sm:mb-2">{feature.icon}</div>
-              <div className="font-semibold text-sm sm:text-base">{feature.label}</div>
-              <div className="text-xs text-muted-foreground">{feature.desc}</div>
+              <LogIn className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
+              Sign In to Play
+            </Button>
+          ) : loading ? (
+            <div className="flex justify-center gap-4">
+              {[1, 2, 3, 4].map(i => (
+                <div key={i} className="w-40 h-32 bg-card/30 rounded-xl animate-pulse" />
+              ))}
             </div>
-          ))}
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 max-w-3xl mx-auto">
+              {testTypes.map((testType) => {
+                const Icon = testTypeIcons[testType.code] || GraduationCap;
+                const gradient = testTypeColors[testType.code] || "from-primary to-primary/80";
+                const isSelected = selectedTestType?.id === testType.id;
+                
+                return (
+                  <button
+                    key={testType.id}
+                    onClick={() => handleSelectTestType(testType)}
+                    className={`
+                      relative p-4 sm:p-5 rounded-xl border-2 transition-all duration-300
+                      hover:scale-105 hover:shadow-card text-left
+                      ${isSelected 
+                        ? `border-primary bg-primary/10 ring-2 ring-primary/50` 
+                        : `border-border/50 bg-card/30 backdrop-blur-sm hover:border-primary/30`
+                      }
+                    `}
+                  >
+                    {isSelected && (
+                      <div className="absolute -top-2 -right-2 bg-primary text-primary-foreground rounded-full p-1">
+                        <Star className="h-3 w-3 fill-current" />
+                      </div>
+                    )}
+                    <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-gradient-to-br ${gradient} flex items-center justify-center mb-3`}>
+                      <Icon className="h-5 w-5 sm:h-6 sm:w-6 text-primary-foreground" />
+                    </div>
+                    <div className="font-semibold text-sm sm:text-base">{testType.name}</div>
+                    <div className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                      {testType.description || "Vocabulary prep"}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
     </section>

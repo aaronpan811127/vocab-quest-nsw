@@ -3,18 +3,18 @@ import { StatsCard } from "./StatsCard";
 import { StreakChart } from "./StreakChart";
 import { UnitCard } from "./UnitCard";
 import { GameCard } from "./GameCard";
-import { Leaderboard } from "./Leaderboard";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Target, Crown, ArrowRight, Layers } from "lucide-react";
+import { Target, Crown, ArrowRight, Layers, ArrowLeft } from "lucide-react";
 import { useProfile } from "@/hooks/useProfile";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTestType } from "@/contexts/TestTypeContext";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
 interface DashboardProps {
   onStartGame?: (gameType: string, unitId: string, unitTitle: string) => void;
+  onBack?: () => void;
 }
 
 interface Unit {
@@ -29,9 +29,10 @@ interface Unit {
   isUnlocked: boolean;
 }
 
-export const Dashboard = ({ onStartGame }: DashboardProps) => {
+export const Dashboard = ({ onStartGame, onBack }: DashboardProps) => {
   const { user } = useAuth();
   const { profile, loading } = useProfile();
+  const { selectedTestType } = useTestType();
   const { toast } = useToast();
   const [units, setUnits] = useState<Unit[]>([]);
   const [selectedUnit, setSelectedUnit] = useState<Unit | null>(null);
@@ -42,20 +43,19 @@ export const Dashboard = ({ onStartGame }: DashboardProps) => {
     >
   >({});
   const [userStats, setUserStats] = useState({ avgScore: 0, unitsCompleted: 0 });
-  const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [showAllUnits, setShowAllUnits] = useState(false);
   const [gameHistory, setGameHistory] = useState<
     Record<string, Array<{ id: string; score: number; created_at: string }>>
   >({});
 
   useEffect(() => {
-    if (user) {
+    if (user && selectedTestType) {
       fetchUnitsWithProgress();
       fetchUserStats();
-    } else {
+    } else if (selectedTestType) {
       fetchUnits();
     }
-  }, [user]);
+  }, [user, selectedTestType]);
 
   useEffect(() => {
     if (user && selectedUnit) {
@@ -67,7 +67,6 @@ export const Dashboard = ({ onStartGame }: DashboardProps) => {
   const fetchUserStats = async () => {
     if (!user) return;
 
-    // Fetch all game attempts for average score
     const { data: attempts, error: attemptsError } = await supabase
       .from("game_attempts")
       .select("score")
@@ -78,14 +77,12 @@ export const Dashboard = ({ onStartGame }: DashboardProps) => {
       return;
     }
 
-    // Calculate average score
     let avgScore = 0;
     if (attempts && attempts.length > 0) {
       const totalScore = attempts.reduce((sum, a) => sum + a.score, 0);
       avgScore = Math.round(totalScore / attempts.length);
     }
 
-    // Fetch user progress to count completed units (now at game level)
     const { data: progress, error: progressError } = await supabase
       .from("user_progress")
       .select("unit_id, completed")
@@ -96,7 +93,6 @@ export const Dashboard = ({ onStartGame }: DashboardProps) => {
       return;
     }
 
-    // Group by unit and count units where all 4 games are completed
     const unitCompletionMap = new Map<string, number>();
     progress?.forEach((p) => {
       if (p.completed) {
@@ -104,7 +100,6 @@ export const Dashboard = ({ onStartGame }: DashboardProps) => {
       }
     });
 
-    // Count units with 4 completed games
     let unitsCompleted = 0;
     unitCompletionMap.forEach((count) => {
       if (count >= 4) unitsCompleted++;
@@ -128,7 +123,6 @@ export const Dashboard = ({ onStartGame }: DashboardProps) => {
       return;
     }
 
-    // Group by game_type
     const historyByGame: Record<string, Array<{ id: string; score: number; created_at: string }>> = {};
     data?.forEach((attempt) => {
       if (!historyByGame[attempt.game_type]) {
@@ -145,7 +139,13 @@ export const Dashboard = ({ onStartGame }: DashboardProps) => {
   };
 
   const fetchUnits = async () => {
-    const { data, error } = await supabase.from("units").select("*").order("unit_number");
+    if (!selectedTestType) return;
+
+    const { data, error } = await supabase
+      .from("units")
+      .select("*")
+      .eq("test_type_id", selectedTestType.id)
+      .order("unit_number");
 
     if (error) {
       console.error("Error fetching units:", error);
@@ -161,7 +161,7 @@ export const Dashboard = ({ onStartGame }: DashboardProps) => {
       completedGames: 0,
       totalGames: 4,
       totalXp: 0,
-      isUnlocked: index === 0, // Only first unit unlocked for guests
+      isUnlocked: index === 0,
     }));
 
     setUnits(formattedUnits);
@@ -171,17 +171,19 @@ export const Dashboard = ({ onStartGame }: DashboardProps) => {
   };
 
   const fetchUnitsWithProgress = async () => {
-    if (!user) return;
+    if (!user || !selectedTestType) return;
 
-    // Fetch units
-    const { data: unitsData, error: unitsError } = await supabase.from("units").select("*").order("unit_number");
+    const { data: unitsData, error: unitsError } = await supabase
+      .from("units")
+      .select("*")
+      .eq("test_type_id", selectedTestType.id)
+      .order("unit_number");
 
     if (unitsError) {
       console.error("Error fetching units:", unitsError);
       return;
     }
 
-    // Fetch user progress for all units (now at game level)
     const { data: progressData, error: progressError } = await supabase
       .from("user_progress")
       .select("*")
@@ -191,7 +193,6 @@ export const Dashboard = ({ onStartGame }: DashboardProps) => {
       console.error("Error fetching progress:", progressError);
     }
 
-    // Group progress by unit_id
     const unitProgressMap = new Map<string, typeof progressData>();
     progressData?.forEach((p) => {
       const existing = unitProgressMap.get(p.unit_id) || [];
@@ -201,15 +202,10 @@ export const Dashboard = ({ onStartGame }: DashboardProps) => {
 
     const formattedUnits: Unit[] = unitsData.map((unit, index) => {
       const unitProgress = unitProgressMap.get(unit.id) || [];
-
-      // Count completed games from progress records
       const completedGames = unitProgress.filter((p) => p.completed).length;
-
-      // Calculate total XP from progress records
       const totalXp = unitProgress.reduce((sum, p) => sum + (p.total_xp || 0), 0);
 
-      // Check if previous unit is completed (all 4 games done)
-      let isUnlocked = index === 0; // First unit always unlocked
+      let isUnlocked = index === 0;
       if (index > 0) {
         const prevUnitId = unitsData[index - 1].id;
         const prevProgress = unitProgressMap.get(prevUnitId) || [];
@@ -239,7 +235,6 @@ export const Dashboard = ({ onStartGame }: DashboardProps) => {
   const fetchGameProgress = async (unitId: string) => {
     if (!user) return;
 
-    // Fetch from user_progress table (game-level data)
     const { data, error } = await supabase
       .from("user_progress")
       .select("game_type, best_score, completed, total_xp, total_time_seconds, attempts")
@@ -289,7 +284,6 @@ Total XP = Sum of all games' XP
 
 💡 Example: Avg 80% in avg 4s/q = 40 + 25 = 65 XP`;
 
-  // Calculate XP progress to next level (100 XP per level)
   const currentXp = profile?.total_xp || 0;
   const currentLevel = profile?.level || 1;
   const xpForCurrentLevel = (currentLevel - 1) * 100;
@@ -362,13 +356,42 @@ Total XP = Sum of all games' XP
     },
   ];
 
+  if (!selectedTestType) {
+    return (
+      <div className="min-h-screen bg-gradient-hero flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <h2 className="text-2xl font-bold">No Test Type Selected</h2>
+          <p className="text-muted-foreground">Please select a test type from the home page.</p>
+          {onBack && (
+            <Button onClick={onBack} variant="gaming">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Go Back
+            </Button>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-hero">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-8 space-y-6 sm:space-y-8">
         {/* Header */}
-        <div>
-          <h1 className="text-xl sm:text-3xl font-bold">Welcome back, {displayName}! 🎮</h1>
-          <p className="text-sm sm:text-base text-muted-foreground mt-1">Ready to level up your vocabulary skills?</p>
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-3 mb-2">
+              {onBack && (
+                <Button variant="ghost" size="icon" onClick={onBack} className="h-8 w-8">
+                  <ArrowLeft className="h-4 w-4" />
+                </Button>
+              )}
+              <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30">
+                {selectedTestType.name}
+              </Badge>
+            </div>
+            <h1 className="text-xl sm:text-3xl font-bold">Welcome back, {displayName}! 🎮</h1>
+            <p className="text-sm sm:text-base text-muted-foreground mt-1">Ready to level up your vocabulary skills?</p>
+          </div>
         </div>
 
         {/* Stats Overview */}
@@ -446,14 +469,6 @@ Total XP = Sum of all games' XP
           </div>
         </div>
       </div>
-
-      {/* Leaderboard Overlay */}
-      {showLeaderboard && (
-        <div className="fixed inset-0 z-50">
-          <Leaderboard onBack={() => setShowLeaderboard(false)} />
-        </div>
-      )}
-
     </div>
   );
 };
