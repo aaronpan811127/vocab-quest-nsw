@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   BookOpen,
@@ -16,8 +15,6 @@ import {
   Clock,
   Target,
   Layers,
-  History,
-  Calendar,
 } from "lucide-react";
 
 interface GameHistoryEntry {
@@ -77,20 +74,6 @@ export const GameCard = ({
   return (
     <>
       <Card className="group relative overflow-hidden border-2 border-border/50 bg-card/50 backdrop-blur-sm hover:border-primary/30 transition-all duration-300 hover:shadow-card animate-slide-up">
-        {/* History Badge - Top Right */}
-        {!isLocked && history.length > 0 && (
-          <Badge
-            variant="secondary"
-            className="absolute top-1 right-1 z-15 cursor-pointer hover:bg-secondary/80 gap-1 text-xs"
-            onClick={(e) => {
-              e.stopPropagation();
-              setShowHistory(true);
-            }}
-          >
-            <History className="h-3 w-3" />
-            {history.length}
-          </Badge>
-        )}
 
         {/* Background gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-secondary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
@@ -120,7 +103,6 @@ export const GameCard = ({
           {/* Description */}
           <p className="text-sm text-muted-foreground leading-relaxed">{description}</p>
 
-          {/* Game Stats */}
           {!isLocked && hasStats && (
             <div className="grid grid-cols-3 gap-2 py-2 px-3 rounded-lg bg-muted/30 border border-border/50">
               <div className="flex flex-col items-center">
@@ -137,7 +119,10 @@ export const GameCard = ({
                 </div>
                 <span className="text-[10px] text-muted-foreground">Time</span>
               </div>
-              <div className="flex flex-col items-center">
+              <div 
+                className={`flex flex-col items-center ${history.length > 0 ? 'cursor-pointer hover:bg-muted/50 rounded-md -my-1 py-1' : ''}`}
+                onClick={() => history.length > 0 && setShowHistory(true)}
+              >
                 <div className="flex items-center gap-1 text-muted-foreground">
                   <Target className="h-3.5 w-3.5" />
                   <span className="text-sm font-semibold">{attempts}</span>
