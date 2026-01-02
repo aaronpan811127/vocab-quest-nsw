@@ -86,8 +86,12 @@ export const Navigation = ({ currentView, onViewChange }: NavigationProps) => {
                 <Badge variant="outline" className="hidden sm:flex">
                   {profile.total_xp.toLocaleString()} XP
                 </Badge>
-                <div className="w-8 h-8 rounded-full bg-gradient-primary flex items-center justify-center text-primary-foreground font-bold text-sm">
-                  {profile.username?.[0]?.toUpperCase() || user.email?.[0]?.toUpperCase() || "U"}
+                <div className="w-8 h-8 rounded-full bg-gradient-primary flex items-center justify-center text-primary-foreground font-bold text-sm overflow-hidden">
+                  {profile.avatar_url ? (
+                    <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    profile.username?.[0]?.toUpperCase() || user.email?.[0]?.toUpperCase() || "U"
+                  )}
                 </div>
                 <Button variant="ghost" size="icon" onClick={handleSignOut}>
                   <LogOut className="h-4 w-4" />
