@@ -6,15 +6,29 @@ import {
   Users, 
   Settings,
   Gamepad2,
-  Crown
+  Crown,
+  LogOut,
+  LogIn
 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useProfile } from "@/hooks/useProfile";
+import { useNavigate } from "react-router-dom";
 
 interface NavigationProps {
-  currentView: "hero" | "dashboard" | "game";
-  onViewChange: (view: "hero" | "dashboard" | "game") => void;
+  currentView: "hero" | "dashboard" | "game" | "leaderboard";
+  onViewChange: (view: "hero" | "dashboard" | "game" | "leaderboard") => void;
 }
 
 export const Navigation = ({ currentView, onViewChange }: NavigationProps) => {
+  const { user, signOut } = useAuth();
+  const { profile } = useProfile();
+  const navigate = useNavigate();
+
+  const handleSignOut = async () => {
+    await signOut();
+    onViewChange("hero");
+  };
+
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-card/80 backdrop-blur-md border-b border-border">
       <div className="max-w-7xl mx-auto px-6 py-4">
@@ -40,36 +54,56 @@ export const Navigation = ({ currentView, onViewChange }: NavigationProps) => {
               <Home className="h-4 w-4" />
               Home
             </Button>
-            <Button
-              variant={currentView === "dashboard" ? "default" : "ghost"}
-              onClick={() => onViewChange("dashboard")}
+            {user && (
+              <Button
+                variant={currentView === "dashboard" ? "default" : "ghost"}
+                onClick={() => onViewChange("dashboard")}
+                className="gap-2"
+              >
+                <Trophy className="h-4 w-4" />
+                Dashboard
+              </Button>
+            )}
+            <Button 
+              variant={currentView === "leaderboard" ? "default" : "ghost"} 
               className="gap-2"
+              onClick={() => onViewChange("leaderboard")}
             >
-              <Trophy className="h-4 w-4" />
-              Dashboard
-            </Button>
-            <Button variant="ghost" className="gap-2">
               <Users className="h-4 w-4" />
               Leaderboard
             </Button>
-            <Button variant="ghost" className="gap-2">
-              <Settings className="h-4 w-4" />
-              Settings
-            </Button>
+            {user && (
+              <Button variant="ghost" className="gap-2">
+                <Settings className="h-4 w-4" />
+                Settings
+              </Button>
+            )}
           </div>
 
-          {/* User Stats */}
+          {/* User Stats / Auth */}
           <div className="flex items-center gap-3">
-            <Badge className="bg-gradient-success text-success-foreground hidden sm:flex">
-              <Crown className="h-3 w-3 mr-1" />
-              Level 12
-            </Badge>
-            <Badge variant="outline" className="hidden sm:flex">
-              2,450 XP
-            </Badge>
-            <div className="w-8 h-8 rounded-full bg-gradient-primary flex items-center justify-center text-primary-foreground font-bold text-sm">
-              A
-            </div>
+            {user && profile ? (
+              <>
+                <Badge className="bg-gradient-success text-success-foreground hidden sm:flex">
+                  <Crown className="h-3 w-3 mr-1" />
+                  Level {profile.level}
+                </Badge>
+                <Badge variant="outline" className="hidden sm:flex">
+                  {profile.total_xp.toLocaleString()} XP
+                </Badge>
+                <div className="w-8 h-8 rounded-full bg-gradient-primary flex items-center justify-center text-primary-foreground font-bold text-sm">
+                  {profile.username?.[0]?.toUpperCase() || user.email?.[0]?.toUpperCase() || "U"}
+                </div>
+                <Button variant="ghost" size="icon" onClick={handleSignOut}>
+                  <LogOut className="h-4 w-4" />
+                </Button>
+              </>
+            ) : (
+              <Button variant="gaming" onClick={() => navigate("/auth")} className="gap-2">
+                <LogIn className="h-4 w-4" />
+                Sign In
+              </Button>
+            )}
           </div>
         </div>
       </div>
