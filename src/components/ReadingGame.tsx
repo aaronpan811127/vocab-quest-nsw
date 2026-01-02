@@ -452,15 +452,6 @@ export const ReadingGame = ({ unitId, unitTitle, onComplete, onBack }: ReadingGa
             <Skeleton className="h-8 w-64" />
             <Skeleton className="h-10 w-32" />
           </div>
-          {generatingQuestions && (
-            <Card className="p-6 bg-card/50 backdrop-blur-sm border-2 border-primary/30">
-              <div className="flex items-center justify-center gap-3">
-                <Sparkles className="h-6 w-6 text-primary animate-pulse" />
-                <span className="text-lg font-medium">Generating new questions with AI...</span>
-                <Loader2 className="h-5 w-5 animate-spin text-primary" />
-              </div>
-            </Card>
-          )}
           <Skeleton className="h-4 w-full" />
           <Skeleton className="h-48 w-full" />
           <Skeleton className="h-64 w-full" />
