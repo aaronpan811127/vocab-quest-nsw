@@ -323,7 +323,14 @@ export const Dashboard = ({ onStartGame }: DashboardProps) => {
   const displayName = profile?.username || user?.email?.split('@')[0] || 'Player';
 
   const stats = [
-    { title: "Total XP", value: profile?.total_xp?.toLocaleString() || "0", icon: Zap, variant: "primary" as const, trend: "up" as const },
+    { 
+      title: "Total XP", 
+      value: profile?.total_xp?.toLocaleString() || "0", 
+      icon: Zap, 
+      variant: "primary" as const, 
+      trend: "up" as const,
+      tooltip: "XP is calculated from your average score (×0.5) plus a time bonus (up to +25 for fast answers). Score higher and answer faster across all attempts to increase your XP!"
+    },
     { title: "Units Completed", value: `${userStats.unitsCompleted}/${units.length}`, icon: Target, variant: "secondary" as const },
     { title: "Study Streak", value: `${profile?.study_streak || 0} days`, icon: Trophy, variant: "success" as const, trend: "up" as const },
     { title: "Level", value: `${profile?.level || 1}`, icon: Crown, variant: "warning" as const },

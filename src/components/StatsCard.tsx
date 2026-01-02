@@ -1,6 +1,12 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { LucideIcon } from "lucide-react";
+import { LucideIcon, HelpCircle } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface StatsCardProps {
   title: string;
@@ -9,6 +15,7 @@ interface StatsCardProps {
   icon: LucideIcon;
   variant?: "primary" | "secondary" | "success" | "warning";
   trend?: "up" | "down" | "neutral";
+  tooltip?: string;
 }
 
 export const StatsCard = ({
@@ -18,6 +25,7 @@ export const StatsCard = ({
   icon: Icon,
   variant = "primary",
   trend = "neutral",
+  tooltip,
 }: StatsCardProps) => {
   const variantClasses = {
     primary: "border-primary/20 bg-primary/5",
@@ -41,11 +49,25 @@ export const StatsCard = ({
     `}>
       <div className="flex items-center justify-between">
         <Icon className={`h-5 w-5 ${iconClasses[variant]}`} />
-        {trend !== "neutral" && (
-          <Badge variant="outline" className="text-xs">
-            {trend === "up" ? "📈" : "📉"}
-          </Badge>
-        )}
+        <div className="flex items-center gap-1">
+          {tooltip && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs">
+                  <p className="text-sm">{tooltip}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+          {trend !== "neutral" && (
+            <Badge variant="outline" className="text-xs">
+              {trend === "up" ? "📈" : "📉"}
+            </Badge>
+          )}
+        </div>
       </div>
       
       <div className="space-y-1">
