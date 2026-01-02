@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      attempt_incorrect_answers: {
+        Row: {
+          attempt_id: string
+          created_at: string
+          id: string
+          question_id: string
+          user_answer: string
+        }
+        Insert: {
+          attempt_id: string
+          created_at?: string
+          id?: string
+          question_id: string
+          user_answer: string
+        }
+        Update: {
+          attempt_id?: string
+          created_at?: string
+          id?: string
+          question_id?: string
+          user_answer?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attempt_incorrect_answers_attempt_id_fkey"
+            columns: ["attempt_id"]
+            isOneToOne: false
+            referencedRelation: "game_attempts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attempt_incorrect_answers_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "question_bank"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       game_attempts: {
         Row: {
           completed: boolean
@@ -99,6 +138,89 @@ export type Database = {
           username?: string | null
         }
         Relationships: []
+      }
+      question_bank: {
+        Row: {
+          correct_answer: string
+          created_at: string
+          game_type: string
+          id: string
+          options: Json | null
+          passage_id: string | null
+          question_text: string
+          unit_id: string
+        }
+        Insert: {
+          correct_answer: string
+          created_at?: string
+          game_type: string
+          id?: string
+          options?: Json | null
+          passage_id?: string | null
+          question_text: string
+          unit_id: string
+        }
+        Update: {
+          correct_answer?: string
+          created_at?: string
+          game_type?: string
+          id?: string
+          options?: Json | null
+          passage_id?: string | null
+          question_text?: string
+          unit_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "question_bank_passage_id_fkey"
+            columns: ["passage_id"]
+            isOneToOne: false
+            referencedRelation: "reading_passages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "question_bank_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "units"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reading_passages: {
+        Row: {
+          content: string
+          created_at: string
+          highlighted_words: string[] | null
+          id: string
+          title: string
+          unit_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          highlighted_words?: string[] | null
+          id?: string
+          title: string
+          unit_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          highlighted_words?: string[] | null
+          id?: string
+          title?: string
+          unit_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reading_passages_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "units"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       units: {
         Row: {
