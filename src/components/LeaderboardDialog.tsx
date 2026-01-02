@@ -150,8 +150,9 @@ export const LeaderboardDialog = () => {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="icon" className="h-9 w-9">
+        <Button variant="outline" size="sm" className="gap-2">
           <Trophy className="h-4 w-4 text-warning" />
+          <span className="hidden sm:inline">Leaderboard</span>
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-md max-h-[80vh] overflow-hidden flex flex-col">

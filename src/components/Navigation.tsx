@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Home, Trophy, Gamepad2, LogOut, LogIn, Sun, Moon } from "lucide-react";
+import { Home, LayoutDashboard, Gamepad2, LogOut, LogIn, Sun, Moon } from "lucide-react";
 import { ProfileSettings } from "@/components/ProfileSettings";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/useProfile";
@@ -53,7 +53,7 @@ export const Navigation = ({
             </Button>
             {user && selectedTestType && (
               <Button variant={currentView === "dashboard" ? "default" : "ghost"} onClick={() => onViewChange("dashboard")} className="gap-2">
-                <Trophy className="h-4 w-4" />
+                <LayoutDashboard className="h-4 w-4" />
                 Dashboard
               </Button>
             )}
