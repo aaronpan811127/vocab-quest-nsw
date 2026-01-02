@@ -40,16 +40,67 @@ export const Dashboard = ({ onStartGame }: DashboardProps) => {
   const [units, setUnits] = useState<Unit[]>([]);
   const [selectedUnit, setSelectedUnit] = useState<Unit | null>(null);
   const [gameProgress, setGameProgress] = useState<Record<string, { bestScore: number; completed: boolean }>>({});
+  const [userStats, setUserStats] = useState({ avgScore: 0, unitsCompleted: 0 });
 
   useEffect(() => {
     fetchUnits();
   }, []);
 
   useEffect(() => {
+    if (user) {
+      fetchUserStats();
+    }
+  }, [user]);
+
+  useEffect(() => {
     if (user && selectedUnit) {
       fetchGameProgress(selectedUnit.id);
     }
   }, [user, selectedUnit]);
+
+  const fetchUserStats = async () => {
+    if (!user) return;
+
+    // Fetch all game attempts for average score
+    const { data: attempts, error: attemptsError } = await supabase
+      .from('game_attempts')
+      .select('score')
+      .eq('user_id', user.id);
+
+    if (attemptsError) {
+      console.error('Error fetching attempts:', attemptsError);
+      return;
+    }
+
+    // Calculate average score
+    let avgScore = 0;
+    if (attempts && attempts.length > 0) {
+      const totalScore = attempts.reduce((sum, a) => sum + a.score, 0);
+      avgScore = Math.round(totalScore / attempts.length);
+    }
+
+    // Fetch user progress to count completed units
+    const { data: progress, error: progressError } = await supabase
+      .from('user_progress')
+      .select('reading_completed, listening_completed, speaking_completed, writing_completed')
+      .eq('user_id', user.id);
+
+    if (progressError) {
+      console.error('Error fetching progress:', progressError);
+      return;
+    }
+
+    // Count units where all 4 games are completed
+    let unitsCompleted = 0;
+    if (progress) {
+      unitsCompleted = progress.filter(p => 
+        p.reading_completed && p.listening_completed && 
+        p.speaking_completed && p.writing_completed
+      ).length;
+    }
+
+    setUserStats({ avgScore, unitsCompleted });
+  };
 
   const fetchUnits = async () => {
     const { data, error } = await supabase
@@ -114,9 +165,9 @@ export const Dashboard = ({ onStartGame }: DashboardProps) => {
 
   const stats = [
     { title: "Total XP", value: profile?.total_xp?.toLocaleString() || "0", icon: Zap, variant: "primary" as const, trend: "up" as const },
-    { title: "Units Completed", value: `0/${units.length}`, icon: Target, variant: "secondary" as const },
+    { title: "Units Completed", value: `${userStats.unitsCompleted}/${units.length}`, icon: Target, variant: "secondary" as const },
     { title: "Study Streak", value: `${profile?.study_streak || 0} days`, icon: Trophy, variant: "success" as const, trend: "up" as const },
-    { title: "Avg Score", value: "0%", icon: Crown, variant: "warning" as const },
+    { title: "Avg Score", value: `${userStats.avgScore}%`, icon: Crown, variant: "warning" as const },
   ];
 
   const currentUnit = selectedUnit || units[0];
