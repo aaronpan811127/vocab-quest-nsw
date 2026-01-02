@@ -3,6 +3,9 @@ project_id = "xepfrqhuoeijhphkcovz"
 [functions.submit-game]
 verify_jwt = false
 
+[functions.submit-dictation-game]
+verify_jwt = false
+
 [functions.generate-passage]
 verify_jwt = false
 
