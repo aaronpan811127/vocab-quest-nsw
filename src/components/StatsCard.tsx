@@ -57,34 +57,23 @@ export const StatsCard = ({
       ${variantClasses[variant]}
     `}>
       <div className="flex items-center justify-between">
-        <Icon className={`h-5 w-5 ${iconClasses[variant]}`} />
-        <div className="flex items-center gap-1">
-          {tooltip && (
-            <TooltipProvider>
-              <Tooltip delayDuration={100}>
-                <TooltipTrigger asChild>
-                  <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help hover:text-primary transition-colors" />
-                </TooltipTrigger>
-                <TooltipContent className="max-w-sm p-4 z-50" side="top" sideOffset={8}>
-                  <div className="text-sm space-y-2 whitespace-pre-line">{tooltip}</div>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          )}
-          {trend !== "neutral" && (
-            <Badge variant="outline" className="text-xs">
-              {trend === "up" ? "📈" : "📉"}
-            </Badge>
-          )}
-        </div>
+        <p className="text-xs text-muted-foreground font-medium">{title}</p>
+        {tooltip && (
+          <TooltipProvider>
+            <Tooltip delayDuration={100}>
+              <TooltipTrigger asChild>
+                <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help hover:text-primary transition-colors" />
+              </TooltipTrigger>
+              <TooltipContent className="max-w-sm p-4 z-50" side="top" sideOffset={8}>
+                <div className="text-sm space-y-2 whitespace-pre-line">{tooltip}</div>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
       </div>
       
       <div className="space-y-1">
         <p className="text-2xl font-bold tracking-tight">{value}</p>
-        <p className="text-xs text-muted-foreground font-medium">{title}</p>
-        {subtitle && (
-          <p className="text-xs text-muted-foreground">{subtitle}</p>
-        )}
       </div>
 
       {progress && (
