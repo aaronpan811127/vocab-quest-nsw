@@ -537,7 +537,7 @@ export const ReadingGame = ({ unitId, unitTitle, onComplete, onBack }: ReadingGa
         {/* Question */}
         <Card className="p-6 bg-card/50 backdrop-blur-sm border-2 border-border/50">
           <h3 className="text-lg font-semibold mb-4">
-            {questions[currentQuestion]?.question_text}
+            {renderHighlightedContent(questions[currentQuestion]?.question_text || '')}
           </h3>
           <div className="space-y-3">
             {questions[currentQuestion]?.options.map((option, index) => (
@@ -562,7 +562,7 @@ export const ReadingGame = ({ unitId, unitTitle, onComplete, onBack }: ReadingGa
                   `}>
                     {String.fromCharCode(65 + index)}
                   </div>
-                  {option}
+                  {renderHighlightedContent(option)}
                 </div>
               </button>
             ))}
