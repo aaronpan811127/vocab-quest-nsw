@@ -217,30 +217,23 @@ export const ReadingGame = ({ unitId, unitTitle, onComplete, onBack }: ReadingGa
       const remaining = 5 - (existingGenerated?.length || 0);
 
       if (remaining <= 0) {
-        toast({
-          title: "Generation limit reached",
-          description: "You've used all 5 passage generations. Try existing passages!",
-          variant: "destructive",
-        });
-        // Fall back to any existing passage
+        // Silently fall back to existing passages without showing toast
         const { data: anyPassages } = await supabase
           .from('reading_passages')
           .select('*')
-          .eq('unit_id', unitId)
-          .limit(1);
+          .eq('unit_id', unitId);
 
         if (anyPassages && anyPassages.length > 0) {
-          await loadPassageWithQuestions(anyPassages[0]);
+          // Pick a random passage from existing ones
+          const randomPassage = anyPassages[Math.floor(Math.random() * anyPassages.length)];
+          await loadPassageWithQuestions(randomPassage);
         } else {
           setError("No passages available for this unit.");
         }
         return;
       }
 
-      toast({
-        title: "Generating new passage",
-        description: `Creating a new reading passage with 10 questions... (${remaining} generations remaining)`,
-      });
+      // No toast for starting generation - only show on failure
 
       const { data, error } = await supabase.functions.invoke('generate-passage', {
         body: {
@@ -258,10 +251,7 @@ export const ReadingGame = ({ unitId, unitTitle, onComplete, onBack }: ReadingGa
         throw new Error(data.error || 'Failed to generate passage');
       }
 
-      toast({
-        title: "New passage ready!",
-        description: `Generated a new passage with ${data.questions_count} questions. ${data.remaining_generations} generations remaining.`,
-      });
+      // Success - no toast needed, just load the content
 
       // Set the new passage
       setPassage({
