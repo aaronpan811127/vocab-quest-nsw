@@ -56,7 +56,7 @@ export const StatsCard = ({
                 <TooltipTrigger asChild>
                   <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help hover:text-primary transition-colors" />
                 </TooltipTrigger>
-                <TooltipContent className="max-w-sm p-4" side="bottom" align="end">
+                <TooltipContent className="max-w-sm p-4 z-50" side="top" sideOffset={8}>
                   <div className="text-sm space-y-2 whitespace-pre-line">{tooltip}</div>
                 </TooltipContent>
               </Tooltip>
