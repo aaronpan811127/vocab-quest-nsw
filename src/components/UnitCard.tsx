@@ -21,6 +21,7 @@ interface UnitCardProps {
   averageScore: number;
   timeSpent: string;
   isUnlocked: boolean;
+  isSelected?: boolean;
   onEnter: () => void;
 }
 
@@ -34,13 +35,23 @@ export const UnitCard = ({
   averageScore,
   timeSpent,
   isUnlocked,
+  isSelected,
   onEnter,
 }: UnitCardProps) => {
   const progress = (completedGames / totalGames) * 100;
   const isCompleted = completedGames === totalGames;
 
   return (
-    <Card className="group relative overflow-hidden border-2 border-border/50 bg-card/50 backdrop-blur-sm hover:border-primary/30 transition-all duration-300 hover:shadow-card animate-slide-up">
+    <Card className={`group relative overflow-hidden border-2 bg-card/50 backdrop-blur-sm transition-all duration-300 hover:shadow-card animate-slide-up ${
+      isSelected 
+        ? 'border-primary shadow-lg shadow-primary/20 ring-2 ring-primary/30' 
+        : 'border-border/50 hover:border-primary/30'
+    }`}>
+      {/* Selected indicator */}
+      {isSelected && (
+        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-primary" />
+      )}
+      
       {/* Animated background gradient */}
       <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-secondary/5 to-accent/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
       

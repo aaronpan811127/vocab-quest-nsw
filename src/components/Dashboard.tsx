@@ -432,6 +432,7 @@ export const Dashboard = ({ onStartGame }: DashboardProps) => {
               <UnitCard 
                 key={unit.unitNumber} 
                 {...unit} 
+                isSelected={selectedUnit?.id === unit.id}
                 onEnter={() => {
                   if (unit.isUnlocked) {
                     setSelectedUnit(unit);
