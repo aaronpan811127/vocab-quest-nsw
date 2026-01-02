@@ -81,7 +81,7 @@ export const GameCard = ({
         {!isLocked && history.length > 0 && (
           <Badge
             variant="secondary"
-            className="absolute top-2 right-2 z-10 cursor-pointer hover:bg-secondary/80 gap-1 text-xs"
+            className="absolute top-1 right-1 z-10 cursor-pointer hover:bg-secondary/80 gap-1 text-xs"
             onClick={(e) => {
               e.stopPropagation();
               setShowHistory(true);
