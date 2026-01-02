@@ -322,6 +322,21 @@ export const Dashboard = ({ onStartGame }: DashboardProps) => {
 
   const displayName = profile?.username || user?.email?.split('@')[0] || 'Player';
 
+  const xpTooltip = `📊 XP Calculation Formula:
+
+XP = (Avg Score × 0.5) + Time Bonus
+
+⏱️ Time Bonus Tiers (per question):
+• ≤5 seconds: +25 XP (fastest)
+• 6-10 seconds: +20 XP
+• 11-15 seconds: +15 XP
+• 16-20 seconds: +10 XP
+• 21-25 seconds: +5 XP
+• 26-29 seconds: +1-4 XP
+• ≥30 seconds: +0 XP
+
+💡 Tips: Answer quickly AND accurately to maximize XP! Your XP updates based on your lifetime average across all attempts.`;
+
   const stats = [
     { 
       title: "Total XP", 
@@ -329,7 +344,7 @@ export const Dashboard = ({ onStartGame }: DashboardProps) => {
       icon: Zap, 
       variant: "primary" as const, 
       trend: "up" as const,
-      tooltip: "XP is calculated from your average score (×0.5) plus a time bonus (up to +25 for fast answers). Score higher and answer faster across all attempts to increase your XP!"
+      tooltip: xpTooltip
     },
     { title: "Units Completed", value: `${userStats.unitsCompleted}/${units.length}`, icon: Target, variant: "secondary" as const },
     { title: "Study Streak", value: `${profile?.study_streak || 0} days`, icon: Trophy, variant: "success" as const, trend: "up" as const },
