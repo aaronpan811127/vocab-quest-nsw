@@ -322,9 +322,10 @@ export const Dashboard = ({ onStartGame }: DashboardProps) => {
 
   const displayName = profile?.username || user?.email?.split('@')[0] || 'Player';
 
-  const xpTooltip = `📊 XP Calculation Formula:
+  const xpTooltip = `📊 XP Calculation (Per Game):
 
-XP = (Avg Score × 0.5) + Time Bonus
+Each game earns: (Score × 0.5) + Time Bonus
+Your Total XP = Sum of all games
 
 ⏱️ Time Bonus Tiers (per question):
 • ≤5 seconds: +25 XP (fastest)
@@ -335,7 +336,7 @@ XP = (Avg Score × 0.5) + Time Bonus
 • 26-29 seconds: +1-4 XP
 • ≥30 seconds: +0 XP
 
-💡 Tips: Answer quickly AND accurately to maximize XP! Your XP updates based on your lifetime average across all attempts.`;
+💡 Example: 80% score in 4s/question = 40 + 25 = 65 XP`;
 
   const stats = [
     { 
