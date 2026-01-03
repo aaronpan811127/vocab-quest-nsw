@@ -86,13 +86,13 @@ export const Navigation = ({
               </>
             ) : (
               <div className="flex items-center gap-2">
-                <Button variant="outline" onClick={() => navigate("/parent-auth")} className="gap-2 text-sm sm:text-base px-3 sm:px-4">
-                  <LogIn className="h-4 w-4" />
-                  <span className="hidden sm:inline">Parent</span>
-                </Button>
                 <Button variant="gaming" onClick={() => navigate("/auth")} className="gap-2 text-sm sm:text-base px-3 sm:px-4">
                   <LogIn className="h-4 w-4" />
                   <span className="hidden sm:inline">Student</span>
+                </Button>
+                <Button variant="outline" onClick={() => navigate("/parent-auth")} className="gap-2 text-sm sm:text-base px-3 sm:px-4">
+                  <LogIn className="h-4 w-4" />
+                  <span className="hidden sm:inline">Parent</span>
                 </Button>
               </div>
             )}
