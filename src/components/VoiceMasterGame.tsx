@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Mic, Volume2, RotateCcw, Trophy, Zap, ArrowRight, Check, X, Loader2, MicOff } from "lucide-react";
+import { Mic, Volume2, Trophy, Zap, Check, X, Loader2, MicOff, ArrowRight } from "lucide-react";
+import { GameResultActions } from "./GameResultActions";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -465,19 +466,12 @@ export const VoiceMasterGame = ({
               {saving && <span className="text-sm text-muted-foreground">(saving...)</span>}
             </div>
 
-            <div className="flex flex-col sm:flex-row justify-center gap-4 pt-4">
-              <Button variant="game" onClick={() => resetGame(true)} size="lg">
-                <RotateCcw className="h-5 w-5 mr-2" />
-                Play Again (All Words)
-              </Button>
-              <Button variant="outline" onClick={() => resetGame(false)} size="lg">
-                <RotateCcw className="h-5 w-5 mr-2" />
-                Try Again (Mistakes)
-              </Button>
-              <Button variant="outline" onClick={onBack} size="lg">
-                Back to Dashboard
-              </Button>
-            </div>
+            <GameResultActions
+              onPlayAgain={() => resetGame(true)}
+              onTryAgain={() => resetGame(false)}
+              onBack={onBack}
+              hasMistakes={!isPerfect}
+            />
           </Card>
         </div>
       </div>
