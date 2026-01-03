@@ -105,7 +105,7 @@ const Auth = () => {
     setIsLoading(false);
     
     if (error) {
-      if (error.message.includes("already registered")) {
+      if (/(already registered|already exists)/i.test(error.message)) {
         toast({
           title: "Account exists",
           description: "This email is already registered. Try signing in instead.",

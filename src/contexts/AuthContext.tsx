@@ -90,8 +90,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signUp = async (email: string, password: string, username?: string) => {
     const redirectUrl = `${window.location.origin}/`;
-    
-    const { error } = await supabase.auth.signUp({
+
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -102,19 +102,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
       }
     });
-    
+
+    // The backend returns success even when the email already exists (to prevent account enumeration).
+    // In that case, identities will be an empty array.
+    const isRepeatedSignup = !!data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0;
+    if (!error && isRepeatedSignup) {
+      return { error: new Error("This email is already registered. Please sign in instead.") };
+    }
+
     if (!error) {
       setCurrentRole('student');
       localStorage.setItem('vocabquest_role', 'student');
     }
-    
+
     return { error: error as Error | null };
   };
 
   const signUpAsParent = async (email: string, password: string, parentName: string) => {
     const redirectUrl = `${window.location.origin}/`;
-    
-    const { error } = await supabase.auth.signUp({
+
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -125,12 +132,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
       }
     });
-    
+
+    // Supabase returns 200 even when the email already exists (to prevent account enumeration).
+    // In that case, identities will be an empty array.
+    const isRepeatedSignup = !!data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0;
+    if (!error && isRepeatedSignup) {
+      return { error: new Error("This email is already registered. Please sign in instead.") };
+    }
+
     if (!error) {
       setCurrentRole('parent');
       localStorage.setItem('vocabquest_role', 'parent');
     }
-    
+
     return { error: error as Error | null };
   };
 

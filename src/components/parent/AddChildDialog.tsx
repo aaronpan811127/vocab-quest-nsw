@@ -155,10 +155,12 @@ export const AddChildDialog = ({ open, onOpenChange, parentId, onSuccess }: AddC
       }
 
       // Create the student account
+      const redirectUrl = `${window.location.origin}/`;
       const { data: authData, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
         options: {
+          emailRedirectTo: redirectUrl,
           data: {
             username,
             signup_type: 'student'
@@ -167,6 +169,16 @@ export const AddChildDialog = ({ open, onOpenChange, parentId, onSuccess }: AddC
       });
 
       if (signUpError) throw signUpError;
+
+      const isRepeatedSignup = !!authData.user && Array.isArray(authData.user.identities) && authData.user.identities.length === 0;
+      if (isRepeatedSignup) {
+        toast({
+          title: "Account exists",
+          description: "An account with this email already exists. Try linking instead.",
+          variant: "destructive"
+        });
+        return;
+      }
 
       if (!authData.user) {
         throw new Error("Failed to create user account");
