@@ -9,7 +9,8 @@ import {
   GraduationCap,
   BookOpen,
   Target,
-  Award
+  Award,
+  Users
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTestType, TestType } from "@/contexts/TestTypeContext";
@@ -110,15 +111,26 @@ export const Hero = ({ onSelectTestType }: HeroProps) => {
         <div className="space-y-4">
           
           {!user ? (
-            <Button 
-              variant="hero" 
-              size="lg" 
-              className="text-base sm:text-lg px-6 sm:px-8 py-5 sm:py-6 animate-glow-pulse"
-              onClick={() => navigate("/auth")}
-            >
-              <LogIn className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
-              Sign In to Play
-            </Button>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
+              <Button 
+                variant="hero" 
+                size="lg" 
+                className="text-base sm:text-lg px-6 sm:px-8 py-5 sm:py-6 animate-glow-pulse w-full sm:w-auto"
+                onClick={() => navigate("/auth")}
+              >
+                <LogIn className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
+                Student Sign In
+              </Button>
+              <Button 
+                variant="outline" 
+                size="lg" 
+                className="text-base sm:text-lg px-6 sm:px-8 py-5 sm:py-6 border-secondary text-secondary hover:bg-secondary/10 w-full sm:w-auto"
+                onClick={() => navigate("/parent-auth")}
+              >
+                <Users className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
+                Parent Sign In
+              </Button>
+            </div>
           ) : loading ? (
             <div className="flex justify-center gap-4">
               {[1, 2, 3, 4].map(i => (
