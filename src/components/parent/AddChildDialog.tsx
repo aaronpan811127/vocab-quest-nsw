@@ -103,15 +103,38 @@ export const AddChildDialog = ({ open, onOpenChange, parentId, parentName, onSuc
         return;
       }
 
-      // Link the existing student
-      const { error: linkError } = await supabase
+      // Check if there's an existing (possibly removed) relationship for this parent
+      const { data: existingLink } = await supabase
         .from("parent_children")
-        .insert({
-          parent_id: parentId,
-          student_user_id: result.existing_user_id,
-          student_email: email,
-          relationship_status: 'active'
-        });
+        .select("id")
+        .eq("parent_id", parentId)
+        .eq("student_user_id", result.existing_user_id)
+        .maybeSingle();
+
+      let linkError;
+      if (existingLink) {
+        // Re-activate the existing relationship
+        const { error } = await supabase
+          .from("parent_children")
+          .update({
+            relationship_status: 'active',
+            removed_at: null,
+            student_email: email
+          })
+          .eq("id", existingLink.id);
+        linkError = error;
+      } else {
+        // Create new relationship
+        const { error } = await supabase
+          .from("parent_children")
+          .insert({
+            parent_id: parentId,
+            student_user_id: result.existing_user_id,
+            student_email: email,
+            relationship_status: 'active'
+          });
+        linkError = error;
+      }
 
       if (linkError) throw linkError;
 
