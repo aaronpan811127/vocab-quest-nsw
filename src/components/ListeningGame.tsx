@@ -15,6 +15,7 @@ interface ListeningGameProps {
   unitTitle: string;
   onComplete: () => void;
   onBack: () => void;
+  playAllWordsOnStart?: boolean;
 }
 
 interface WordQuestion {
@@ -24,7 +25,13 @@ interface WordQuestion {
   isPriority?: boolean; // From previous incorrect answers
 }
 
-export const ListeningGame = ({ unitId, unitTitle, onComplete, onBack }: ListeningGameProps) => {
+export const ListeningGame = ({
+  unitId,
+  unitTitle,
+  onComplete,
+  onBack,
+  playAllWordsOnStart = false,
+}: ListeningGameProps) => {
   const [words, setWords] = useState<string[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [questions, setQuestions] = useState<WordQuestion[]>([]);
@@ -47,7 +54,7 @@ export const ListeningGame = ({ unitId, unitTitle, onComplete, onBack }: Listeni
 
   useEffect(() => {
     synthRef.current = window.speechSynthesis;
-    fetchWords();
+    fetchWords(playAllWordsOnStart);
     startTimeRef.current = Date.now();
 
     return () => {
@@ -55,7 +62,7 @@ export const ListeningGame = ({ unitId, unitTitle, onComplete, onBack }: Listeni
         synthRef.current.cancel();
       }
     };
-  }, [unitId]);
+  }, [unitId, playAllWordsOnStart]);
 
   useEffect(() => {
     // Auto-play word when moving to a new question

@@ -14,7 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
 interface DashboardProps {
-  onStartGame?: (gameType: string, unitId: string, unitTitle: string) => void;
+  onStartGame?: (gameType: string, unitId: string, unitTitle: string, playAllWordsOnStart?: boolean) => void;
   onBack?: () => void;
 }
 
@@ -448,7 +448,10 @@ Total XP = Sum of all games' XP
                   history={gameHistory[game.gameType] || []}
                   onPlay={() => {
                     if (!game.isLocked && onStartGame && currentUnit) {
-                      onStartGame(game.gameType, currentUnit.id, currentUnit.title);
+                      const playAllWordsOnStart =
+                        game.isCompleted && (game.gameType === "listening" || game.gameType === "speaking");
+
+                      onStartGame(game.gameType, currentUnit.id, currentUnit.title, playAllWordsOnStart);
                     } else if (game.isLocked) {
                       console.log(`${game.title} coming soon!`);
                     }

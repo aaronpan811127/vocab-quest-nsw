@@ -14,6 +14,7 @@ interface VoiceMasterGameProps {
   unitTitle: string;
   onComplete: () => void;
   onBack: () => void;
+  playAllWordsOnStart?: boolean;
 }
 
 interface WordQuestion {
@@ -23,7 +24,13 @@ interface WordQuestion {
   isPriority?: boolean;
 }
 
-export const VoiceMasterGame = ({ unitId, unitTitle, onComplete, onBack }: VoiceMasterGameProps) => {
+export const VoiceMasterGame = ({
+  unitId,
+  unitTitle,
+  onComplete,
+  onBack,
+  playAllWordsOnStart = false,
+}: VoiceMasterGameProps) => {
   const [words, setWords] = useState<string[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [questions, setQuestions] = useState<WordQuestion[]>([]);
@@ -65,7 +72,7 @@ export const VoiceMasterGame = ({ unitId, unitTitle, onComplete, onBack }: Voice
       });
     }
 
-    fetchWords();
+    fetchWords(playAllWordsOnStart);
     startTimeRef.current = Date.now();
 
     return () => {
@@ -76,7 +83,7 @@ export const VoiceMasterGame = ({ unitId, unitTitle, onComplete, onBack }: Voice
         recognitionRef.current.abort();
       }
     };
-  }, [unitId]);
+  }, [unitId, playAllWordsOnStart]);
 
   // Keep refs in sync with state
   useEffect(() => {
