@@ -459,7 +459,7 @@ export const VoiceMasterGame = ({ unitId, unitTitle, onComplete, onBack }: Voice
             </div>
 
             <div className="flex justify-center gap-4 pt-4">
-              <Button variant="game" onClick={() => resetGame(true)} size="lg">
+              <Button variant="game" onClick={() => resetGame(isPerfect)} size="lg">
                 <RotateCcw className="h-5 w-5 mr-2" />
                 {isPerfect ? "Play Again" : "Try Again"}
               </Button>
