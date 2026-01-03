@@ -308,14 +308,23 @@ const ParentAuth = () => {
         </Card>
 
         <div className="text-center space-y-2">
-          <Button 
-            variant="ghost" 
-            className="text-muted-foreground"
-            onClick={() => navigate("/auth")}
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Student Sign In
-          </Button>
+          <div className="flex flex-col gap-2">
+            <Button 
+              variant="ghost" 
+              className="text-muted-foreground"
+              onClick={() => navigate("/")}
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Home
+            </Button>
+            <Button 
+              variant="link" 
+              className="text-muted-foreground"
+              onClick={() => navigate("/auth")}
+            >
+              Student Sign In
+            </Button>
+          </div>
           <p className="text-xs text-muted-foreground">
             Supporting your child's vocabulary journey! 📚
           </p>
