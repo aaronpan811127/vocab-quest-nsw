@@ -394,10 +394,14 @@ export const ListeningGame = ({ unitId, unitTitle, onComplete, onBack }: Listeni
               {saving && <span className="text-sm text-muted-foreground">(saving...)</span>}
             </div>
 
-            <div className="flex justify-center gap-4 pt-4">
-              <Button variant="game" onClick={() => resetGame(isPerfect)} size="lg">
+            <div className="flex flex-col sm:flex-row justify-center gap-4 pt-4">
+              <Button variant="game" onClick={() => resetGame(true)} size="lg">
                 <RotateCcw className="h-5 w-5 mr-2" />
-                {isPerfect ? "Play Again" : "Try Again"}
+                Play Again (All Words)
+              </Button>
+              <Button variant="outline" onClick={() => resetGame(false)} size="lg">
+                <RotateCcw className="h-5 w-5 mr-2" />
+                Try Again (Mistakes)
               </Button>
               <Button variant="outline" onClick={onBack} size="lg">
                 Back to Dashboard
