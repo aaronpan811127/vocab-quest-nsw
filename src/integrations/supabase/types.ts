@@ -190,6 +190,89 @@ export type Database = {
           },
         ]
       }
+      parent_children: {
+        Row: {
+          added_at: string
+          id: string
+          notes: string | null
+          parent_id: string
+          relationship_status: string | null
+          removed_at: string | null
+          student_email: string
+          student_user_id: string
+        }
+        Insert: {
+          added_at?: string
+          id?: string
+          notes?: string | null
+          parent_id: string
+          relationship_status?: string | null
+          removed_at?: string | null
+          student_email: string
+          student_user_id: string
+        }
+        Update: {
+          added_at?: string
+          id?: string
+          notes?: string | null
+          parent_id?: string
+          relationship_status?: string | null
+          removed_at?: string | null
+          student_email?: string
+          student_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parent_children_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "parent_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      parent_profiles: {
+        Row: {
+          billing_email: string | null
+          created_at: string
+          id: string
+          parent_name: string
+          phone_number: string | null
+          subscription_end_date: string | null
+          subscription_start_date: string | null
+          subscription_status: string | null
+          subscription_tier: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          billing_email?: string | null
+          created_at?: string
+          id?: string
+          parent_name: string
+          phone_number?: string | null
+          subscription_end_date?: string | null
+          subscription_start_date?: string | null
+          subscription_status?: string | null
+          subscription_tier?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          billing_email?: string | null
+          created_at?: string
+          id?: string
+          parent_name?: string
+          phone_number?: string | null
+          subscription_end_date?: string | null
+          subscription_start_date?: string | null
+          subscription_status?: string | null
+          subscription_tier?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -421,6 +504,27 @@ export type Database = {
         }
         Relationships: []
       }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       vocabulary: {
         Row: {
           antonyms: string[] | null
@@ -511,6 +615,15 @@ export type Database = {
       }
     }
     Functions: {
+      check_child_availability: {
+        Args: { p_student_email: string }
+        Returns: {
+          available: boolean
+          existing_user_id: string
+          has_parent: boolean
+          message: string
+        }[]
+      }
       get_leaderboard: {
         Args: { limit_count?: number; p_test_type_id?: string }
         Returns: {
@@ -519,6 +632,12 @@ export type Database = {
           study_streak: number
           total_xp: number
           username: string
+        }[]
+      }
+      get_user_roles: {
+        Args: { p_user_id: string }
+        Returns: {
+          role: string
         }[]
       }
       validate_dictation_game_submission: {
