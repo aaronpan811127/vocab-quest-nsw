@@ -15,6 +15,7 @@ interface GameState {
   unitId: string;
   unitTitle: string;
   gameType: string;
+  playAllWordsOnStart?: boolean;
 }
 
 const Index = () => {
@@ -22,8 +23,8 @@ const Index = () => {
   const [gameState, setGameState] = useState<GameState | null>(null);
   const { user } = useAuth();
 
-  const handleStartGame = (gameType: string, unitId: string, unitTitle: string) => {
-    setGameState({ unitId, unitTitle, gameType });
+  const handleStartGame = (gameType: string, unitId: string, unitTitle: string, playAllWordsOnStart?: boolean) => {
+    setGameState({ unitId, unitTitle, gameType, playAllWordsOnStart });
     setCurrentView("game");
   };
 
@@ -45,9 +46,9 @@ const Index = () => {
       case "reading":
         return <ReadingGame {...commonProps} />;
       case "listening":
-        return <ListeningGame {...commonProps} />;
+        return <ListeningGame {...commonProps} playAllWordsOnStart={gameState.playAllWordsOnStart} />;
       case "speaking":
-        return <VoiceMasterGame {...commonProps} />;
+        return <VoiceMasterGame {...commonProps} playAllWordsOnStart={gameState.playAllWordsOnStart} />;
       case "writing":
         return <StoryCreatorGame {...commonProps} />;
       case "flashcards":
