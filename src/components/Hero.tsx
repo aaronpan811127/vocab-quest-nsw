@@ -90,7 +90,7 @@ export const Hero = ({ onSelectTestType }: HeroProps) => {
           <p className="text-base sm:text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto leading-relaxed px-2">
             Master words through epic gaming adventures.
             <br />
-            15-minute daily challenges that build your vocabulary with endless fun and real results
+            15-minute daily challenges that build your vocabulary with endless fun and real results.
           </p>
         </div>
 
