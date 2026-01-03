@@ -312,14 +312,24 @@ const Auth = () => {
         </Card>
 
         <div className="text-center space-y-2">
-          <Button 
-            variant="ghost" 
-            className="text-muted-foreground"
-            onClick={() => navigate("/parent-auth")}
-          >
-            <Users className="h-4 w-4 mr-2" />
-            Are you a parent? Sign in here
-          </Button>
+          <div className="flex flex-col gap-1">
+            <Button 
+              variant="ghost" 
+              className="text-muted-foreground"
+              onClick={() => navigate("/")}
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Home
+            </Button>
+            <Button 
+              variant="ghost" 
+              className="text-muted-foreground"
+              onClick={() => navigate("/parent-auth")}
+            >
+              <Users className="h-4 w-4 mr-2" />
+              Are you a parent? Sign in here
+            </Button>
+          </div>
           <p className="text-xs text-muted-foreground">
             By continuing, you agree to learn awesome vocabulary! 🎮
           </p>
