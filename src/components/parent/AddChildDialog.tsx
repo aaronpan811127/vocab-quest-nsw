@@ -19,10 +19,11 @@ interface AddChildDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   parentId: string;
+  parentName: string;
   onSuccess: () => void;
 }
 
-export const AddChildDialog = ({ open, onOpenChange, parentId, onSuccess }: AddChildDialogProps) => {
+export const AddChildDialog = ({ open, onOpenChange, parentId, parentName, onSuccess }: AddChildDialogProps) => {
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -33,6 +34,25 @@ export const AddChildDialog = ({ open, onOpenChange, parentId, onSuccess }: AddC
     setEmail("");
     setUsername("");
     setPassword("");
+  };
+
+  const sendLinkNotification = async (childEmail: string, childName?: string) => {
+    try {
+      const { error } = await supabase.functions.invoke('send-child-link-notification', {
+        body: {
+          childEmail,
+          childName: childName || childEmail.split('@')[0],
+          parentName: parentName || 'A parent'
+        }
+      });
+      if (error) {
+        console.error("Failed to send notification email:", error);
+      } else {
+        console.log("Notification email sent successfully");
+      }
+    } catch (err) {
+      console.error("Error sending notification:", err);
+    }
   };
 
   const handleLinkExisting = async (e: React.FormEvent) => {
@@ -95,9 +115,12 @@ export const AddChildDialog = ({ open, onOpenChange, parentId, onSuccess }: AddC
 
       if (linkError) throw linkError;
 
+      // Send notification email (don't await - fire and forget)
+      sendLinkNotification(email);
+
       toast({
         title: "Child linked successfully!",
-        description: "You can now view their progress.",
+        description: "You can now view their progress. An email notification has been sent.",
       });
 
       resetForm();

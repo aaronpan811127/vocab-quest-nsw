@@ -346,6 +346,7 @@ const ParentDashboard = () => {
         open={showAddChild} 
         onOpenChange={setShowAddChild}
         parentId={parentProfile?.id || ''}
+        parentName={parentProfile?.parent_name || ''}
         onSuccess={fetchParentData}
       />
     </div>

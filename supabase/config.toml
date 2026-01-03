@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.generate-vocabulary]
 verify_jwt = false
+
+[functions.send-child-link-notification]
+verify_jwt = false
