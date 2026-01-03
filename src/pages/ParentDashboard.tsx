@@ -80,13 +80,35 @@ const ParentDashboard = () => {
 
     try {
       // Fetch parent profile
-      const { data: profile, error: profileError } = await supabase
+      let { data: profile, error: profileError } = await supabase
         .from("parent_profiles")
         .select("*")
         .eq("user_id", user.id)
-        .single();
+        .maybeSingle();
 
       if (profileError) throw profileError;
+
+      // If no parent profile exists (e.g., existing student adding parent role), create one
+      if (!profile) {
+        const { data: newProfile, error: createError } = await supabase
+          .from("parent_profiles")
+          .insert({
+            user_id: user.id,
+            parent_name: user.email?.split('@')[0] || 'Parent'
+          })
+          .select()
+          .single();
+
+        if (createError) throw createError;
+        profile = newProfile;
+
+        // Also ensure parent role exists in user_roles
+        await supabase
+          .from("user_roles")
+          .insert({ user_id: user.id, role: 'parent' })
+          .select();
+      }
+
       setParentProfile(profile);
 
       // Fetch children

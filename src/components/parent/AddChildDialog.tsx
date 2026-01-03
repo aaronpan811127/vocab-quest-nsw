@@ -46,6 +46,15 @@ export const AddChildDialog = ({ open, onOpenChange, parentId, onSuccess }: AddC
       return;
     }
 
+    if (!parentId) {
+      toast({
+        title: "Loading...",
+        description: "Please wait for your profile to load",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsLoading(true);
     try {
       // Check if student exists and is available
