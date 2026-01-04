@@ -300,8 +300,9 @@ export const ReadingGame = ({ unitId, unitTitle, onComplete, onBack }: ReadingGa
     if (currentQuestion < questions.length - 1) {
       setCurrentQuestion(currentQuestion + 1);
     } else {
-      setShowResults(true);
+      setSaving(true);
       await saveGameAttempt();
+      setShowResults(true);
     }
   };
 
