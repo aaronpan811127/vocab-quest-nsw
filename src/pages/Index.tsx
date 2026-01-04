@@ -8,6 +8,7 @@ import { ListeningGame } from "@/components/ListeningGame";
 import { VoiceMasterGame } from "@/components/VoiceMasterGame";
 import { StoryCreatorGame } from "@/components/StoryCreatorGame";
 import { FlashcardGame } from "@/components/FlashcardGame";
+import { MatchingGame } from "@/components/MatchingGame";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/useProfile";
 import { TestType } from "@/contexts/TestTypeContext";
@@ -71,6 +72,8 @@ const Index = () => {
         return <StoryCreatorGame {...commonProps} playAllWordsOnStart={gameState.playAllWordsOnStart} />;
       case "flashcards":
         return <FlashcardGame {...commonProps} />;
+      case "matching":
+        return <MatchingGame {...commonProps} />;
       default:
         return <ReadingGame {...commonProps} />;
     }
