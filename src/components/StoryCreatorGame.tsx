@@ -44,16 +44,17 @@ export const StoryCreatorGame = ({ unitId, unitTitle, onComplete, onBack }: Stor
   const { toast } = useToast();
   const startTimeRef = useRef<number>(Date.now());
 
-  useEffect(() => {
-    const storageKey = `story_creator_play_all_words_next:${unitId}`;
-    const playAllWordsNext = sessionStorage.getItem(storageKey) === "1";
-    sessionStorage.removeItem(storageKey);
+  const getStorageKey = () => `story_creator_play_mode:${unitId}`;
 
-    fetchWords(playAllWordsNext);
+  useEffect(() => {
+    const mode = sessionStorage.getItem(getStorageKey());
+    const playAllWords = mode === "all";
+    console.log("[StoryCreator] Mount - mode:", mode, "playAllWords:", playAllWords);
+    fetchWords(playAllWords);
     startTimeRef.current = Date.now();
   }, [unitId]);
 
-  const fetchWords = async (playAllWords: boolean = false) => {
+  const fetchWords = async (playAllWords: boolean) => {
     setLoading(true);
 
     try {
@@ -295,13 +296,9 @@ export const StoryCreatorGame = ({ unitId, unitTitle, onComplete, onBack }: Stor
     return Math.round((correct / questions.length) * 100);
   };
 
-  const resetGame = (playAllWords: boolean = false) => {
-    const storageKey = `story_creator_play_all_words_next:${unitId}`;
-    if (playAllWords) {
-      sessionStorage.setItem(storageKey, "1");
-    } else {
-      sessionStorage.removeItem(storageKey);
-    }
+  const resetGame = (playAllWords: boolean) => {
+    console.log("[StoryCreator] resetGame - playAllWords:", playAllWords);
+    sessionStorage.setItem(getStorageKey(), playAllWords ? "all" : "smart");
 
     setCurrentIndex(0);
     setQuestions([]);
@@ -313,6 +310,11 @@ export const StoryCreatorGame = ({ unitId, unitTitle, onComplete, onBack }: Stor
     setShowXpAnimation(false);
     startTimeRef.current = Date.now();
     fetchWords(playAllWords);
+  };
+
+  const handleBack = () => {
+    sessionStorage.removeItem(getStorageKey());
+    onBack();
   };
 
   if (loading) {
@@ -400,7 +402,7 @@ export const StoryCreatorGame = ({ unitId, unitTitle, onComplete, onBack }: Stor
             <GameResultActions
               onPlayAgain={() => resetGame(true)}
               onTryAgain={() => resetGame(false)}
-              onBack={onBack}
+              onBack={handleBack}
               hasMistakes={!isPerfect}
             />
           </Card>
@@ -424,7 +426,7 @@ export const StoryCreatorGame = ({ unitId, unitTitle, onComplete, onBack }: Stor
             </h1>
             <p className="text-muted-foreground">{unitTitle}</p>
           </div>
-          <Button variant="ghost" onClick={onBack}>
+          <Button variant="ghost" onClick={handleBack}>
             Back
           </Button>
         </div>
