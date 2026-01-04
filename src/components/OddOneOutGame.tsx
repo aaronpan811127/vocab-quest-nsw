@@ -61,15 +61,16 @@ export const OddOneOutGame = ({ unitId, unitTitle, onComplete, onBack }: OddOneO
   const fetchVocabulary = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      // First check if vocabulary exists
+      let { data, error } = await supabase
         .from('vocabulary')
         .select('*')
         .eq('unit_id', unitId);
 
       if (error) throw error;
 
+      // If no vocabulary or not enough, generate it
       if (!data || data.length < 4) {
-        // Need at least 4 words, generate vocabulary if not enough
         const { data: unitData, error: unitError } = await supabase
           .from('units')
           .select('words')
@@ -79,27 +80,62 @@ export const OddOneOutGame = ({ unitId, unitTitle, onComplete, onBack }: OddOneO
         if (unitError) throw unitError;
 
         const unitWords = unitData.words as string[];
+        
+        if (unitWords.length < 4) {
+          toast({
+            title: "Not enough words",
+            description: "This unit needs at least 4 words to play.",
+            variant: "destructive",
+          });
+          return;
+        }
+
         setGenerating(true);
+        toast({
+          title: "Generating vocabulary...",
+          description: "Creating definitions and synonyms for words.",
+        });
         
         const { data: genData, error: genError } = await supabase.functions.invoke('generate-vocabulary', {
           body: { unit_id: unitId, words: unitWords }
         });
 
-        if (genError) throw genError;
-
-        if (genData.success && genData.vocabulary) {
-          setWords(genData.vocabulary);
-          generateQuestions(genData.vocabulary);
+        if (genError) {
+          console.error('Generation error:', genError);
+          throw new Error('Failed to generate vocabulary');
         }
-      } else {
-        setWords(data as Word[]);
-        generateQuestions(data as Word[]);
+
+        if (genData?.success && genData.vocabulary) {
+          // Re-fetch from database to ensure consistency
+          const { data: freshData, error: freshError } = await supabase
+            .from('vocabulary')
+            .select('*')
+            .eq('unit_id', unitId);
+          
+          if (freshError) throw freshError;
+          
+          data = freshData;
+        } else {
+          throw new Error(genData?.error || 'Failed to generate vocabulary');
+        }
       }
+
+      if (!data || data.length < 4) {
+        toast({
+          title: "Vocabulary generation failed",
+          description: "Please try playing Flashcards first to generate vocabulary.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setWords(data as Word[]);
+      generateQuestions(data as Word[]);
     } catch (err) {
       console.error('Error fetching vocabulary:', err);
       toast({
         title: "Error",
-        description: "Failed to load vocabulary. Please try again.",
+        description: err instanceof Error ? err.message : "Failed to load vocabulary. Please try again.",
         variant: "destructive",
       });
     } finally {
