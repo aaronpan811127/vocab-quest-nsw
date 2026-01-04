@@ -143,7 +143,7 @@ const Auth = () => {
         <div className="grid grid-cols-3 gap-4 text-center">
           <div className="space-y-1">
             <BookOpen className="h-6 w-6 mx-auto text-primary" />
-            <p className="text-xs text-muted-foreground">Learning</p>
+            <p className="text-xs text-muted-foreground">Learn</p>
           </div>
           <div className="space-y-1">
             <Trophy className="h-6 w-6 mx-auto text-warning" />
