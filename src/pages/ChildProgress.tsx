@@ -438,11 +438,17 @@ const ChildProgress = () => {
                         Units Completed
                       </CardTitle>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="space-y-3">
                       <p className="text-3xl font-bold">
                         {completedUnits}
-                        <span className="text-lg text-muted-foreground font-normal">/{filteredUnits.length}</span>
+                        <span className="text-base text-muted-foreground/70 font-medium ml-1">
+                          of {filteredUnits.length}
+                        </span>
                       </p>
+                      <Progress 
+                        value={filteredUnits.length > 0 ? (completedUnits / filteredUnits.length) * 100 : 0} 
+                        className="h-2"
+                      />
                     </CardContent>
                   </Card>
                   
