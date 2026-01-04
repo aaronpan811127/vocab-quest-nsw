@@ -375,15 +375,13 @@ export const MatchingGame = ({ unitId, unitTitle, onComplete, onBack }: Matching
     <div className="min-h-screen bg-gradient-hero p-4 sm:p-6">
       <div className="max-w-5xl mx-auto space-y-4 sm:space-y-6">
         {/* Header */}
-        <div className="flex items-start sm:items-center justify-between gap-2">
-          <div className="min-w-0 flex-1">
-            <h1 className="text-lg sm:text-2xl font-bold flex items-center gap-2">
-              <Link2 className="h-5 w-5 sm:h-6 sm:w-6 text-primary flex-shrink-0" />
-              <span className="truncate">{unitTitle}</span>
-            </h1>
-            <p className="text-sm text-muted-foreground">
-              Match words with their definitions • {moves} moves
-            </p>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Link2 className="h-6 w-6 text-primary" />
+            <h1 className="text-lg sm:text-2xl font-bold">Matching</h1>
+            <Badge className="bg-gradient-primary text-primary-foreground hidden sm:inline-flex">
+              {unitTitle}
+            </Badge>
           </div>
           <Button variant="outline" onClick={onBack} size="sm">
             Back

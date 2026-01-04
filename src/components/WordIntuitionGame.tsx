@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, CheckCircle2, XCircle, Loader2, ThumbsUp, ThumbsDown, Minus, Lightbulb } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { CheckCircle2, XCircle, Loader2, ThumbsUp, ThumbsDown, Minus, Lightbulb } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -411,13 +412,16 @@ export const WordIntuitionGame = ({ unitId, unitTitle, onComplete, onBack }: Wor
       <div className="max-w-2xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <Button variant="ghost" onClick={onBack} className="gap-2">
-            <ArrowLeft className="h-4 w-4" />
+          <div className="flex items-center gap-3">
+            <Lightbulb className="h-6 w-6 text-primary" />
+            <h1 className="text-lg sm:text-2xl font-bold">Word Intuition</h1>
+            <Badge className="bg-gradient-primary text-primary-foreground hidden sm:inline-flex">
+              {unitTitle}
+            </Badge>
+          </div>
+          <Button variant="outline" onClick={onBack} size="sm">
             Back
           </Button>
-          <div className="text-sm text-muted-foreground">
-            Question {currentIndex + 1} of {questions.length}
-          </div>
         </div>
 
         {/* Progress */}
@@ -425,7 +429,7 @@ export const WordIntuitionGame = ({ unitId, unitTitle, onComplete, onBack }: Wor
 
         {/* Score */}
         <div className="flex justify-between text-sm">
-          <span className="text-muted-foreground">Unit: {unitTitle}</span>
+          <span className="text-muted-foreground">Question {currentIndex + 1} of {questions.length}</span>
           <span className="font-medium text-primary">Score: {score}/{currentIndex + (showResult ? 1 : 0)}</span>
         </div>
 
