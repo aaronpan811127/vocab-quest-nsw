@@ -361,8 +361,6 @@ export const WordIntuitionGame = ({ unitId, unitTitle, onComplete, onBack }: Wor
             <GameResultActions
               onBack={onComplete}
               onPlayAgain={handleTryAgain}
-              onPracticeMistakes={handlePracticeMistakes}
-              hasMistakes={incorrectAnswers.length > 0}
             />
           </CardContent>
         </Card>

@@ -103,8 +103,8 @@ export const GameCard = ({
           {/* Description */}
           <p className="text-sm text-muted-foreground leading-relaxed">{description}</p>
 
-          {!isLocked && hasStats && (
-            <div className="grid grid-cols-3 gap-2 py-2 px-3 rounded-lg bg-muted/30 border border-border/50">
+        {!isLocked && hasStats && (
+            <div className="grid grid-cols-2 gap-2 py-2 px-3 rounded-lg bg-muted/30 border border-border/50">
               <div className="flex flex-col items-center">
                 <div className="flex items-center gap-1 text-primary">
                   <Zap className="h-3.5 w-3.5" />
@@ -112,22 +112,12 @@ export const GameCard = ({
                 </div>
                 <span className="text-[10px] text-muted-foreground">XP</span>
               </div>
-              <div className="flex flex-col items-center border-x border-border/50">
+              <div className="flex flex-col items-center border-l border-border/50">
                 <div className="flex items-center gap-1 text-muted-foreground">
                   <Clock className="h-3.5 w-3.5" />
                   <span className="text-sm font-semibold">{formatTime(totalTimeSeconds)}</span>
                 </div>
                 <span className="text-[10px] text-muted-foreground">Time</span>
-              </div>
-              <div 
-                className={`flex flex-col items-center ${history.length > 0 ? 'cursor-pointer hover:bg-muted/50 rounded-md -my-1 py-1' : ''}`}
-                onClick={() => history.length > 0 && setShowHistory(true)}
-              >
-                <div className="flex items-center gap-1 text-muted-foreground">
-                  <Target className="h-3.5 w-3.5" />
-                  <span className="text-sm font-semibold">{attempts}</span>
-                </div>
-                <span className="text-[10px] text-muted-foreground">Plays</span>
               </div>
             </div>
           )}
