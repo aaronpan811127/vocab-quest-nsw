@@ -429,7 +429,7 @@ export const ListeningGame = ({
             </div>
           </div>
           <Button variant="outline" onClick={onBack}>
-            Exit
+            Back
           </Button>
         </div>
 

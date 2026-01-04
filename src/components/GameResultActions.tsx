@@ -30,7 +30,7 @@ export const GameResultActions = ({
       
       <Button type="button" variant="ghost" onClick={onBack} size="sm" className="w-full text-muted-foreground">
         <Home className="h-4 w-4 mr-2" />
-        Back to Dashboard
+        Back
       </Button>
     </div>
   );

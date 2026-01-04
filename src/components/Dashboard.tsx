@@ -532,7 +532,7 @@ Game XP = (Avg Score over all attempts × 0.5) + Time Bonus
                     key={game.title}
                     variant="outline"
                     className={`h-auto py-4 flex flex-col items-center gap-2 hover:bg-primary/10 hover:border-primary/50 transition-all relative ${game.isCompleted ? 'border-green-500/50 bg-green-500/5' : ''}`}
-                    onClick={() => onStartGame && onStartGame(game.gameType, currentUnit.id, currentUnit.title)}
+                    onClick={() => onStartGame && onStartGame(game.gameType, currentUnit.id, `Unit ${currentUnit.unitNumber}: ${currentUnit.title}`)}
                   >
                     {game.isCompleted && (
                       <CheckCircle2 className="h-4 w-4 text-green-500 absolute top-2 right-2" />
@@ -577,7 +577,7 @@ Game XP = (Avg Score over all attempts × 0.5) + Time Bonus
                             game.gameType === "speaking" ||
                             game.gameType === "writing");
 
-                        onStartGame(game.gameType, currentUnit.id, currentUnit.title, playAllWordsOnStart);
+                        onStartGame(game.gameType, currentUnit.id, `Unit ${currentUnit.unitNumber}: ${currentUnit.title}`, playAllWordsOnStart);
                       } else if (game.isLocked) {
                         console.log(`${game.title} coming soon!`);
                       }

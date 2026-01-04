@@ -312,7 +312,7 @@ export const FlashcardGame = ({ unitId, unitTitle, onComplete, onBack }: Flashca
               Please check back later or try a different unit.
             </p>
             <Button variant="outline" onClick={onBack} size="lg">
-              Back to Dashboard
+              Back
             </Button>
           </Card>
         </div>

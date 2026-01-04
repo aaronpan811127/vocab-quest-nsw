@@ -313,7 +313,7 @@ export const MatchingGame = ({ unitId, unitTitle, onComplete, onBack }: Matching
               Please check back later or try a different unit.
             </p>
             <Button variant="outline" onClick={onBack} size="lg">
-              Back to Dashboard
+              Back
             </Button>
           </Card>
         </div>

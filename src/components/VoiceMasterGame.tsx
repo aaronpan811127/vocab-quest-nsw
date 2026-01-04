@@ -398,7 +398,7 @@ export const VoiceMasterGame = ({
               device.
             </p>
             <Button variant="outline" onClick={onBack} size="lg">
-              Back to Dashboard
+              Back
             </Button>
           </Card>
         </div>
