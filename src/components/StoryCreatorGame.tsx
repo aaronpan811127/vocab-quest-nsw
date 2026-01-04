@@ -52,13 +52,16 @@ export const StoryCreatorGame = ({ unitId, unitTitle, onComplete, onBack }: Stor
   const { user } = useAuth();
   const { toast } = useToast();
   const startTimeRef = useRef<number>(Date.now());
+  const playAllWordsRef = useRef<boolean>(false);
 
   useEffect(() => {
-    fetchWords();
+    playAllWordsRef.current = false;
+    fetchWords(false);
     startTimeRef.current = Date.now();
   }, [unitId]);
 
   const fetchWords = async (playAllWords: boolean = false) => {
+    console.log('fetchWords called with playAllWords:', playAllWords);
     setLoading(true);
     
     try {
@@ -87,8 +90,9 @@ export const StoryCreatorGame = ({ unitId, unitTitle, onComplete, onBack }: Stor
       let finalWords: string[];
       let priorityWords: string[] = [];
       
+      // Play Again: always use all words
       if (playAllWords) {
-        // Play Again: shuffle all words randomly
+        console.log('Playing all words:', wordList.length);
         finalWords = [...wordList].sort(() => Math.random() - 0.5);
       } else {
         // Initial play: prioritize incorrect words from last 3 attempts
@@ -302,6 +306,8 @@ export const StoryCreatorGame = ({ unitId, unitTitle, onComplete, onBack }: Stor
   };
 
   const resetGame = (playAllWords: boolean = false) => {
+    console.log('resetGame called with playAllWords:', playAllWords);
+    playAllWordsRef.current = playAllWords;
     setCurrentIndex(0);
     setQuestions([]);
     setUserInput("");
