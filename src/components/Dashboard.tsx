@@ -275,8 +275,12 @@ export const Dashboard = ({ onStartGame, onBack, selectedUnitId, onUnitChange }:
       if (index > 0 && isWithinSubscriptionLimit) {
         const prevUnitId = unitsData[index - 1].id;
         const prevProgress = unitProgressMap.get(prevUnitId) || [];
-        const prevCompletedGames = prevProgress.filter((p) => p.completed).length;
-        isUnlocked = prevCompletedGames >= 4;
+        // Check if all 4 Learn games are completed (flashcards, matching, oddoneout, intuition)
+        const learnGameTypes = ['flashcards', 'matching', 'oddoneout', 'intuition'];
+        const completedLearnGames = prevProgress.filter(
+          (p) => p.completed && learnGameTypes.includes(p.game_type)
+        ).length;
+        isUnlocked = completedLearnGames >= 4;
       }
 
       return {
