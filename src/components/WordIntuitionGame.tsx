@@ -219,7 +219,7 @@ export const WordIntuitionGame = ({ unitId, unitTitle, onComplete, onBack }: Wor
     if (!user) return;
 
     try {
-      const { data, error } = await supabase.functions.invoke("submit-intuition-game", {
+      const { error } = await supabase.functions.invoke("submit-intuition-game", {
         body: {
           unit_id: unitId,
           score: finalScore,
@@ -231,11 +231,7 @@ export const WordIntuitionGame = ({ unitId, unitTitle, onComplete, onBack }: Wor
       });
 
       if (error) throw error;
-
-      toast({
-        title: "Game Complete! 🎉",
-        description: `You scored ${finalScore}% and earned ${data?.xpEarned || 0} XP!`,
-      });
+      // No toast notification for practice games
     } catch (error) {
       console.error("Error saving game:", error);
     }
@@ -249,6 +245,23 @@ export const WordIntuitionGame = ({ unitId, unitTitle, onComplete, onBack }: Wor
     setGameComplete(false);
     setIncorrectAnswers([]);
     setQuestions(shuffleArray(questions));
+    setStartTime(Date.now());
+  };
+
+  const handlePracticeMistakes = () => {
+    // Filter questions to only include ones that were answered incorrectly
+    const mistakeQuestionIds = incorrectAnswers.map((a) => a.questionId);
+    const mistakeQuestions = questions.filter((q) => mistakeQuestionIds.includes(q.id));
+    
+    if (mistakeQuestions.length === 0) return;
+    
+    setCurrentIndex(0);
+    setSelectedAnswer(null);
+    setShowResult(false);
+    setScore(0);
+    setGameComplete(false);
+    setIncorrectAnswers([]);
+    setQuestions(shuffleArray(mistakeQuestions));
     setStartTime(Date.now());
   };
 
@@ -343,7 +356,7 @@ export const WordIntuitionGame = ({ unitId, unitTitle, onComplete, onBack }: Wor
             <GameResultActions
               onBack={onComplete}
               onPlayAgain={handleTryAgain}
-              onTryAgain={handleTryAgain}
+              onPracticeMistakes={handlePracticeMistakes}
               hasMistakes={incorrectAnswers.length > 0}
             />
           </CardContent>

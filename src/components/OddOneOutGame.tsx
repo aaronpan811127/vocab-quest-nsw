@@ -326,14 +326,6 @@ export const OddOneOutGame = ({ unitId, unitTitle, onComplete, onBack }: OddOneO
                 setShowCompletion(false);
                 generateQuestions(words);
               }} 
-              onTryAgain={() => {
-                setCurrentQuestion(0);
-                setSelectedAnswer(null);
-                setShowResult(false);
-                setCorrectAnswers(0);
-                setShowCompletion(false);
-                generateQuestions(words);
-              }}
               onBack={onComplete} 
               hasMistakes={correctAnswers < questions.length}
             />
