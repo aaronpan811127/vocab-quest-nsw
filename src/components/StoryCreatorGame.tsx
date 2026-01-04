@@ -389,7 +389,7 @@ export const StoryCreatorGame = ({ unitId, unitTitle, onComplete, onBack, playAl
 
             <GameResultActions
               onPlayAgain={() => resetGame(true)}
-              onTryAgain={() => resetGame(false)}
+              onPracticeMistakes={() => resetGame(false)}
               onBack={onBack}
               hasMistakes={!isPerfect}
             />

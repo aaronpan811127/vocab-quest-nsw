@@ -404,7 +404,7 @@ export const ListeningGame = ({
 
             <GameResultActions
               onPlayAgain={() => resetGame(true)}
-              onTryAgain={() => resetGame(false)}
+              onPracticeMistakes={() => resetGame(false)}
               onBack={onBack}
               hasMistakes={!isPerfect}
             />

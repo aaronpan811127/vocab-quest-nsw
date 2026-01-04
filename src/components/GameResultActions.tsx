@@ -3,14 +3,14 @@ import { RotateCcw, Home, RefreshCw } from "lucide-react";
 
 interface GameResultActionsProps {
   onPlayAgain: () => void;
-  onTryAgain: () => void;
+  onPracticeMistakes?: () => void;
   onBack: () => void;
   hasMistakes: boolean;
 }
 
 export const GameResultActions = ({
   onPlayAgain,
-  onTryAgain,
+  onPracticeMistakes,
   onBack,
   hasMistakes,
 }: GameResultActionsProps) => {
@@ -21,8 +21,8 @@ export const GameResultActions = ({
         Play Again
       </Button>
       
-      {hasMistakes && (
-        <Button type="button" variant="outline" onClick={onTryAgain} size="lg" className="w-full">
+      {hasMistakes && onPracticeMistakes && (
+        <Button type="button" variant="outline" onClick={onPracticeMistakes} size="lg" className="w-full">
           <RefreshCw className="h-4 w-4 mr-2" />
           Practice Mistakes
         </Button>
