@@ -40,8 +40,58 @@ export const FlashcardGame = ({ unitId, unitTitle, onComplete, onBack }: Flashca
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [startTime] = useState(Date.now());
   const femaleVoiceRef = useRef<SpeechSynthesisVoice | null>(null);
   const { toast } = useToast();
+
+  // Save progress to database when all words are learned
+  const saveProgress = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const timeSpentSeconds = Math.floor((Date.now() - startTime) / 1000);
+
+    // Check if progress exists
+    const { data: existingProgress } = await supabase
+      .from('user_progress')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('unit_id', unitId)
+      .eq('game_type', 'flashcards')
+      .maybeSingle();
+
+    if (existingProgress) {
+      await supabase
+        .from('user_progress')
+        .update({
+          completed: true,
+          attempts: (existingProgress.attempts || 0) + 1,
+          total_time_seconds: (existingProgress.total_time_seconds || 0) + timeSpentSeconds,
+          best_score: 100,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', existingProgress.id);
+    } else {
+      await supabase
+        .from('user_progress')
+        .insert({
+          user_id: user.id,
+          unit_id: unitId,
+          game_type: 'flashcards',
+          completed: true,
+          attempts: 1,
+          total_time_seconds: timeSpentSeconds,
+          best_score: 100
+        });
+    }
+  };
+
+  // Auto-save when all words are learned
+  useEffect(() => {
+    if (words.length > 0 && learnedWords.size === words.length) {
+      saveProgress();
+    }
+  }, [learnedWords.size, words.length]);
 
   useEffect(() => {
     // Find a female voice
