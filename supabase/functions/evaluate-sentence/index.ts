@@ -2,78 +2,81 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
 serve(async (req) => {
-  if (req.method === 'OPTIONS') {
+  if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
     // Authenticate the user
-    const authHeader = req.headers.get('Authorization');
+    const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      console.log('No authorization header provided');
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      console.log("No authorization header provided");
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
-    
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+
     const supabaseUser = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } }
+      global: { headers: { Authorization: authHeader } },
     });
 
-    const { data: { user }, error: userError } = await supabaseUser.auth.getUser();
+    const {
+      data: { user },
+      error: userError,
+    } = await supabaseUser.auth.getUser();
     if (userError || !user) {
-      console.log('Invalid user token:', userError?.message);
-      return new Response(
-        JSON.stringify({ error: 'Invalid user token' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      console.log("Invalid user token:", userError?.message);
+      return new Response(JSON.stringify({ error: "Invalid user token" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    console.log('Authenticated user:', user.id);
+    console.log("Authenticated user:", user.id);
 
     const { word, sentence } = await req.json();
 
     if (!word || !sentence) {
-      return new Response(
-        JSON.stringify({ error: 'Word and sentence are required' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return new Response(JSON.stringify({ error: "Word and sentence are required" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     // Input length validation to prevent resource exhaustion
-    if (typeof word !== 'string' || typeof sentence !== 'string') {
-      return new Response(
-        JSON.stringify({ error: 'Word and sentence must be strings' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    if (typeof word !== "string" || typeof sentence !== "string") {
+      return new Response(JSON.stringify({ error: "Word and sentence must be strings" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     if (word.length > 100) {
-      return new Response(
-        JSON.stringify({ error: 'Word must be 100 characters or less' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return new Response(JSON.stringify({ error: "Word must be 100 characters or less" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     if (sentence.length > 1000) {
-      return new Response(
-        JSON.stringify({ error: 'Sentence must be 1000 characters or less' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return new Response(JSON.stringify({ error: "Sentence must be 1000 characters or less" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY is not configured');
+      throw new Error("LOVABLE_API_KEY is not configured");
     }
 
     const prompt = `You are evaluating if a student correctly used a vocabulary word in a sentence.
@@ -85,6 +88,8 @@ Evaluate if:
 1. The word "${word}" (or a valid form like plural/past tense) is actually used in the sentence
 2. The word is used correctly in context (grammatically and semantically)
 3. The sentence makes sense
+4. The sentence must demonstrate user’s understanding of the word otherwise mark as incorrect
+5. If a user input contains profanity, mark as incorrect even if it passes rest of criteria and gently remind them to use respectful language as per our guidelines. 
 
 Respond with a JSON object:
 {
@@ -94,44 +99,42 @@ Respond with a JSON object:
 
 Be encouraging but accurate. If the word is not used at all, mark as incorrect. If used but with minor issues, still give credit if the meaning is clear.`;
 
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
       headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
-          { role: 'user', content: prompt }
-        ],
+        model: "google/gemini-2.5-flash",
+        messages: [{ role: "user", content: prompt }],
         temperature: 0.3,
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('AI Gateway error:', response.status, errorText);
-      
+      console.error("AI Gateway error:", response.status, errorText);
+
       if (response.status === 429) {
-        return new Response(
-          JSON.stringify({ error: 'Rate limit exceeded. Please try again later.' }),
-          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again later." }), {
+          status: 429,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
       if (response.status === 402) {
-        return new Response(
-          JSON.stringify({ error: 'AI credits exhausted. Please add funds.' }),
-          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        return new Response(JSON.stringify({ error: "AI credits exhausted. Please add funds." }), {
+          status: 402,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
-      
+
       throw new Error(`AI Gateway error: ${response.status}`);
     }
 
     const data = await response.json();
-    const content = data.choices?.[0]?.message?.content || '';
-    
+    const content = data.choices?.[0]?.message?.content || "";
+
     // Parse the JSON response from the AI
     let result;
     try {
@@ -140,34 +143,30 @@ Be encouraging but accurate. If the word is not used at all, mark as incorrect. 
       if (jsonMatch) {
         result = JSON.parse(jsonMatch[0]);
       } else {
-        throw new Error('No JSON found in response');
+        throw new Error("No JSON found in response");
       }
     } catch (parseError) {
-      console.error('Failed to parse AI response:', content);
+      console.error("Failed to parse AI response:", content);
       // Fallback: simple check if word is in sentence
       const wordInSentence = sentence.toLowerCase().includes(word.toLowerCase());
       result = {
         isCorrect: wordInSentence && sentence.trim().length > word.length + 10,
-        feedback: wordInSentence 
-          ? "Good use of the vocabulary word!" 
-          : `Remember to use the word "${word}" in your sentence.`
+        feedback: wordInSentence
+          ? "Good use of the vocabulary word!"
+          : `Remember to use the word "${word}" in your sentence.`,
       };
     }
 
-    return new Response(
-      JSON.stringify(result),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-
+    return new Response(JSON.stringify(result), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (error) {
-    console.error('Error in evaluate-sentence:', error);
+    console.error("Error in evaluate-sentence:", error);
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         error: error.message,
         isCorrect: false,
-        feedback: 'Unable to evaluate. Please try again.'
+        feedback: "Unable to evaluate. Please try again.",
       }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }
 });
