@@ -8,6 +8,7 @@ export interface Profile {
   username: string | null;
   avatar_url: string | null;
   default_test_type_id: string | null;
+  current_unit_id: string | null;
   created_at: string;
   updated_at: string;
 }
