@@ -405,8 +405,14 @@ export const StoryCreatorGame = ({ unitId, unitTitle, onComplete, onBack }: Stor
             </div>
 
             <GameResultActions
-              onPlayAgain={() => resetGame(true)}
-              onTryAgain={() => resetGame(false)}
+              onPlayAgain={() => {
+                console.log('Play Again button clicked');
+                resetGame(true);
+              }}
+              onTryAgain={() => {
+                console.log('Practice Mistakes button clicked');
+                resetGame(false);
+              }}
               onBack={onBack}
               hasMistakes={!isPerfect}
             />
