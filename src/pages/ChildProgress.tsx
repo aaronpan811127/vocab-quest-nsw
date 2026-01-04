@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
   TableBody,
@@ -21,7 +22,7 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer } from "recharts";
+import { BarChart, Bar, XAxis, YAxis } from "recharts";
 import { 
   ArrowLeft, 
   Trophy, 
@@ -30,12 +31,8 @@ import {
   Clock,
   Target,
   TrendingUp,
-  Calendar,
-  Crown,
-  Lock,
-  Gamepad2
 } from "lucide-react";
-import { format, subDays, startOfDay, parseISO } from "date-fns";
+import { format, subDays, parseISO } from "date-fns";
 
 interface ChildProfile {
   username: string;
@@ -47,6 +44,7 @@ interface ChildStats {
   level: number;
   study_streak: number;
   last_study_date: string | null;
+  test_type_id: string;
 }
 
 interface GameAttempt {
@@ -74,6 +72,13 @@ interface Unit {
   id: string;
   title: string;
   unit_number: number;
+  test_type_id: string;
+}
+
+interface TestType {
+  id: string;
+  name: string;
+  code: string;
 }
 
 // Learning games: vocabulary building, practice
@@ -88,11 +93,12 @@ const ChildProgress = () => {
   const { canViewProgressReports } = useSubscription();
   
   const [childProfile, setChildProfile] = useState<ChildProfile | null>(null);
-  const [childStats, setChildStats] = useState<ChildStats | null>(null);
-  const [recentAttempts, setRecentAttempts] = useState<GameAttempt[]>([]);
+  const [allChildStats, setAllChildStats] = useState<ChildStats[]>([]);
   const [allAttempts, setAllAttempts] = useState<GameAttempt[]>([]);
   const [unitProgress, setUnitProgress] = useState<UnitProgress[]>([]);
   const [units, setUnits] = useState<Unit[]>([]);
+  const [testTypes, setTestTypes] = useState<TestType[]>([]);
+  const [selectedTestType, setSelectedTestType] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [childEmail, setChildEmail] = useState<string>("");
 
@@ -145,7 +151,7 @@ const ChildProgress = () => {
       const sevenDaysAgo = subDays(new Date(), 7).toISOString();
 
       // Fetch all data in parallel
-      const [profileResult, statsResult, recentAttemptsResult, allAttemptsResult, progressResult, unitsResult] = await Promise.all([
+      const [profileResult, statsResult, attemptsResult, progressResult, unitsResult, testTypesResult] = await Promise.all([
         supabase
           .from("profiles")
           .select("username, avatar_url")
@@ -153,45 +159,82 @@ const ChildProgress = () => {
           .single(),
         supabase
           .from("leaderboard")
-          .select("total_xp, level, study_streak, last_study_date")
-          .eq("user_id", childId)
-          .limit(1),
+          .select("total_xp, level, study_streak, last_study_date, test_type_id")
+          .eq("user_id", childId),
         supabase
           .from("game_attempts")
-          .select("*")
+          .select("id, game_type, score, correct_answers, total_questions, time_spent_seconds, created_at, unit_id")
           .eq("user_id", childId)
           .eq("completed", true)
-          .order("created_at", { ascending: false })
-          .limit(10),
-        supabase
-          .from("game_attempts")
-          .select("id, game_type, time_spent_seconds, created_at")
-          .eq("user_id", childId)
-          .eq("completed", true)
-          .gte("created_at", sevenDaysAgo)
-          .order("created_at", { ascending: true }),
+          .order("created_at", { ascending: false }),
         supabase
           .from("user_progress")
           .select("*")
           .eq("user_id", childId),
         supabase
           .from("units")
-          .select("id, title, unit_number")
-          .order("unit_number", { ascending: true })
+          .select("id, title, unit_number, test_type_id")
+          .order("unit_number", { ascending: true }),
+        supabase
+          .from("test_types")
+          .select("id, name, code")
+          .order("name", { ascending: true })
       ]);
 
       setChildProfile(profileResult.data);
-      setChildStats(statsResult.data?.[0] || null);
-      setRecentAttempts(recentAttemptsResult.data || []);
-      setAllAttempts(allAttemptsResult.data as GameAttempt[] || []);
+      setAllChildStats(statsResult.data || []);
+      setAllAttempts(attemptsResult.data || []);
       setUnitProgress(progressResult.data || []);
       setUnits(unitsResult.data || []);
+      setTestTypes(testTypesResult.data || []);
+
+      // Set default selected test type (first one with stats, or first available)
+      if (testTypesResult.data && testTypesResult.data.length > 0) {
+        const firstWithStats = statsResult.data?.find(s => s.test_type_id);
+        setSelectedTestType(firstWithStats?.test_type_id || testTypesResult.data[0].id);
+      }
     } catch (error) {
       console.error("Error fetching child data:", error);
     } finally {
       setLoading(false);
     }
   };
+
+  // Get units for selected test type
+  const filteredUnits = useMemo(() => {
+    return units.filter(u => u.test_type_id === selectedTestType);
+  }, [units, selectedTestType]);
+
+  // Get unit IDs for selected test type
+  const filteredUnitIds = useMemo(() => {
+    return new Set(filteredUnits.map(u => u.id));
+  }, [filteredUnits]);
+
+  // Get stats for selected test type
+  const childStats = useMemo(() => {
+    return allChildStats.find(s => s.test_type_id === selectedTestType) || null;
+  }, [allChildStats, selectedTestType]);
+
+  // Filter attempts by test type (through units)
+  const filteredAttempts = useMemo(() => {
+    return allAttempts.filter(a => filteredUnitIds.has(a.unit_id));
+  }, [allAttempts, filteredUnitIds]);
+
+  // Get recent attempts (last 10)
+  const recentAttempts = useMemo(() => {
+    return filteredAttempts.slice(0, 10);
+  }, [filteredAttempts]);
+
+  // Filter progress by test type (through units)
+  const filteredProgress = useMemo(() => {
+    return unitProgress.filter(p => filteredUnitIds.has(p.unit_id));
+  }, [unitProgress, filteredUnitIds]);
+
+  // Get attempts from last 7 days for chart
+  const last7DaysAttempts = useMemo(() => {
+    const sevenDaysAgo = subDays(new Date(), 7);
+    return filteredAttempts.filter(a => new Date(a.created_at) >= sevenDaysAgo);
+  }, [filteredAttempts]);
 
   const getUnitTitle = (unitId: string) => {
     const unit = units.find(u => u.id === unitId);
@@ -213,9 +256,9 @@ const ChildProgress = () => {
   const displayName = childProfile?.username || childEmail.split('@')[0];
   const initials = displayName.slice(0, 2).toUpperCase();
 
-  // Calculate overall stats
-  const totalAttempts = unitProgress.reduce((sum, p) => sum + p.attempts, 0);
-  const completedUnits = new Set(unitProgress.filter(p => p.completed).map(p => p.unit_id)).size;
+  // Calculate stats for selected test type
+  const totalAttempts = filteredProgress.reduce((sum, p) => sum + p.attempts, 0);
+  const completedUnits = new Set(filteredProgress.filter(p => p.completed).map(p => p.unit_id)).size;
   const averageScore = recentAttempts.length > 0
     ? Math.round(recentAttempts.reduce((sum, a) => sum + a.score, 0) / recentAttempts.length)
     : 0;
@@ -226,7 +269,6 @@ const ChildProgress = () => {
     
     for (let i = 6; i >= 0; i--) {
       const day = subDays(new Date(), i);
-      const dayStr = format(day, 'yyyy-MM-dd');
       last7Days.push({
         date: format(day, 'EEE'),
         learning: 0,
@@ -234,7 +276,7 @@ const ChildProgress = () => {
       });
     }
 
-    allAttempts.forEach(attempt => {
+    last7DaysAttempts.forEach(attempt => {
       const attemptDate = format(parseISO(attempt.created_at), 'yyyy-MM-dd');
       const dayIndex = last7Days.findIndex((_, i) => 
         format(subDays(new Date(), 6 - i), 'yyyy-MM-dd') === attemptDate
@@ -247,14 +289,13 @@ const ChildProgress = () => {
         } else if (COMPETE_GAMES.includes(attempt.game_type)) {
           last7Days[dayIndex].compete += timeInMinutes;
         } else {
-          // Default to learning for unknown game types
           last7Days[dayIndex].learning += timeInMinutes;
         }
       }
     });
 
     return last7Days;
-  }, [allAttempts]);
+  }, [last7DaysAttempts]);
 
   const chartConfig = {
     learning: {
@@ -305,269 +346,298 @@ const ChildProgress = () => {
       </header>
 
       <main className="container mx-auto px-4 py-8 space-y-8">
-        {/* Stats Overview */}
-        <div className="grid gap-4 md:grid-cols-4">
-          <Card>
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="p-2 bg-yellow-500/10 rounded-lg">
-                <Trophy className="h-6 w-6 text-yellow-500" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{childStats?.level || 1}</p>
-                <p className="text-sm text-muted-foreground">Level</p>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="p-2 bg-primary/10 rounded-lg">
-                <BookOpen className="h-6 w-6 text-primary" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{childStats?.total_xp || 0}</p>
-                <p className="text-sm text-muted-foreground">Total XP</p>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="p-2 bg-destructive/10 rounded-lg">
-                <Flame className="h-6 w-6 text-destructive" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{childStats?.study_streak || 0}</p>
-                <p className="text-sm text-muted-foreground">Day Streak</p>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="p-2 bg-green-500/10 rounded-lg">
-                <Target className="h-6 w-6 text-green-500" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{averageScore}%</p>
-                <p className="text-sm text-muted-foreground">Avg Score</p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        {/* Test Type Tabs */}
+        {testTypes.length > 0 && (
+          <Tabs value={selectedTestType} onValueChange={setSelectedTestType}>
+            <TabsList className="w-full max-w-lg grid" style={{ gridTemplateColumns: `repeat(${testTypes.length}, 1fr)` }}>
+              {testTypes.map((tt) => (
+                <TabsTrigger key={tt.id} value={tt.id}>
+                  {tt.name}
+                </TabsTrigger>
+              ))}
+            </TabsList>
 
-        {/* Summary Cards */}
-        <div className="grid gap-4 md:grid-cols-3">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Total Attempts
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold">{totalAttempts}</p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Units Completed
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold">{completedUnits}</p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Last Study Date
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-lg font-bold">
-                {childStats?.last_study_date 
-                  ? format(new Date(childStats.last_study_date), 'MMM d, yyyy')
-                  : 'Not yet'}
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Recent Activity */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5" />
-              Recent Activity
-            </CardTitle>
-            <CardDescription>Last 10 completed game attempts</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {recentAttempts.length === 0 ? (
-              <p className="text-center py-8 text-muted-foreground">
-                No game attempts yet
-              </p>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Game</TableHead>
-                    <TableHead>Unit</TableHead>
-                    <TableHead className="text-center">Score</TableHead>
-                    <TableHead className="text-center">Accuracy</TableHead>
-                    <TableHead className="text-right">Time</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {recentAttempts.map((attempt) => (
-                    <TableRow key={attempt.id}>
-                      <TableCell className="font-medium">
-                        {format(new Date(attempt.created_at), 'MMM d, h:mm a')}
-                      </TableCell>
-                      <TableCell>{formatGameType(attempt.game_type)}</TableCell>
-                      <TableCell className="max-w-[200px] truncate">
-                        {getUnitTitle(attempt.unit_id)}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <Badge variant={attempt.score >= 80 ? "default" : "secondary"}>
-                          {attempt.score}%
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {attempt.correct_answers}/{attempt.total_questions}
-                      </TableCell>
-                      <TableCell className="text-right text-muted-foreground">
-                        {formatTime(attempt.time_spent_seconds)}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Daily Time Breakdown Chart */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Clock className="h-5 w-5" />
-              Daily Time Breakdown
-            </CardTitle>
-            <CardDescription>Minutes spent on learning vs. compete games (last 7 days)</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {allAttempts.length === 0 ? (
-              <p className="text-center py-8 text-muted-foreground">
-                No activity in the last 7 days
-              </p>
-            ) : (
-              <>
-                <div className="flex items-center gap-6 mb-4">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-sm bg-primary" />
-                    <span className="text-sm text-muted-foreground">Learning</span>
-                    <span className="text-xs text-muted-foreground">(Flashcards, Matching, Reading, etc.)</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-sm bg-destructive" />
-                    <span className="text-sm text-muted-foreground">Compete</span>
-                    <span className="text-xs text-muted-foreground">(Listening, Speaking)</span>
-                  </div>
-                </div>
-                <ChartContainer config={chartConfig} className="h-[250px] w-full">
-                  <BarChart data={dailyTimeData} accessibilityLayer>
-                    <XAxis 
-                      dataKey="date" 
-                      tickLine={false} 
-                      axisLine={false}
-                      tickMargin={8}
-                    />
-                    <YAxis 
-                      tickLine={false} 
-                      axisLine={false}
-                      tickMargin={8}
-                      tickFormatter={(value) => `${value}m`}
-                    />
-                    <ChartTooltip 
-                      content={<ChartTooltipContent />}
-                      formatter={(value, name) => [`${value} min`, name === 'learning' ? 'Learning' : 'Compete']}
-                    />
-                    <Bar 
-                      dataKey="learning" 
-                      fill="var(--color-learning)" 
-                      radius={[4, 4, 0, 0]}
-                      stackId="time"
-                    />
-                    <Bar 
-                      dataKey="compete" 
-                      fill="var(--color-compete)" 
-                      radius={[4, 4, 0, 0]}
-                      stackId="time"
-                    />
-                  </BarChart>
-                </ChartContainer>
-              </>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Unit Progress */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <BookOpen className="h-5 w-5" />
-              Unit Progress
-            </CardTitle>
-            <CardDescription>Progress across all units</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {unitProgress.length === 0 ? (
-              <p className="text-center py-8 text-muted-foreground">
-                No unit progress yet
-              </p>
-            ) : (
-              <div className="space-y-4">
-                {units.filter(u => unitProgress.some(p => p.unit_id === u.id)).map((unit) => {
-                  const progress = unitProgress.filter(p => p.unit_id === unit.id);
-                  const totalXP = progress.reduce((sum, p) => sum + p.total_xp, 0);
-                  const bestScore = Math.max(...progress.map(p => p.best_score), 0);
-                  const isCompleted = progress.some(p => p.completed);
+            {testTypes.map((tt) => (
+              <TabsContent key={tt.id} value={tt.id} className="space-y-8 mt-6">
+                {/* Stats Overview */}
+                <div className="grid gap-4 md:grid-cols-4">
+                  <Card>
+                    <CardContent className="p-4 flex items-center gap-3">
+                      <div className="p-2 bg-yellow-500/10 rounded-lg">
+                        <Trophy className="h-6 w-6 text-yellow-500" />
+                      </div>
+                      <div>
+                        <p className="text-2xl font-bold">{childStats?.level || 1}</p>
+                        <p className="text-sm text-muted-foreground">Level</p>
+                      </div>
+                    </CardContent>
+                  </Card>
                   
-                  return (
-                    <div key={unit.id} className="border rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">
-                            Unit {unit.unit_number}: {unit.title}
-                          </span>
-                          {isCompleted && (
-                            <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/20">
-                              Completed
-                            </Badge>
-                          )}
+                  <Card>
+                    <CardContent className="p-4 flex items-center gap-3">
+                      <div className="p-2 bg-primary/10 rounded-lg">
+                        <BookOpen className="h-6 w-6 text-primary" />
+                      </div>
+                      <div>
+                        <p className="text-2xl font-bold">{childStats?.total_xp || 0}</p>
+                        <p className="text-sm text-muted-foreground">Total XP</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  
+                  <Card>
+                    <CardContent className="p-4 flex items-center gap-3">
+                      <div className="p-2 bg-destructive/10 rounded-lg">
+                        <Flame className="h-6 w-6 text-destructive" />
+                      </div>
+                      <div>
+                        <p className="text-2xl font-bold">{childStats?.study_streak || 0}</p>
+                        <p className="text-sm text-muted-foreground">Day Streak</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  
+                  <Card>
+                    <CardContent className="p-4 flex items-center gap-3">
+                      <div className="p-2 bg-green-500/10 rounded-lg">
+                        <Target className="h-6 w-6 text-green-500" />
+                      </div>
+                      <div>
+                        <p className="text-2xl font-bold">{averageScore}%</p>
+                        <p className="text-sm text-muted-foreground">Avg Score</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Summary Cards */}
+                <div className="grid gap-4 md:grid-cols-3">
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-medium text-muted-foreground">
+                        Total Attempts
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-3xl font-bold">{totalAttempts}</p>
+                    </CardContent>
+                  </Card>
+                  
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-medium text-muted-foreground">
+                        Units Completed
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-3xl font-bold">{completedUnits}</p>
+                    </CardContent>
+                  </Card>
+                  
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-medium text-muted-foreground">
+                        Last Study Date
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-lg font-bold">
+                        {childStats?.last_study_date 
+                          ? format(new Date(childStats.last_study_date), 'MMM d, yyyy')
+                          : 'Not yet'}
+                      </p>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Daily Time Breakdown Chart */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Clock className="h-5 w-5" />
+                      Daily Time Breakdown
+                    </CardTitle>
+                    <CardDescription>Minutes spent on learning vs. compete games (last 7 days)</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {last7DaysAttempts.length === 0 ? (
+                      <p className="text-center py-8 text-muted-foreground">
+                        No activity in the last 7 days
+                      </p>
+                    ) : (
+                      <>
+                        <div className="flex flex-wrap items-center gap-4 mb-4">
+                          <div className="flex items-center gap-2">
+                            <div className="w-3 h-3 rounded-sm bg-primary" />
+                            <span className="text-sm text-muted-foreground">Learning</span>
+                            <span className="text-xs text-muted-foreground">(Flashcards, Matching, etc.)</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="w-3 h-3 rounded-sm bg-destructive" />
+                            <span className="text-sm text-muted-foreground">Compete</span>
+                            <span className="text-xs text-muted-foreground">(Reading, Writing, Listening, Speaking)</span>
+                          </div>
                         </div>
-                        <span className="text-sm text-muted-foreground">
-                          {totalXP} XP earned
-                        </span>
+                        <ChartContainer config={chartConfig} className="h-[250px] w-full">
+                          <BarChart data={dailyTimeData} accessibilityLayer>
+                            <XAxis 
+                              dataKey="date" 
+                              tickLine={false} 
+                              axisLine={false}
+                              tickMargin={8}
+                            />
+                            <YAxis 
+                              tickLine={false} 
+                              axisLine={false}
+                              tickMargin={8}
+                              tickFormatter={(value) => `${value}m`}
+                            />
+                            <ChartTooltip 
+                              content={<ChartTooltipContent />}
+                              formatter={(value, name) => [`${value} min`, name === 'learning' ? 'Learning' : 'Compete']}
+                            />
+                            <Bar 
+                              dataKey="learning" 
+                              fill="var(--color-learning)" 
+                              radius={[4, 4, 0, 0]}
+                              stackId="time"
+                            />
+                            <Bar 
+                              dataKey="compete" 
+                              fill="var(--color-compete)" 
+                              radius={[4, 4, 0, 0]}
+                              stackId="time"
+                            />
+                          </BarChart>
+                        </ChartContainer>
+                      </>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Recent Activity */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <TrendingUp className="h-5 w-5" />
+                      Recent Activity
+                    </CardTitle>
+                    <CardDescription>Last 10 completed game attempts</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {recentAttempts.length === 0 ? (
+                      <p className="text-center py-8 text-muted-foreground">
+                        No game attempts yet for {tt.name}
+                      </p>
+                    ) : (
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Date</TableHead>
+                            <TableHead>Game</TableHead>
+                            <TableHead>Unit</TableHead>
+                            <TableHead className="text-center">Score</TableHead>
+                            <TableHead className="text-center">Accuracy</TableHead>
+                            <TableHead className="text-right">Time</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {recentAttempts.map((attempt) => (
+                            <TableRow key={attempt.id}>
+                              <TableCell className="font-medium">
+                                {format(new Date(attempt.created_at), 'MMM d, h:mm a')}
+                              </TableCell>
+                              <TableCell>{formatGameType(attempt.game_type)}</TableCell>
+                              <TableCell className="max-w-[200px] truncate">
+                                {getUnitTitle(attempt.unit_id)}
+                              </TableCell>
+                              <TableCell className="text-center">
+                                <Badge variant={attempt.score >= 80 ? "default" : "secondary"}>
+                                  {attempt.score}%
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-center">
+                                {attempt.correct_answers}/{attempt.total_questions}
+                              </TableCell>
+                              <TableCell className="text-right text-muted-foreground">
+                                {formatTime(attempt.time_spent_seconds)}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Unit Progress */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <BookOpen className="h-5 w-5" />
+                      Unit Progress
+                    </CardTitle>
+                    <CardDescription>Progress across {tt.name} units</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {filteredUnits.length === 0 ? (
+                      <p className="text-center py-8 text-muted-foreground">
+                        No units available for {tt.name}
+                      </p>
+                    ) : filteredProgress.length === 0 ? (
+                      <p className="text-center py-8 text-muted-foreground">
+                        No progress yet for {tt.name}
+                      </p>
+                    ) : (
+                      <div className="space-y-4">
+                        {filteredUnits.filter(u => filteredProgress.some(p => p.unit_id === u.id)).map((unit) => {
+                          const progress = filteredProgress.filter(p => p.unit_id === unit.id);
+                          const totalXP = progress.reduce((sum, p) => sum + p.total_xp, 0);
+                          const bestScore = Math.max(...progress.map(p => p.best_score), 0);
+                          const isCompleted = progress.some(p => p.completed);
+                          
+                          return (
+                            <div key={unit.id} className="border rounded-lg p-4">
+                              <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-medium">
+                                    Unit {unit.unit_number}: {unit.title}
+                                  </span>
+                                  {isCompleted && (
+                                    <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/20">
+                                      Completed
+                                    </Badge>
+                                  )}
+                                </div>
+                                <span className="text-sm text-muted-foreground">
+                                  {totalXP} XP earned
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-4">
+                                <Progress value={bestScore} className="flex-1" />
+                                <span className="text-sm font-medium w-12 text-right">
+                                  {bestScore}%
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
-                      <div className="flex items-center gap-4">
-                        <Progress value={bestScore} className="flex-1" />
-                        <span className="text-sm font-medium w-12 text-right">
-                          {bestScore}%
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            ))}
+          </Tabs>
+        )}
+
+        {testTypes.length === 0 && (
+          <Card>
+            <CardContent className="flex items-center justify-center py-12">
+              <p className="text-muted-foreground">No test types available</p>
+            </CardContent>
+          </Card>
+        )}
       </main>
     </div>
   );
