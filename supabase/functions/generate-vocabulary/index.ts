@@ -141,10 +141,9 @@ Return ONLY a valid JSON array with this exact structure, no other text:
       throw new Error("Failed to parse vocabulary data");
     }
 
-    // Store in database
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    // Store in database using service role for insert
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const vocabRecords = vocabularyData.map((item: any) => ({
       unit_id,
