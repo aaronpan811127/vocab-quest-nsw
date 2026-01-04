@@ -190,7 +190,7 @@ export const OddOneOutGame = ({ unitId, unitTitle, onComplete, onBack }: OddOneO
         const word1 = shuffledSynWords[i];
         const word2 = shuffledSynWords.find(w => 
           w.id !== word1.id && 
-          !word1.synonyms.some(s => word2?.synonyms?.includes(s))
+          !word1.synonyms.some(s => w.synonyms?.includes(s))
         );
         
         if (!word2) continue;
