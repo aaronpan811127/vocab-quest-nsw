@@ -81,8 +81,15 @@ export const VoiceMasterGame = ({
         synthRef.current.cancel();
       }
       if (recognitionRef.current) {
-        recognitionRef.current.abort();
+        try {
+          recognitionRef.current.stop();
+          recognitionRef.current.abort();
+        } catch (e) {
+          // Ignore errors during cleanup
+        }
+        recognitionRef.current = null;
       }
+      setIsListening(false);
     };
   }, [unitId, playAllWordsOnStart]);
 
@@ -356,6 +363,18 @@ export const VoiceMasterGame = ({
   };
 
   const resetGame = (playAllWords: boolean = false) => {
+    // Stop any active recognition
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+        recognitionRef.current.abort();
+      } catch (e) {
+        // Ignore errors
+      }
+      recognitionRef.current = null;
+    }
+    setIsListening(false);
+    
     setCurrentIndex(0);
     setQuestions([]);
     setShowResults(false);
