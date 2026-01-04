@@ -66,10 +66,10 @@ serve(async (req) => {
     const prompt = `Generate word intuition questions for these vocabulary words: ${words.join(", ")}
 
 For each word, create a question where:
-1. The word is used in a sentence context that clearly shows its connotation
+1. The word is used naturally in a sentence context that clearly shows its connotation
 2. The student must identify if the word feels positive, negative, or neutral in that context
 3. The sentence should be age-appropriate for students (grades 5-12)
-4. The word should be naturally highlighted in context
+4. DO NOT use any markdown formatting like asterisks or bold - just write the plain sentence with the word included naturally
 
 Return ONLY a valid JSON array with this exact structure, no other text:
 [
@@ -77,18 +77,19 @@ Return ONLY a valid JSON array with this exact structure, no other text:
     "word": "reluctant",
     "sentence": "The judge was reluctant to accept the argument without solid evidence.",
     "correct_answer": "negative",
-    "explanation": "In this context, 'reluctant' shows hesitation and unwillingness, which carries a negative connotation as it implies doubt or resistance."
+    "explanation": "In this context, reluctant shows hesitation and unwillingness, which carries a negative connotation as it implies doubt or resistance."
   },
   {
     "word": "diligent",
     "sentence": "The diligent student spent extra hours reviewing the material before the exam.",
     "correct_answer": "positive",
-    "explanation": "Here 'diligent' describes someone who is hardworking and careful, which is a positive quality."
+    "explanation": "Here diligent describes someone who is hardworking and careful, which is a positive quality."
   }
 ]
 
 The options are always: "positive", "negative", "neutral"
-Make sure each sentence clearly demonstrates the word's connotation in that specific context.`;
+Make sure each sentence clearly demonstrates the word's connotation in that specific context.
+IMPORTANT: Write plain sentences without any special formatting or markdown.`;
 
     console.log("Generating intuition questions for words:", words);
 
