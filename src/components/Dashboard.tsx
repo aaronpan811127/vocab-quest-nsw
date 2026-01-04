@@ -6,7 +6,7 @@ import { GameCard } from "./GameCard";
 import { LeaderboardDialog } from "./LeaderboardDialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Target, Crown, ArrowRight, Layers, ArrowLeft, Link2, CircleOff, Lightbulb } from "lucide-react";
+import { Target, Crown, ArrowRight, Layers, ArrowLeft, Link2, CircleOff, Lightbulb, BookOpen, Trophy } from "lucide-react";
 import { useProfile } from "@/hooks/useProfile";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTestType } from "@/contexts/TestTypeContext";
@@ -358,7 +358,44 @@ Total XP = Sum of all games' XP
     };
   };
 
-  const games = [
+  // Learn section games - practice games, no XP accumulation
+  const learnGames = [
+    {
+      title: "Flashcards",
+      description: "Review words with interactive flashcards",
+      gameType: "flashcards" as const,
+      ...getGameData("flashcards"),
+      isLocked: false,
+      icon: Layers,
+    },
+    {
+      title: "Matching",
+      description: "Match words with their definitions",
+      gameType: "matching" as const,
+      ...getGameData("matching"),
+      isLocked: false,
+      icon: Link2,
+    },
+    {
+      title: "Odd One Out",
+      description: "Find the word that doesn't belong",
+      gameType: "oddoneout" as const,
+      ...getGameData("oddoneout"),
+      isLocked: false,
+      icon: CircleOff,
+    },
+    {
+      title: "Word Intuition",
+      description: "Test your word sense with context clues",
+      gameType: "intuition" as const,
+      ...getGameData("intuition"),
+      isLocked: false,
+      icon: Lightbulb,
+    },
+  ];
+
+  // Challenge section games - XP earning games
+  const challengeGames = [
     {
       title: "Reading Quest",
       description: "Embark on reading adventures with comprehension challenges",
@@ -436,68 +473,68 @@ Total XP = Sum of all games' XP
 
         {/* Current Unit Progress */}
         {currentUnit && (
-          <div className="space-y-3 sm:space-y-4">
+          <div className="space-y-6 sm:space-y-8">
             <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
               <h2 className="text-lg sm:text-2xl font-bold">Current Unit: {currentUnit.unitNumber}</h2>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => onStartGame && onStartGame("flashcards", currentUnit.id, currentUnit.title)}
-                  className="gap-2"
-                >
-                  <Layers className="h-4 w-4" />
-                  Flashcards
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => onStartGame && onStartGame("matching", currentUnit.id, currentUnit.title)}
-                  className="gap-2"
-                >
-                  <Link2 className="h-4 w-4" />
-                  Matching
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => onStartGame && onStartGame("oddoneout", currentUnit.id, currentUnit.title)}
-                  className="gap-2"
-                >
-                  <CircleOff className="h-4 w-4" />
-                  Odd One Out
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => onStartGame && onStartGame("intuition", currentUnit.id, currentUnit.title)}
-                  className="gap-2"
-                >
-                  <Lightbulb className="h-4 w-4" />
-                  Word Intuition
-                </Button>
+              <span className="text-muted-foreground">{currentUnit.title}</span>
+            </div>
+
+            {/* Learn Section */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 text-primary">
+                  <BookOpen className="h-5 w-5" />
+                  <h3 className="text-lg font-semibold">Learn</h3>
+                </div>
+                <span className="text-sm text-muted-foreground">Practice and master vocabulary</span>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+                {learnGames.map((game) => (
+                  <Button
+                    key={game.title}
+                    variant="outline"
+                    className="h-auto py-4 flex flex-col items-center gap-2 hover:bg-primary/10 hover:border-primary/50 transition-all"
+                    onClick={() => onStartGame && onStartGame(game.gameType, currentUnit.id, currentUnit.title)}
+                  >
+                    <game.icon className="h-6 w-6 text-primary" />
+                    <span className="font-medium">{game.title}</span>
+                    {game.attempts > 0 && (
+                      <span className="text-xs text-muted-foreground">{game.attempts} plays</span>
+                    )}
+                  </Button>
+                ))}
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-6">
-              {games.map((game) => (
-                <GameCard
-                  key={game.title}
-                  {...game}
-                  history={gameHistory[game.gameType] || []}
-                  onPlay={() => {
-                    if (!game.isLocked && onStartGame && currentUnit) {
-                      const playAllWordsOnStart =
-                        game.isCompleted &&
-                        (game.gameType === "listening" || game.gameType === "speaking" || game.gameType === "writing");
+            {/* Challenge Section */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 text-amber-500">
+                  <Trophy className="h-5 w-5" />
+                  <h3 className="text-lg font-semibold">Challenge</h3>
+                </div>
+                <span className="text-sm text-muted-foreground">Earn XP and level up</span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-6">
+                {challengeGames.map((game) => (
+                  <GameCard
+                    key={game.title}
+                    {...game}
+                    history={gameHistory[game.gameType] || []}
+                    onPlay={() => {
+                      if (!game.isLocked && onStartGame && currentUnit) {
+                        const playAllWordsOnStart =
+                          game.isCompleted &&
+                          (game.gameType === "listening" || game.gameType === "speaking" || game.gameType === "writing");
 
-                      onStartGame(game.gameType, currentUnit.id, currentUnit.title, playAllWordsOnStart);
-                    } else if (game.isLocked) {
-                      console.log(`${game.title} coming soon!`);
-                    }
-                  }}
-                />
-              ))}
+                        onStartGame(game.gameType, currentUnit.id, currentUnit.title, playAllWordsOnStart);
+                      } else if (game.isLocked) {
+                        console.log(`${game.title} coming soon!`);
+                      }
+                    }}
+                  />
+                ))}
+              </div>
             </div>
           </div>
         )}
