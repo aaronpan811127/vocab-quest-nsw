@@ -316,12 +316,13 @@ export const Dashboard = ({ onStartGame, onBack, selectedUnitId, onUnitChange }:
 
   const displayName = profile?.username || user?.email?.split("@")[0] || "Player";
 
-  const xpTooltip = `📊 XP Calculation (Per Game):
+  const xpTooltip = `
+Gain XP by completing challenges with accuracy AND speed.
 
-Each game's XP = (Avg Score × 0.5) + Time Bonus
-Based on average across all attempts of that game.
+📊 XP Calculation:
+Total XP = Sum of all Games' XP
 
-Total XP = Sum of all games' XP
+Game XP = (Avg Score over all attempts × 0.5) + Time Bonus
 
 ⏱️ Time Bonus Tiers (avg time per question):
 • ≤5 seconds: +25 XP (fastest)
@@ -332,7 +333,11 @@ Total XP = Sum of all games' XP
 • 26-29 seconds: +1-4 XP
 • ≥30 seconds: +0 XP
 
-💡 Example: Avg 80% in avg 4s/q = 40 + 25 = 65 XP`;
+💡 Example: 
+3 attempts with scores 20%,30%,100% gives an Avg Score of 50% i.e.(20+30+100)/3
+Avg time per question over all 3 attemps is 8 secs
+Game XP = (50 × 0.5) + 20 = 45
+`;
 
   const currentXp = testTypeStats.totalXp;
   const currentLevel = testTypeStats.level;
