@@ -316,8 +316,7 @@ export const Dashboard = ({ onStartGame, onBack, selectedUnitId, onUnitChange }:
 
   const displayName = profile?.username || user?.email?.split("@")[0] || "Player";
 
-  const xpTooltip = `
-Gain XP by completing challenges with accuracy AND speed.
+  const xpTooltip = `Gain XP by completing challenges with accuracy AND speed.
 
 📊 XP Calculation:
 Total XP = Sum of all Games' XP
