@@ -100,6 +100,8 @@ serve(async (req) => {
       );
     }
 
+    const isPerfect = correct_answers === total_questions;
+
     if (existingProgress?.id) {
       const { error: progressUpdateError } = await supabaseAdmin
         .from('user_progress')
@@ -107,7 +109,7 @@ serve(async (req) => {
           attempts: (existingProgress.attempts ?? 0) + 1,
           total_time_seconds: (existingProgress.total_time_seconds ?? 0) + time_spent_seconds,
           best_score: Math.max(existingProgress.best_score ?? 0, score),
-          completed: true,
+          completed: existingProgress.completed || isPerfect,
           updated_at: new Date().toISOString(),
         })
         .eq('id', existingProgress.id);
@@ -130,7 +132,7 @@ serve(async (req) => {
           total_xp: 0,
           total_time_seconds: time_spent_seconds,
           attempts: 1,
-          completed: true,
+          completed: isPerfect,
         });
 
       if (progressInsertError) {
