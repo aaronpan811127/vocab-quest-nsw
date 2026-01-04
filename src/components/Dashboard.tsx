@@ -6,7 +6,7 @@ import { GameCard } from "./GameCard";
 import { LeaderboardDialog } from "./LeaderboardDialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Target, Crown, ArrowRight, Layers, ArrowLeft, Link2, CircleOff } from "lucide-react";
+import { Target, Crown, ArrowRight, Layers, ArrowLeft, Link2, CircleOff, Lightbulb } from "lucide-react";
 import { useProfile } from "@/hooks/useProfile";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTestType } from "@/contexts/TestTypeContext";
@@ -466,6 +466,15 @@ Total XP = Sum of all games' XP
                 >
                   <CircleOff className="h-4 w-4" />
                   Odd One Out
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onStartGame && onStartGame("intuition", currentUnit.id, currentUnit.title)}
+                  className="gap-2"
+                >
+                  <Lightbulb className="h-4 w-4" />
+                  Word Intuition
                 </Button>
               </div>
             </div>
