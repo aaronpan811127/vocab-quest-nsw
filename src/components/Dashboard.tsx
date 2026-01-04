@@ -17,6 +17,7 @@ import {
   Lightbulb,
   BookOpen,
   Trophy,
+  CheckCircle2,
 } from "lucide-react";
 import { useProfile } from "@/hooks/useProfile";
 import { useAuth } from "@/contexts/AuthContext";
@@ -507,9 +508,12 @@ Game XP = (Avg Score over all attempts × 0.5) + Time Bonus
                   <Button
                     key={game.title}
                     variant="outline"
-                    className="h-auto py-4 flex flex-col items-center gap-2 hover:bg-primary/10 hover:border-primary/50 transition-all"
+                    className={`h-auto py-4 flex flex-col items-center gap-2 hover:bg-primary/10 hover:border-primary/50 transition-all relative ${game.isCompleted ? 'border-green-500/50 bg-green-500/5' : ''}`}
                     onClick={() => onStartGame && onStartGame(game.gameType, currentUnit.id, currentUnit.title)}
                   >
+                    {game.isCompleted && (
+                      <CheckCircle2 className="h-4 w-4 text-green-500 absolute top-2 right-2" />
+                    )}
                     <game.icon className="h-6 w-6 text-primary" />
                     <span className="font-medium">{game.title}</span>
                   </Button>
