@@ -333,9 +333,9 @@ Game XP = (Avg Score over all attempts × 0.5) + Time Bonus
 • ≥30 seconds: +0 XP
 
 💡 Example: 
-3 attempts with scores 20%,30%,100% gives an Avg Score of 50% i.e.(20+30+100)/3
-Avg time per question over all 3 attemps is 8 secs
-Game XP = (50 × 0.5) + 20 = 45
+• 3 attempts with scores 20%,30%,100% -> Avg Score of 50% i.e.(20%+30%+100%)/3
+• Avg time per question over all 3 attemps is 8 secs
+• Game XP = (50 × 0.5) + 20 = 45
 `;
 
   const currentXp = testTypeStats.totalXp;
