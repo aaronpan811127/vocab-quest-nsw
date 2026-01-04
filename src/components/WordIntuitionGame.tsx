@@ -27,6 +27,7 @@ export const WordIntuitionGame = ({ unitId, unitTitle, onComplete, onBack }: Wor
   const { user } = useAuth();
   const { toast } = useToast();
   const [questions, setQuestions] = useState<Question[]>([]);
+  const [allQuestions, setAllQuestions] = useState<Question[]>([]); // Store all questions for "Play Again"
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [showResult, setShowResult] = useState(false);
@@ -67,7 +68,9 @@ export const WordIntuitionGame = ({ unitId, unitTitle, onComplete, onBack }: Wor
             explanation: options.explanation,
           };
         });
-        setQuestions(shuffleArray(formattedQuestions).slice(0, 10));
+        const shuffled = shuffleArray(formattedQuestions).slice(0, 10);
+        setAllQuestions(shuffled);
+        setQuestions(shuffled);
         setStartTime(Date.now());
       } else {
         // Generate new questions using AI
@@ -159,7 +162,9 @@ export const WordIntuitionGame = ({ unitId, unitTitle, onComplete, onBack }: Wor
             explanation: options.explanation,
           };
         });
-        setQuestions(shuffleArray(formattedQuestions).slice(0, 10));
+        const shuffled = shuffleArray(formattedQuestions).slice(0, 10);
+        setAllQuestions(shuffled);
+        setQuestions(shuffled);
         setStartTime(Date.now());
       }
     } catch (error) {
@@ -244,14 +249,14 @@ export const WordIntuitionGame = ({ unitId, unitTitle, onComplete, onBack }: Wor
     setScore(0);
     setGameComplete(false);
     setIncorrectAnswers([]);
-    setQuestions(shuffleArray(questions));
+    setQuestions(shuffleArray([...allQuestions])); // Use all questions for "Play Again"
     setStartTime(Date.now());
   };
 
   const handlePracticeMistakes = () => {
     // Filter questions to only include ones that were answered incorrectly
     const mistakeQuestionIds = incorrectAnswers.map((a) => a.questionId);
-    const mistakeQuestions = questions.filter((q) => mistakeQuestionIds.includes(q.id));
+    const mistakeQuestions = allQuestions.filter((q) => mistakeQuestionIds.includes(q.id));
     
     if (mistakeQuestions.length === 0) return;
     
