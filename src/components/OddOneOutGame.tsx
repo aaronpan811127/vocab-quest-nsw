@@ -22,13 +22,14 @@ interface Word {
   word: string;
   definition: string;
   synonyms: string[];
+  antonyms: string[];
 }
 
 interface Question {
   options: string[];
   oddOneOut: string;
-  oddDefinition: string;
-  similarDefinition: string;
+  explanation: string;
+  baseWord: string;
 }
 
 interface OddOneOutGameProps {
@@ -108,41 +109,96 @@ export const OddOneOutGame = ({ unitId, unitTitle, onComplete, onBack }: OddOneO
   };
 
   const generateQuestions = (vocabWords: Word[]) => {
-    if (vocabWords.length < 4) return;
-
     const generatedQuestions: Question[] = [];
-    const shuffledWords = [...vocabWords].sort(() => Math.random() - 0.5);
-    const numQuestions = Math.min(8, Math.floor(vocabWords.length / 2));
-
-    for (let i = 0; i < numQuestions; i++) {
-      // Pick 3 similar words (using synonyms if available, otherwise random)
-      const baseWord = shuffledWords[i % shuffledWords.length];
-      const similarWords: Word[] = [baseWord];
+    
+    // Filter words that have both synonyms and antonyms
+    const wordsWithRelations = vocabWords.filter(
+      w => w.synonyms?.length >= 3 && w.antonyms?.length >= 1
+    );
+    
+    // Also include words with just synonyms (we can use a synonym from another word as odd)
+    const wordsWithSynonyms = vocabWords.filter(w => w.synonyms?.length >= 3);
+    
+    // Shuffle and create questions
+    const shuffled = [...wordsWithRelations].sort(() => Math.random() - 0.5);
+    const numQuestions = Math.min(8, shuffled.length + Math.floor(wordsWithSynonyms.length / 2));
+    
+    for (let i = 0; i < Math.min(shuffled.length, numQuestions); i++) {
+      const word = shuffled[i];
       
-      // Find words with similar definitions or shared synonyms
-      const otherWords = vocabWords.filter(w => w.id !== baseWord.id);
-      const shuffledOthers = [...otherWords].sort(() => Math.random() - 0.5);
+      // Get 3 synonyms
+      const synonyms = [...word.synonyms].sort(() => Math.random() - 0.5).slice(0, 3);
       
-      // Add 2 more "similar" words
-      for (let j = 0; j < Math.min(2, shuffledOthers.length); j++) {
-        similarWords.push(shuffledOthers[j]);
-      }
-
-      // Pick 1 odd word (different from the group)
-      const oddWord = shuffledOthers[2] || shuffledOthers[0];
+      // Get 1 antonym as the odd one out
+      const oddWord = word.antonyms[Math.floor(Math.random() * word.antonyms.length)];
       
-      if (similarWords.length >= 3 && oddWord) {
-        const options = [...similarWords.map(w => w.word), oddWord.word].sort(() => Math.random() - 0.5);
+      if (synonyms.length === 3 && oddWord) {
+        const options = [...synonyms, oddWord].sort(() => Math.random() - 0.5);
         
         generatedQuestions.push({
           options,
-          oddOneOut: oddWord.word,
-          oddDefinition: oddWord.definition,
-          similarDefinition: baseWord.definition,
+          oddOneOut: oddWord,
+          explanation: `"${oddWord}" is an antonym (opposite) of "${word.word}", while the others are synonyms.`,
+          baseWord: word.word,
         });
       }
     }
-
+    
+    // If we need more questions, create synonym-based questions
+    if (generatedQuestions.length < numQuestions && wordsWithSynonyms.length >= 2) {
+      const remainingNeeded = numQuestions - generatedQuestions.length;
+      const shuffledSynWords = [...wordsWithSynonyms].sort(() => Math.random() - 0.5);
+      
+      for (let i = 0; i < Math.min(remainingNeeded, shuffledSynWords.length - 1); i++) {
+        const word1 = shuffledSynWords[i];
+        const word2 = shuffledSynWords[(i + 1) % shuffledSynWords.length];
+        
+        // Skip if same word or if word2's synonym overlaps with word1's
+        if (word1.id === word2.id) continue;
+        
+        // Get 3 synonyms from word1
+        const synonyms = [...word1.synonyms].sort(() => Math.random() - 0.5).slice(0, 3);
+        
+        // Get 1 synonym from word2 as the odd one (different meaning)
+        const oddWord = word2.synonyms[Math.floor(Math.random() * word2.synonyms.length)];
+        
+        // Skip if oddWord is also a synonym of word1
+        if (!oddWord || synonyms.includes(oddWord) || word1.synonyms.includes(oddWord)) continue;
+        
+        const options = [...synonyms, oddWord].sort(() => Math.random() - 0.5);
+        
+        generatedQuestions.push({
+          options,
+          oddOneOut: oddWord,
+          explanation: `"${oddWord}" relates to "${word2.word}", while the others are synonyms of "${word1.word}".`,
+          baseWord: word1.word,
+        });
+      }
+    }
+    
+    // Fallback: if still not enough questions, use any words with at least some synonyms
+    if (generatedQuestions.length < 4 && vocabWords.length >= 4) {
+      const anyWords = vocabWords.filter(w => w.synonyms?.length >= 1 || w.antonyms?.length >= 1);
+      const shuffledAny = [...anyWords].sort(() => Math.random() - 0.5);
+      
+      for (let i = 0; i < Math.min(4, shuffledAny.length) && generatedQuestions.length < 4; i++) {
+        const word = shuffledAny[i];
+        const allRelated = [...(word.synonyms || []), ...(word.antonyms || [])];
+        
+        if (allRelated.length >= 4) {
+          const options = [...allRelated].sort(() => Math.random() - 0.5).slice(0, 4);
+          const oddWord = word.antonyms?.[0] || options[0];
+          
+          generatedQuestions.push({
+            options,
+            oddOneOut: oddWord,
+            explanation: `"${oddWord}" has a different relationship to "${word.word}" than the others.`,
+            baseWord: word.word,
+          });
+        }
+      }
+    }
+    
     setQuestions(generatedQuestions);
   };
 
@@ -352,7 +408,7 @@ export const OddOneOutGame = ({ unitId, unitTitle, onComplete, onBack }: OddOneO
                 <span className="text-primary">{currentQ.oddOneOut}</span> is the odd one out!
               </p>
               <p className="text-sm text-muted-foreground">
-                Definition: {currentQ.oddDefinition}
+                {currentQ.explanation}
               </p>
             </div>
           )}
