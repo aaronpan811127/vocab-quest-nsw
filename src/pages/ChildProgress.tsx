@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSubscription } from "@/contexts/SubscriptionContext";
@@ -16,6 +16,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "@/components/ui/chart";
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer } from "recharts";
 import { 
   ArrowLeft, 
   Trophy, 
@@ -26,9 +32,10 @@ import {
   TrendingUp,
   Calendar,
   Crown,
-  Lock
+  Lock,
+  Gamepad2
 } from "lucide-react";
-import { format } from "date-fns";
+import { format, subDays, startOfDay, parseISO } from "date-fns";
 
 interface ChildProfile {
   username: string;
@@ -69,6 +76,11 @@ interface Unit {
   unit_number: number;
 }
 
+// Learning games: vocabulary building, comprehension
+const LEARNING_GAMES = ['flashcards', 'matching', 'reading', 'oddoneout', 'word_intuition', 'story'];
+// Compete games: active recall, dictation-based
+const COMPETE_GAMES = ['listening', 'speaking'];
+
 const ChildProgress = () => {
   const { childId } = useParams<{ childId: string }>();
   const navigate = useNavigate();
@@ -78,6 +90,7 @@ const ChildProgress = () => {
   const [childProfile, setChildProfile] = useState<ChildProfile | null>(null);
   const [childStats, setChildStats] = useState<ChildStats | null>(null);
   const [recentAttempts, setRecentAttempts] = useState<GameAttempt[]>([]);
+  const [allAttempts, setAllAttempts] = useState<GameAttempt[]>([]);
   const [unitProgress, setUnitProgress] = useState<UnitProgress[]>([]);
   const [units, setUnits] = useState<Unit[]>([]);
   const [loading, setLoading] = useState(true);
@@ -128,8 +141,11 @@ const ChildProgress = () => {
 
       setChildEmail(childLink.student_email);
 
+      // Get date range for last 7 days
+      const sevenDaysAgo = subDays(new Date(), 7).toISOString();
+
       // Fetch all data in parallel
-      const [profileResult, statsResult, attemptsResult, progressResult, unitsResult] = await Promise.all([
+      const [profileResult, statsResult, recentAttemptsResult, allAttemptsResult, progressResult, unitsResult] = await Promise.all([
         supabase
           .from("profiles")
           .select("username, avatar_url")
@@ -148,6 +164,13 @@ const ChildProgress = () => {
           .order("created_at", { ascending: false })
           .limit(10),
         supabase
+          .from("game_attempts")
+          .select("id, game_type, time_spent_seconds, created_at")
+          .eq("user_id", childId)
+          .eq("completed", true)
+          .gte("created_at", sevenDaysAgo)
+          .order("created_at", { ascending: true }),
+        supabase
           .from("user_progress")
           .select("*")
           .eq("user_id", childId),
@@ -159,7 +182,8 @@ const ChildProgress = () => {
 
       setChildProfile(profileResult.data);
       setChildStats(statsResult.data?.[0] || null);
-      setRecentAttempts(attemptsResult.data || []);
+      setRecentAttempts(recentAttemptsResult.data || []);
+      setAllAttempts(allAttemptsResult.data as GameAttempt[] || []);
       setUnitProgress(progressResult.data || []);
       setUnits(unitsResult.data || []);
     } catch (error) {
@@ -195,6 +219,53 @@ const ChildProgress = () => {
   const averageScore = recentAttempts.length > 0
     ? Math.round(recentAttempts.reduce((sum, a) => sum + a.score, 0) / recentAttempts.length)
     : 0;
+
+  // Calculate daily time breakdown for learning vs compete games
+  const dailyTimeData = useMemo(() => {
+    const last7Days: { date: string; learning: number; compete: number }[] = [];
+    
+    for (let i = 6; i >= 0; i--) {
+      const day = subDays(new Date(), i);
+      const dayStr = format(day, 'yyyy-MM-dd');
+      last7Days.push({
+        date: format(day, 'EEE'),
+        learning: 0,
+        compete: 0,
+      });
+    }
+
+    allAttempts.forEach(attempt => {
+      const attemptDate = format(parseISO(attempt.created_at), 'yyyy-MM-dd');
+      const dayIndex = last7Days.findIndex((_, i) => 
+        format(subDays(new Date(), 6 - i), 'yyyy-MM-dd') === attemptDate
+      );
+      
+      if (dayIndex !== -1) {
+        const timeInMinutes = Math.round(attempt.time_spent_seconds / 60);
+        if (LEARNING_GAMES.includes(attempt.game_type)) {
+          last7Days[dayIndex].learning += timeInMinutes;
+        } else if (COMPETE_GAMES.includes(attempt.game_type)) {
+          last7Days[dayIndex].compete += timeInMinutes;
+        } else {
+          // Default to learning for unknown game types
+          last7Days[dayIndex].learning += timeInMinutes;
+        }
+      }
+    });
+
+    return last7Days;
+  }, [allAttempts]);
+
+  const chartConfig = {
+    learning: {
+      label: "Learning",
+      color: "hsl(var(--primary))",
+    },
+    compete: {
+      label: "Compete",
+      color: "hsl(var(--destructive))",
+    },
+  };
 
   if (loading) {
     return (
@@ -376,6 +447,71 @@ const ChildProgress = () => {
                   ))}
                 </TableBody>
               </Table>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Daily Time Breakdown Chart */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Clock className="h-5 w-5" />
+              Daily Time Breakdown
+            </CardTitle>
+            <CardDescription>Minutes spent on learning vs. compete games (last 7 days)</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {allAttempts.length === 0 ? (
+              <p className="text-center py-8 text-muted-foreground">
+                No activity in the last 7 days
+              </p>
+            ) : (
+              <>
+                <div className="flex items-center gap-6 mb-4">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-sm bg-primary" />
+                    <span className="text-sm text-muted-foreground">Learning</span>
+                    <span className="text-xs text-muted-foreground">(Flashcards, Matching, Reading, etc.)</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-sm bg-destructive" />
+                    <span className="text-sm text-muted-foreground">Compete</span>
+                    <span className="text-xs text-muted-foreground">(Listening, Speaking)</span>
+                  </div>
+                </div>
+                <ChartContainer config={chartConfig} className="h-[250px] w-full">
+                  <BarChart data={dailyTimeData} accessibilityLayer>
+                    <XAxis 
+                      dataKey="date" 
+                      tickLine={false} 
+                      axisLine={false}
+                      tickMargin={8}
+                    />
+                    <YAxis 
+                      tickLine={false} 
+                      axisLine={false}
+                      tickMargin={8}
+                      tickFormatter={(value) => `${value}m`}
+                    />
+                    <ChartTooltip 
+                      content={<ChartTooltipContent />}
+                      formatter={(value, name) => [`${value} min`, name === 'learning' ? 'Learning' : 'Compete']}
+                    />
+                    <Bar 
+                      dataKey="learning" 
+                      fill="var(--color-learning)" 
+                      radius={[4, 4, 0, 0]}
+                      stackId="time"
+                    />
+                    <Bar 
+                      dataKey="compete" 
+                      fill="var(--color-compete)" 
+                      radius={[4, 4, 0, 0]}
+                      stackId="time"
+                    />
+                  </BarChart>
+                </ChartContainer>
+              </>
             )}
           </CardContent>
         </Card>
