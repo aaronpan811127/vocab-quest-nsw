@@ -9,6 +9,7 @@ import { VoiceMasterGame } from "@/components/VoiceMasterGame";
 import { StoryCreatorGame } from "@/components/StoryCreatorGame";
 import { FlashcardGame } from "@/components/FlashcardGame";
 import { MatchingGame } from "@/components/MatchingGame";
+import { OddOneOutGame } from "@/components/OddOneOutGame";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/useProfile";
 import { TestType } from "@/contexts/TestTypeContext";
@@ -74,6 +75,8 @@ const Index = () => {
         return <FlashcardGame {...commonProps} />;
       case "matching":
         return <MatchingGame {...commonProps} />;
+      case "oddoneout":
+        return <OddOneOutGame {...commonProps} />;
       default:
         return <ReadingGame {...commonProps} />;
     }
