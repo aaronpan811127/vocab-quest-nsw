@@ -214,6 +214,7 @@ export const MatchingGame = ({ unitId, unitTitle, onComplete, onBack }: Matching
     const score = Math.round((words.length / Math.max(moves, words.length)) * 100);
 
     try {
+      // Save game attempt
       await supabase.from('game_attempts').insert({
         user_id: user.id,
         unit_id: unitId,
@@ -224,6 +225,40 @@ export const MatchingGame = ({ unitId, unitTitle, onComplete, onBack }: Matching
         time_spent_seconds: timeSpent,
         completed: true
       });
+
+      // Save/update user_progress for completion tracking
+      const { data: existingProgress } = await supabase
+        .from('user_progress')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('unit_id', unitId)
+        .eq('game_type', 'matching')
+        .maybeSingle();
+
+      if (existingProgress) {
+        await supabase
+          .from('user_progress')
+          .update({
+            completed: true,
+            attempts: (existingProgress.attempts || 0) + 1,
+            total_time_seconds: (existingProgress.total_time_seconds || 0) + timeSpent,
+            best_score: Math.max(existingProgress.best_score || 0, Math.min(score, 100)),
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existingProgress.id);
+      } else {
+        await supabase
+          .from('user_progress')
+          .insert({
+            user_id: user.id,
+            unit_id: unitId,
+            game_type: 'matching',
+            completed: true,
+            attempts: 1,
+            total_time_seconds: timeSpent,
+            best_score: Math.min(score, 100)
+          });
+      }
     } catch (err) {
       console.error('Error saving game attempt:', err);
     }

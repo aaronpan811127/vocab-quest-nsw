@@ -238,8 +238,10 @@ export const OddOneOutGame = ({ unitId, unitTitle, onComplete, onBack }: OddOneO
 
     const timeSpent = Math.floor((Date.now() - startTime) / 1000);
     const score = Math.round((correctAnswers / questions.length) * 100);
+    const isPerfect = correctAnswers === questions.length;
 
     try {
+      // Save game attempt
       const { error } = await supabase
         .from('game_attempts')
         .insert({
@@ -254,6 +256,40 @@ export const OddOneOutGame = ({ unitId, unitTitle, onComplete, onBack }: OddOneO
         });
 
       if (error) throw error;
+
+      // Save/update user_progress for completion tracking
+      const { data: existingProgress } = await supabase
+        .from('user_progress')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('unit_id', unitId)
+        .eq('game_type', 'oddoneout')
+        .maybeSingle();
+
+      if (existingProgress) {
+        await supabase
+          .from('user_progress')
+          .update({
+            completed: existingProgress.completed || isPerfect,
+            attempts: (existingProgress.attempts || 0) + 1,
+            total_time_seconds: (existingProgress.total_time_seconds || 0) + timeSpent,
+            best_score: Math.max(existingProgress.best_score || 0, score),
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existingProgress.id);
+      } else {
+        await supabase
+          .from('user_progress')
+          .insert({
+            user_id: user.id,
+            unit_id: unitId,
+            game_type: 'oddoneout',
+            completed: isPerfect,
+            attempts: 1,
+            total_time_seconds: timeSpent,
+            best_score: score
+          });
+      }
     } catch (err) {
       console.error('Error saving game attempt:', err);
     }
