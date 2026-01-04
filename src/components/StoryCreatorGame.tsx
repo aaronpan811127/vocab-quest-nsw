@@ -407,14 +407,14 @@ export const StoryCreatorGame = ({ unitId, unitTitle, onComplete, onBack, playAl
       <div className="max-w-2xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <PenTool className="h-6 w-6 text-primary" />
-              Story Creator
-            </h1>
-            <p className="text-muted-foreground">{unitTitle}</p>
+          <div className="flex items-center gap-3">
+            <PenTool className="h-6 w-6 text-primary" />
+            <h1 className="text-2xl font-bold">Story Creator</h1>
+            <Badge className="bg-gradient-primary text-primary-foreground">
+              {unitTitle}
+            </Badge>
           </div>
-          <Button variant="ghost" onClick={onBack}>
+          <Button variant="outline" onClick={onBack}>
             Back
           </Button>
         </div>

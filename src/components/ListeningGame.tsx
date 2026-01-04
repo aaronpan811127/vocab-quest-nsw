@@ -423,10 +423,10 @@ export const ListeningGame = ({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Headphones className="h-6 w-6 text-primary" />
-            <div>
-              <h1 className="text-xl font-bold">Audio Challenge</h1>
-              <p className="text-sm text-muted-foreground">{unitTitle}</p>
-            </div>
+            <h1 className="text-2xl font-bold">Audio Challenge</h1>
+            <Badge className="bg-gradient-primary text-primary-foreground">
+              {unitTitle}
+            </Badge>
           </div>
           <Button variant="outline" onClick={onBack}>
             Back
