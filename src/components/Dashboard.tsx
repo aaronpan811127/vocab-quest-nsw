@@ -18,6 +18,7 @@ import {
   BookOpen,
   Trophy,
   CheckCircle2,
+  Lock,
 } from "lucide-react";
 import { useProfile } from "@/hooks/useProfile";
 import { useAuth } from "@/contexts/AuthContext";
@@ -410,35 +411,38 @@ Game XP = (Avg Score over all attempts × 0.5) + Time Bonus
     },
   ];
 
-  // Challenge section games - XP earning games
+  // Check if all Learn games are completed
+  const allLearnGamesCompleted = learnGames.every((game) => game.isCompleted);
+
+  // Challenge section games - XP earning games (locked until all Learn games completed)
   const challengeGames = [
     {
       title: "Reading Quest",
       description: "Embark on reading adventures with comprehension challenges",
       gameType: "reading" as const,
       ...getGameData("reading"),
-      isLocked: false,
+      isLocked: !allLearnGamesCompleted,
     },
     {
       title: "Audio Challenge",
       description: "Listen and spell words perfectly to advance",
       gameType: "listening" as const,
       ...getGameData("listening"),
-      isLocked: false,
+      isLocked: !allLearnGamesCompleted,
     },
     {
       title: "Voice Master",
       description: "Speak clearly and accurately to unlock achievements",
       gameType: "speaking" as const,
       ...getGameData("speaking"),
-      isLocked: false,
+      isLocked: !allLearnGamesCompleted,
     },
     {
       title: "Story Creator",
       description: "Craft creative sentences using your new vocabulary",
       gameType: "writing" as const,
       ...getGameData("writing"),
-      isLocked: false,
+      isLocked: !allLearnGamesCompleted,
     },
   ];
 
@@ -524,11 +528,21 @@ Game XP = (Avg Score over all attempts × 0.5) + Time Bonus
             {/* Challenge Section */}
             <div className="space-y-4">
               <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2 text-amber-500">
-                  <Trophy className="h-5 w-5" />
+                <div className={`flex items-center gap-2 ${allLearnGamesCompleted ? 'text-amber-500' : 'text-muted-foreground'}`}>
+                  {allLearnGamesCompleted ? (
+                    <Trophy className="h-5 w-5" />
+                  ) : (
+                    <Lock className="h-5 w-5" />
+                  )}
                   <h3 className="text-lg font-semibold">Challenge</h3>
                 </div>
-                <span className="text-sm text-muted-foreground">Earn XP and level up</span>
+                {allLearnGamesCompleted ? (
+                  <span className="text-sm text-muted-foreground">Earn XP and level up</span>
+                ) : (
+                  <Badge variant="outline" className="text-xs">
+                    Complete all Learn games to unlock
+                  </Badge>
+                )}
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-6">
                 {challengeGames.map((game) => (
