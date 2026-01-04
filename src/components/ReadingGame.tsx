@@ -375,17 +375,9 @@ export const ReadingGame = ({ unitId, unitTitle, onComplete, onBack }: ReadingGa
     fetchPassageAndQuestions();
   };
 
-  const renderHighlightedContent = (content: string) => {
-    // Split by ** markers for highlighted words
-    return content.split('**').map((part, index) => 
-      index % 2 === 0 ? (
-        <span key={index}>{part}</span>
-      ) : (
-        <strong key={index} className="text-primary font-bold bg-primary/10 px-1 rounded">
-          {part}
-        </strong>
-      )
-    );
+  const renderContent = (content: string) => {
+    // Remove ** markers and return plain text
+    return content.replace(/\*\*/g, '');
   };
 
   if (loading || generatingQuestions) {
@@ -530,14 +522,14 @@ export const ReadingGame = ({ unitId, unitTitle, onComplete, onBack }: ReadingGa
             {passage?.title || 'Reading Passage'}
           </h3>
           <div className="prose prose-sm max-w-none text-foreground leading-relaxed">
-            {passage && renderHighlightedContent(passage.content)}
+            {passage && renderContent(passage.content)}
           </div>
         </Card>
 
         {/* Question */}
         <Card className="p-6 bg-card/50 backdrop-blur-sm border-2 border-border/50">
           <h3 className="text-lg font-semibold mb-4">
-            {renderHighlightedContent(questions[currentQuestion]?.question_text || '')}
+            {renderContent(questions[currentQuestion]?.question_text || '')}
           </h3>
           <div className="space-y-3">
             {questions[currentQuestion]?.options.map((option, index) => (
@@ -562,7 +554,7 @@ export const ReadingGame = ({ unitId, unitTitle, onComplete, onBack }: ReadingGa
                   `}>
                     {String.fromCharCode(65 + index)}
                   </div>
-                  {renderHighlightedContent(option)}
+                  {renderContent(option)}
                 </div>
               </button>
             ))}
