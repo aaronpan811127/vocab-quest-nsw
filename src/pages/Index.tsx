@@ -21,6 +21,7 @@ interface GameState {
 const Index = () => {
   const [currentView, setCurrentView] = useState<"hero" | "dashboard" | "game">("hero");
   const [gameState, setGameState] = useState<GameState | null>(null);
+  const [selectedUnitId, setSelectedUnitId] = useState<string | null>(null);
   const { user } = useAuth();
 
   const handleStartGame = (gameType: string, unitId: string, unitTitle: string, playAllWordsOnStart?: boolean) => {
@@ -63,7 +64,7 @@ const Index = () => {
       case "hero":
         return <Hero onSelectTestType={handleSelectTestType} />;
       case "dashboard":
-        return <Dashboard onStartGame={handleStartGame} onBack={() => setCurrentView("hero")} />;
+        return <Dashboard onStartGame={handleStartGame} onBack={() => setCurrentView("hero")} selectedUnitId={selectedUnitId} onUnitChange={setSelectedUnitId} />;
       case "game":
         return renderGameComponent();
       default:
