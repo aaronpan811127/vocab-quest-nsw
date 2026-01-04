@@ -277,6 +277,7 @@ export type Database = {
         Row: {
           avatar_url: string | null
           created_at: string
+          current_unit_id: string | null
           default_test_type_id: string | null
           id: string
           updated_at: string
@@ -286,6 +287,7 @@ export type Database = {
         Insert: {
           avatar_url?: string | null
           created_at?: string
+          current_unit_id?: string | null
           default_test_type_id?: string | null
           id?: string
           updated_at?: string
@@ -295,6 +297,7 @@ export type Database = {
         Update: {
           avatar_url?: string | null
           created_at?: string
+          current_unit_id?: string | null
           default_test_type_id?: string | null
           id?: string
           updated_at?: string
@@ -302,6 +305,13 @@ export type Database = {
           username?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "profiles_current_unit_id_fkey"
+            columns: ["current_unit_id"]
+            isOneToOne: false
+            referencedRelation: "units"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "profiles_default_test_type_id_fkey"
             columns: ["default_test_type_id"]
