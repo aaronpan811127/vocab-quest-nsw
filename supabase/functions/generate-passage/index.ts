@@ -6,7 +6,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const MAX_GENERATED_PASSAGES_PER_USER = 5;
+// No limit on generated passages
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -63,31 +63,7 @@ serve(async (req) => {
     // Use service role for database operations
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Check how many passages the user has already generated
-    const { data: existingPassages, error: countError } = await supabaseAdmin
-      .from('reading_passages')
-      .select('id')
-      .eq('generated_by', user.id)
-      .eq('is_generated', true);
-
-    if (countError) {
-      console.error('Error counting passages:', countError);
-      throw new Error('Failed to check passage limit');
-    }
-
-    const currentCount = existingPassages?.length || 0;
-    if (currentCount >= MAX_GENERATED_PASSAGES_PER_USER) {
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: `You have reached the maximum of ${MAX_GENERATED_PASSAGES_PER_USER} generated passages. Please use existing passages.`,
-          remaining: 0
-        }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    console.log(`User ${user.id} has ${currentCount}/${MAX_GENERATED_PASSAGES_PER_USER} generated passages`);
+    console.log(`User ${user.id} generating new passage for unit: ${unit_id}`);
 
     // Get unit words to incorporate into the passage
     const { data: unitData } = await supabaseAdmin
@@ -261,8 +237,7 @@ Respond with ONLY this JSON structure (no markdown, no explanation):
         success: true, 
         passage: insertedPassage,
         questions: insertedQuestions,
-        questions_count: insertedQuestions?.length || 0,
-        remaining_generations: MAX_GENERATED_PASSAGES_PER_USER - currentCount - 1
+        questions_count: insertedQuestions?.length || 0
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
