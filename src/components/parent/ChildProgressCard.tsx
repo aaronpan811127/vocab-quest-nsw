@@ -22,7 +22,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Trophy, Flame, BookOpen, MoreVertical, Eye, UserMinus } from "lucide-react";
+import { Trophy, Flame, BookOpen, MoreVertical, Eye, UserMinus, Lock, Crown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface ChildData {
@@ -44,9 +44,10 @@ interface ChildData {
 interface ChildProgressCardProps {
   child: ChildData;
   onRefresh: () => void;
+  canViewProgress?: boolean;
 }
 
-export const ChildProgressCard = ({ child, onRefresh }: ChildProgressCardProps) => {
+export const ChildProgressCard = ({ child, onRefresh, canViewProgress = true }: ChildProgressCardProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [showRemoveDialog, setShowRemoveDialog] = useState(false);
@@ -152,14 +153,23 @@ export const ChildProgressCard = ({ child, onRefresh }: ChildProgressCardProps) 
             </div>
           </div>
 
-          <Button 
-            variant="outline" 
-            className="w-full" 
-            onClick={handleViewProgress}
-          >
-            <Eye className="h-4 w-4 mr-2" />
-            View Full Progress
-          </Button>
+          {canViewProgress ? (
+            <Button 
+              variant="outline" 
+              className="w-full" 
+              onClick={handleViewProgress}
+            >
+              <Eye className="h-4 w-4 mr-2" />
+              View Full Progress
+            </Button>
+          ) : (
+            <div className="text-center p-3 bg-muted/30 rounded-lg border border-dashed">
+              <Lock className="h-4 w-4 mx-auto mb-1 text-muted-foreground" />
+              <p className="text-xs text-muted-foreground">
+                Upgrade to Premium for detailed progress reports
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
 

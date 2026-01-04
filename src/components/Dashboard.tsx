@@ -23,6 +23,7 @@ import {
 import { useProfile } from "@/hooks/useProfile";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTestType } from "@/contexts/TestTypeContext";
+import { useSubscription } from "@/contexts/SubscriptionContext";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -43,12 +44,14 @@ interface Unit {
   totalGames: number;
   totalXp: number;
   isUnlocked: boolean;
+  isPremiumLocked?: boolean;
 }
 
 export const Dashboard = ({ onStartGame, onBack, selectedUnitId, onUnitChange }: DashboardProps) => {
   const { user } = useAuth();
   const { profile, loading } = useProfile();
   const { selectedTestType } = useTestType();
+  const { maxUnitsPerTestType, tier } = useSubscription();
   const { toast } = useToast();
   const [units, setUnits] = useState<Unit[]>([]);
   const [selectedUnit, setSelectedUnit] = useState<Unit | null>(null);
@@ -205,7 +208,7 @@ export const Dashboard = ({ onStartGame, onBack, selectedUnitId, onUnitChange }:
       completedGames: 0,
       totalGames: 8,
       totalXp: 0,
-      isUnlocked: index === 0,
+      isUnlocked: index === 0 && index < maxUnitsPerTestType,
     }));
 
     setUnits(formattedUnits);
@@ -253,8 +256,11 @@ export const Dashboard = ({ onStartGame, onBack, selectedUnitId, onUnitChange }:
       const completedGames = unitProgress.filter((p) => p.completed).length;
       const totalXp = unitProgress.reduce((sum, p) => sum + (p.total_xp || 0), 0);
 
-      let isUnlocked = index === 0;
-      if (index > 0) {
+      // Check subscription limit first
+      const isWithinSubscriptionLimit = index < maxUnitsPerTestType;
+      
+      let isUnlocked = index === 0 && isWithinSubscriptionLimit;
+      if (index > 0 && isWithinSubscriptionLimit) {
         const prevUnitId = unitsData[index - 1].id;
         const prevProgress = unitProgressMap.get(prevUnitId) || [];
         const prevCompletedGames = prevProgress.filter((p) => p.completed).length;
@@ -271,6 +277,7 @@ export const Dashboard = ({ onStartGame, onBack, selectedUnitId, onUnitChange }:
         totalGames: 8,
         totalXp,
         isUnlocked,
+        isPremiumLocked: !isWithinSubscriptionLimit,
       };
     });
 
