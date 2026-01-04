@@ -118,9 +118,9 @@ export const OddOneOutGame = ({ unitId, unitTitle, onComplete, onBack }: OddOneO
     
     const wordsWithSynonyms = vocabWords.filter(w => w.synonyms?.length >= 2);
     
-    // Shuffle and create questions
+    // Shuffle and create questions - use all available words
     const shuffled = [...wordsWithAntonyms].sort(() => Math.random() - 0.5);
-    const numQuestions = Math.min(8, Math.max(shuffled.length, wordsWithSynonyms.length));
+    const numQuestions = Math.max(shuffled.length, wordsWithSynonyms.length);
     
     // Strategy 1: Use base word + 2 synonyms + 1 antonym (antonym is odd)
     for (let i = 0; i < Math.min(shuffled.length, numQuestions); i++) {
