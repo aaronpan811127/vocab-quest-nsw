@@ -1,5 +1,14 @@
 project_id = "xepfrqhuoeijhphkcovz"
 
+[functions.check-subscription]
+verify_jwt = false
+
+[functions.create-checkout]
+verify_jwt = false
+
+[functions.customer-portal]
+verify_jwt = false
+
 [functions.submit-game]
 verify_jwt = false
 
