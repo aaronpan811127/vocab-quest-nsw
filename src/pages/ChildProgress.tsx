@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
 import {
   Table,
   TableBody,
@@ -349,13 +349,22 @@ const ChildProgress = () => {
         {/* Test Type Tabs */}
         {testTypes.length > 0 && (
           <Tabs value={selectedTestType} onValueChange={setSelectedTestType}>
-            <TabsList className="w-full max-w-lg grid" style={{ gridTemplateColumns: `repeat(${testTypes.length}, 1fr)` }}>
-              {testTypes.map((tt) => (
-                <TabsTrigger key={tt.id} value={tt.id}>
-                  {tt.name}
-                </TabsTrigger>
-              ))}
-            </TabsList>
+            <div className="flex flex-wrap gap-2 mb-6">
+              {testTypes.map((tt) => {
+                const isActive = selectedTestType === tt.id;
+                return (
+                  <Button
+                    key={tt.id}
+                    variant={isActive ? "default" : "outline"}
+                    size="lg"
+                    onClick={() => setSelectedTestType(tt.id)}
+                    className={`rounded-full px-6 ${isActive ? 'shadow-md' : ''}`}
+                  >
+                    {tt.name}
+                  </Button>
+                );
+              })}
+            </div>
 
             {testTypes.map((tt) => (
               <TabsContent key={tt.id} value={tt.id} className="space-y-8 mt-6">
@@ -430,7 +439,10 @@ const ChildProgress = () => {
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <p className="text-3xl font-bold">{completedUnits}</p>
+                      <p className="text-3xl font-bold">
+                        {completedUnits}
+                        <span className="text-lg text-muted-foreground font-normal">/{filteredUnits.length}</span>
+                      </p>
                     </CardContent>
                   </Card>
                   
