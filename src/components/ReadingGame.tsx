@@ -408,7 +408,7 @@ export const ReadingGame = ({ unitId, unitTitle, onComplete, onBack }: ReadingGa
               Please check back later or try a different unit.
             </p>
             <Button variant="outline" onClick={onBack} size="lg">
-              Back to Dashboard
+              Back
             </Button>
           </Card>
         </div>
@@ -479,7 +479,7 @@ export const ReadingGame = ({ unitId, unitTitle, onComplete, onBack }: ReadingGa
                 </Button>
               )}
               <Button variant="outline" onClick={onBack} size="lg">
-                Back to Dashboard
+                Back
               </Button>
             </div>
           </Card>
@@ -503,7 +503,7 @@ export const ReadingGame = ({ unitId, unitTitle, onComplete, onBack }: ReadingGa
             </Badge>
           </div>
           <Button variant="outline" onClick={onBack}>
-            Back to Dashboard
+            Back
           </Button>
         </div>
 

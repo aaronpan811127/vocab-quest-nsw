@@ -360,7 +360,7 @@ export const OddOneOutGame = ({ unitId, unitTitle, onComplete, onBack }: OddOneO
               This unit needs more words to play. Try another unit or add more vocabulary.
             </p>
             <Button variant="outline" onClick={onBack} size="lg">
-              Back to Dashboard
+              Back
             </Button>
           </Card>
         </div>
