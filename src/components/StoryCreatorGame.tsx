@@ -53,12 +53,16 @@ export const StoryCreatorGame = ({ unitId, unitTitle, onComplete, onBack }: Stor
   const { toast } = useToast();
   const startTimeRef = useRef<number>(Date.now());
   const playAllWordsRef = useRef<boolean>(false);
+  const hasInitializedRef = useRef<boolean>(false);
 
   useEffect(() => {
-    console.log('StoryCreatorGame MOUNTED - fetching words with false');
-    playAllWordsRef.current = false;
-    fetchWords(false);
-    startTimeRef.current = Date.now();
+    // Only run on initial mount, not on subsequent remounts during same game session
+    if (!hasInitializedRef.current) {
+      console.log('StoryCreatorGame initial mount - fetching words');
+      hasInitializedRef.current = true;
+      fetchWords(playAllWordsRef.current);
+      startTimeRef.current = Date.now();
+    }
     
     return () => {
       console.log('StoryCreatorGame UNMOUNTED');
@@ -313,6 +317,7 @@ export const StoryCreatorGame = ({ unitId, unitTitle, onComplete, onBack }: Stor
   const resetGame = (playAllWords: boolean = false) => {
     console.log('resetGame called with playAllWords:', playAllWords);
     playAllWordsRef.current = playAllWords;
+    hasInitializedRef.current = false; // Allow useEffect to run again if component remounts
     setCurrentIndex(0);
     setQuestions([]);
     setUserInput("");
