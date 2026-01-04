@@ -6,7 +6,18 @@ import { GameCard } from "./GameCard";
 import { LeaderboardDialog } from "./LeaderboardDialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Target, Crown, ArrowRight, Layers, ArrowLeft, Link2, CircleOff, Lightbulb, BookOpen, Trophy } from "lucide-react";
+import {
+  Target,
+  Crown,
+  ArrowRight,
+  Layers,
+  ArrowLeft,
+  Link2,
+  CircleOff,
+  Lightbulb,
+  BookOpen,
+  Trophy,
+} from "lucide-react";
 import { useProfile } from "@/hooks/useProfile";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTestType } from "@/contexts/TestTypeContext";
@@ -198,8 +209,8 @@ export const Dashboard = ({ onStartGame, onBack, selectedUnitId, onUnitChange }:
     setUnits(formattedUnits);
     if (formattedUnits.length > 0) {
       // Use the persisted selectedUnitId from parent, or default to first unit
-      const unitToSelect = selectedUnitId 
-        ? formattedUnits.find(u => u.id === selectedUnitId) || formattedUnits[0]
+      const unitToSelect = selectedUnitId
+        ? formattedUnits.find((u) => u.id === selectedUnitId) || formattedUnits[0]
         : formattedUnits[0];
       setSelectedUnit(unitToSelect);
     }
@@ -264,8 +275,8 @@ export const Dashboard = ({ onStartGame, onBack, selectedUnitId, onUnitChange }:
     setUnits(formattedUnits);
     if (formattedUnits.length > 0) {
       // Use the persisted selectedUnitId from parent, or default to first unit
-      const unitToSelect = selectedUnitId 
-        ? formattedUnits.find(u => u.id === selectedUnitId) || formattedUnits[0]
+      const unitToSelect = selectedUnitId
+        ? formattedUnits.find((u) => u.id === selectedUnitId) || formattedUnits[0]
         : formattedUnits[0];
       setSelectedUnit(unitToSelect);
     }
@@ -476,7 +487,6 @@ Total XP = Sum of all games' XP
           <div className="space-y-6 sm:space-y-8">
             <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
               <h2 className="text-lg sm:text-2xl font-bold">Current Unit: {currentUnit.unitNumber}</h2>
-              <span className="text-muted-foreground">{currentUnit.title}</span>
             </div>
 
             {/* Learn Section */}
@@ -498,9 +508,7 @@ Total XP = Sum of all games' XP
                   >
                     <game.icon className="h-6 w-6 text-primary" />
                     <span className="font-medium">{game.title}</span>
-                    {game.attempts > 0 && (
-                      <span className="text-xs text-muted-foreground">{game.attempts} plays</span>
-                    )}
+                    {game.attempts > 0 && <span className="text-xs text-muted-foreground">{game.attempts} plays</span>}
                   </Button>
                 ))}
               </div>
@@ -525,7 +533,9 @@ Total XP = Sum of all games' XP
                       if (!game.isLocked && onStartGame && currentUnit) {
                         const playAllWordsOnStart =
                           game.isCompleted &&
-                          (game.gameType === "listening" || game.gameType === "speaking" || game.gameType === "writing");
+                          (game.gameType === "listening" ||
+                            game.gameType === "speaking" ||
+                            game.gameType === "writing");
 
                         onStartGame(game.gameType, currentUnit.id, currentUnit.title, playAllWordsOnStart);
                       } else if (game.isLocked) {
