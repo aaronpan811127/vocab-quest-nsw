@@ -83,8 +83,67 @@ serve(async (req) => {
       );
     }
 
-    console.log('Intuition game attempt saved (no XP):', { score, correct_answers, total_questions });
-    
+    // Upsert user progress so the dashboard can mark the game as completed
+    const { data: existingProgress, error: progressFetchError } = await supabaseAdmin
+      .from('user_progress')
+      .select('id, attempts, total_time_seconds, best_score, total_xp, completed')
+      .eq('user_id', user.id)
+      .eq('unit_id', unit_id)
+      .eq('game_type', 'intuition')
+      .maybeSingle();
+
+    if (progressFetchError) {
+      console.error('Fetch user progress error:', progressFetchError);
+      return new Response(
+        JSON.stringify({ success: false, error: 'Failed to update progress' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (existingProgress?.id) {
+      const { error: progressUpdateError } = await supabaseAdmin
+        .from('user_progress')
+        .update({
+          attempts: (existingProgress.attempts ?? 0) + 1,
+          total_time_seconds: (existingProgress.total_time_seconds ?? 0) + time_spent_seconds,
+          best_score: Math.max(existingProgress.best_score ?? 0, score),
+          completed: true,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', existingProgress.id);
+
+      if (progressUpdateError) {
+        console.error('Update user progress error:', progressUpdateError);
+        return new Response(
+          JSON.stringify({ success: false, error: 'Failed to update progress' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    } else {
+      const { error: progressInsertError } = await supabaseAdmin
+        .from('user_progress')
+        .insert({
+          user_id: user.id,
+          unit_id,
+          game_type: 'intuition',
+          best_score: score,
+          total_xp: 0,
+          total_time_seconds: time_spent_seconds,
+          attempts: 1,
+          completed: true,
+        });
+
+      if (progressInsertError) {
+        console.error('Insert user progress error:', progressInsertError);
+        return new Response(
+          JSON.stringify({ success: false, error: 'Failed to update progress' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
+    console.log('Intuition game saved:', { score, correct_answers, total_questions });
+
     return new Response(
       JSON.stringify({
         success: true,
