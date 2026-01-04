@@ -508,7 +508,6 @@ Total XP = Sum of all games' XP
                   >
                     <game.icon className="h-6 w-6 text-primary" />
                     <span className="font-medium">{game.title}</span>
-                    {game.attempts > 0 && <span className="text-xs text-muted-foreground">{game.attempts} plays</span>}
                   </Button>
                 ))}
               </div>
