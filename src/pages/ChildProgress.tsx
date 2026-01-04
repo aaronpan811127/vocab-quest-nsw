@@ -76,10 +76,10 @@ interface Unit {
   unit_number: number;
 }
 
-// Learning games: vocabulary building, comprehension
-const LEARNING_GAMES = ['flashcards', 'matching', 'reading', 'oddoneout', 'word_intuition', 'story'];
-// Compete games: active recall, dictation-based
-const COMPETE_GAMES = ['listening', 'speaking'];
+// Learning games: vocabulary building, practice
+const LEARNING_GAMES = ['flashcards', 'matching', 'oddoneout', 'word_intuition', 'story'];
+// Compete games: active recall, dictation, comprehension
+const COMPETE_GAMES = ['listening', 'speaking', 'reading', 'writing'];
 
 const ChildProgress = () => {
   const { childId } = useParams<{ childId: string }>();
