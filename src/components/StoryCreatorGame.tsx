@@ -52,27 +52,19 @@ export const StoryCreatorGame = ({ unitId, unitTitle, onComplete, onBack }: Stor
   const { user } = useAuth();
   const { toast } = useToast();
   const startTimeRef = useRef<number>(Date.now());
-  const playAllWordsRef = useRef<boolean>(false);
-  const hasInitializedRef = useRef<boolean>(false);
 
   useEffect(() => {
-    // Only run on initial mount, not on subsequent remounts during same game session
-    if (!hasInitializedRef.current) {
-      console.log('StoryCreatorGame initial mount - fetching words');
-      hasInitializedRef.current = true;
-      fetchWords(playAllWordsRef.current);
-      startTimeRef.current = Date.now();
-    }
-    
-    return () => {
-      console.log('StoryCreatorGame UNMOUNTED');
-    };
+    const storageKey = `story_creator_play_all_words_next:${unitId}`;
+    const playAllWordsNext = sessionStorage.getItem(storageKey) === "1";
+    sessionStorage.removeItem(storageKey);
+
+    fetchWords(playAllWordsNext);
+    startTimeRef.current = Date.now();
   }, [unitId]);
 
   const fetchWords = async (playAllWords: boolean = false) => {
-    console.log('fetchWords called with playAllWords:', playAllWords);
     setLoading(true);
-    
+
     try {
       const { data: unit, error } = await supabase
         .from('units')
@@ -99,9 +91,7 @@ export const StoryCreatorGame = ({ unitId, unitTitle, onComplete, onBack }: Stor
       let finalWords: string[];
       let priorityWords: string[] = [];
       
-      // Play Again: always use all words
       if (playAllWords) {
-        console.log('Playing all words:', wordList.length);
         finalWords = [...wordList].sort(() => Math.random() - 0.5);
       } else {
         // Initial play: prioritize incorrect words from last 3 attempts
@@ -315,9 +305,13 @@ export const StoryCreatorGame = ({ unitId, unitTitle, onComplete, onBack }: Stor
   };
 
   const resetGame = (playAllWords: boolean = false) => {
-    console.log('resetGame called with playAllWords:', playAllWords);
-    playAllWordsRef.current = playAllWords;
-    hasInitializedRef.current = false; // Allow useEffect to run again if component remounts
+    const storageKey = `story_creator_play_all_words_next:${unitId}`;
+    if (playAllWords) {
+      sessionStorage.setItem(storageKey, "1");
+    } else {
+      sessionStorage.removeItem(storageKey);
+    }
+
     setCurrentIndex(0);
     setQuestions([]);
     setUserInput("");
@@ -415,14 +409,8 @@ export const StoryCreatorGame = ({ unitId, unitTitle, onComplete, onBack }: Stor
             </div>
 
             <GameResultActions
-              onPlayAgain={() => {
-                console.log('Play Again button clicked');
-                resetGame(true);
-              }}
-              onTryAgain={() => {
-                console.log('Practice Mistakes button clicked');
-                resetGame(false);
-              }}
+              onPlayAgain={() => resetGame(true)}
+              onTryAgain={() => resetGame(false)}
               onBack={onBack}
               hasMistakes={!isPerfect}
             />
