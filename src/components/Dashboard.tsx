@@ -501,7 +501,6 @@ Game XP = (Avg Score over all attempts × 0.5) + Time Bonus
             <h1 className="text-xl sm:text-3xl font-bold">Welcome back, {displayName}! 🎮</h1>
             <p className="text-sm sm:text-base text-muted-foreground mt-1">Ready to level up your vocabulary skills?</p>
           </div>
-          <LeaderboardDialog />
         </div>
 
         {/* Stats Overview */}
@@ -546,22 +545,25 @@ Game XP = (Avg Score over all attempts × 0.5) + Time Bonus
 
             {/* Challenge Section */}
             <div className="space-y-4">
-              <div className="flex items-center gap-3">
-                <div className={`flex items-center gap-2 ${allLearnGamesCompleted ? 'text-amber-500' : 'text-muted-foreground'}`}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className={`flex items-center gap-2 ${allLearnGamesCompleted ? 'text-amber-500' : 'text-muted-foreground'}`}>
+                    {allLearnGamesCompleted ? (
+                      <Trophy className="h-5 w-5" />
+                    ) : (
+                      <Lock className="h-5 w-5" />
+                    )}
+                    <h3 className="text-lg font-semibold">Challenge</h3>
+                  </div>
                   {allLearnGamesCompleted ? (
-                    <Trophy className="h-5 w-5" />
+                    <span className="text-sm text-muted-foreground">Earn XP and level up</span>
                   ) : (
-                    <Lock className="h-5 w-5" />
+                    <Badge variant="outline" className="text-xs">
+                      Complete all Learn games to unlock
+                    </Badge>
                   )}
-                  <h3 className="text-lg font-semibold">Challenge</h3>
                 </div>
-                {allLearnGamesCompleted ? (
-                  <span className="text-sm text-muted-foreground">Earn XP and level up</span>
-                ) : (
-                  <Badge variant="outline" className="text-xs">
-                    Complete all Learn games to unlock
-                  </Badge>
-                )}
+                <LeaderboardDialog />
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-6">
                 {challengeGames.map((game) => (
