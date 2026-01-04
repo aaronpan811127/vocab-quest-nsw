@@ -89,7 +89,7 @@ Evaluate if:
 2. The word is used correctly in context (grammatically and semantically)
 3. The sentence makes sense
 4. The sentences is descriptive and specific. Good example: 'The beauty of the cherry blossoms is ephemeral.' Incorrect example: This is ephemeral
-4. The sentence must demonstrate user’s understanding of the word, otherwise mark as incorrect. incorrect example: 'I am meticulous', I jolted. Good example: I am meticulous about my work and make sure no mistakes are made. I jolted awake when I heard a loud noise
+4. The sentence must demonstrate user’s understanding of the word.
 5. If a user input contains profanity, mark as incorrect even if it passes rest of criteria and gently remind them to use respectful language as per our guidelines. 
 
 Respond with a JSON object:
