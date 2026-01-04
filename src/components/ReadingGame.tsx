@@ -153,33 +153,7 @@ export const ReadingGame = ({ unitId, unitTitle, onComplete, onBack }: ReadingGa
     setGeneratingQuestions(true);
     
     try {
-      // Check remaining generations first
-      const { data: existingGenerated } = await supabase
-        .from('reading_passages')
-        .select('id')
-        .eq('generated_by', user?.id)
-        .eq('is_generated', true);
-
-      const remaining = 5 - (existingGenerated?.length || 0);
-
-      if (remaining <= 0) {
-        // Silently fall back to existing passages without showing toast
-        const { data: anyPassages } = await supabase
-          .from('reading_passages')
-          .select('*')
-          .eq('unit_id', unitId);
-
-        if (anyPassages && anyPassages.length > 0) {
-          // Pick a random passage from existing ones
-          const randomPassage = anyPassages[Math.floor(Math.random() * anyPassages.length)];
-          await loadPassageWithQuestions(randomPassage);
-        } else {
-          setError("No passages available for this unit.");
-        }
-        return;
-      }
-
-      // No toast for starting generation - only show on failure
+      console.log('Generating new passage for unit:', unitId);
 
       const { data, error } = await supabase.functions.invoke('generate-passage', {
         body: {
@@ -196,8 +170,6 @@ export const ReadingGame = ({ unitId, unitTitle, onComplete, onBack }: ReadingGa
       if (!data.success) {
         throw new Error(data.error || 'Failed to generate passage');
       }
-
-      // Success - no toast needed, just load the content
 
       // Set the new passage
       setPassage({
