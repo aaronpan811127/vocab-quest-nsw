@@ -130,6 +130,17 @@ export const Dashboard = ({ onStartGame, onBack, selectedUnitId, onUnitChange }:
       avgScore = Math.round(totalScore / attempts.length);
     }
 
+    // Get all unit IDs for the current test type
+    const currentTestTypeUnitIds = new Set<string>();
+    if (selectedTestType) {
+      const { data: testTypeUnits } = await supabase
+        .from("units")
+        .select("id")
+        .eq("test_type_id", selectedTestType.id);
+      
+      testTypeUnits?.forEach((u) => currentTestTypeUnitIds.add(u.id));
+    }
+
     const { data: progress, error: progressError } = await supabase
       .from("user_progress")
       .select("unit_id, completed")
@@ -142,7 +153,8 @@ export const Dashboard = ({ onStartGame, onBack, selectedUnitId, onUnitChange }:
 
     const unitCompletionMap = new Map<string, number>();
     progress?.forEach((p) => {
-      if (p.completed) {
+      // Only count progress for units in the current test type
+      if (p.completed && currentTestTypeUnitIds.has(p.unit_id)) {
         unitCompletionMap.set(p.unit_id, (unitCompletionMap.get(p.unit_id) || 0) + 1);
       }
     });
