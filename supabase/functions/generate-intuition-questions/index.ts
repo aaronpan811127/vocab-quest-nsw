@@ -58,12 +58,56 @@ serve(async (req) => {
       });
     }
 
+    // Use service role to check existing questions
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Check which words already have questions in this unit
+    const { data: existingQuestions, error: fetchError } = await supabase
+      .from("question_bank")
+      .select("id, question_text, correct_answer, options")
+      .eq("unit_id", unit_id)
+      .eq("game_type", "intuition");
+
+    if (fetchError) {
+      console.error("Error fetching existing questions:", fetchError);
+      throw new Error("Failed to check existing questions");
+    }
+
+    // Extract words that already have questions by parsing the options JSON
+    const existingWords = new Set<string>();
+    existingQuestions?.forEach((q) => {
+      try {
+        const options = typeof q.options === "string" ? JSON.parse(q.options) : q.options;
+        if (options?.word) {
+          existingWords.add(options.word.toLowerCase());
+        }
+      } catch (e) {
+        console.error("Error parsing options:", e);
+      }
+    });
+
+    // Filter out words that already have questions
+    const wordsToGenerate = words.filter((word: string) => !existingWords.has(word.toLowerCase()));
+
+    console.log("Existing words:", Array.from(existingWords));
+    console.log("Words to generate:", wordsToGenerate);
+
+    // If all words already have questions, return existing ones
+    if (wordsToGenerate.length === 0) {
+      console.log("All words already have questions, returning existing");
+      return new Response(JSON.stringify({ success: true, questions: existingQuestions, skipped: words }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    const prompt = `Generate word intuition questions for these vocabulary words: ${words.join(", ")}
+    const prompt = `Generate word intuition questions for these vocabulary words: ${wordsToGenerate.join(", ")}
 
 For each word, create a question where:
 1. The word is used naturally in a sentence context that clearly shows its connotation
@@ -91,7 +135,7 @@ The options are always: "positive", "negative", "neutral"
 Make sure each sentence clearly demonstrates the word's connotation in that specific context.
 IMPORTANT: Write plain sentences without any special formatting or markdown.`;
 
-    console.log("Generating intuition questions for words:", words);
+    console.log("Generating intuition questions for words:", wordsToGenerate);
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -148,9 +192,7 @@ IMPORTANT: Write plain sentences without any special formatting or markdown.`;
       throw new Error("Failed to parse questions data");
     }
 
-    // Store questions in question_bank using service role
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    // supabase client already created above
 
     const questionRecords = questionsData.map((item: any) => ({
       unit_id,
@@ -176,7 +218,15 @@ IMPORTANT: Write plain sentences without any special formatting or markdown.`;
 
     console.log("Successfully generated and saved", insertedData?.length, "intuition questions");
 
-    return new Response(JSON.stringify({ success: true, questions: insertedData }), {
+    // Combine existing and new questions for response
+    const allQuestions = [...(existingQuestions || []), ...(insertedData || [])];
+
+    return new Response(JSON.stringify({ 
+      success: true, 
+      questions: allQuestions,
+      generated: insertedData?.length || 0,
+      skipped: words.filter((w: string) => existingWords.has(w.toLowerCase()))
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
