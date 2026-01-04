@@ -16,6 +16,8 @@ import { supabase } from "@/integrations/supabase/client";
 interface DashboardProps {
   onStartGame?: (gameType: string, unitId: string, unitTitle: string, playAllWordsOnStart?: boolean) => void;
   onBack?: () => void;
+  selectedUnitId?: string | null;
+  onUnitChange?: (unitId: string | null) => void;
 }
 
 interface Unit {
@@ -30,7 +32,7 @@ interface Unit {
   isUnlocked: boolean;
 }
 
-export const Dashboard = ({ onStartGame, onBack }: DashboardProps) => {
+export const Dashboard = ({ onStartGame, onBack, selectedUnitId, onUnitChange }: DashboardProps) => {
   const { user } = useAuth();
   const { profile, loading } = useProfile();
   const { selectedTestType } = useTestType();
@@ -194,8 +196,12 @@ export const Dashboard = ({ onStartGame, onBack }: DashboardProps) => {
     }));
 
     setUnits(formattedUnits);
-    if (formattedUnits.length > 0 && !selectedUnit) {
-      setSelectedUnit(formattedUnits[0]);
+    if (formattedUnits.length > 0) {
+      // Use the persisted selectedUnitId from parent, or default to first unit
+      const unitToSelect = selectedUnitId 
+        ? formattedUnits.find(u => u.id === selectedUnitId) || formattedUnits[0]
+        : formattedUnits[0];
+      setSelectedUnit(unitToSelect);
     }
   };
 
@@ -256,8 +262,12 @@ export const Dashboard = ({ onStartGame, onBack }: DashboardProps) => {
     });
 
     setUnits(formattedUnits);
-    if (formattedUnits.length > 0 && !selectedUnit) {
-      setSelectedUnit(formattedUnits[0]);
+    if (formattedUnits.length > 0) {
+      // Use the persisted selectedUnitId from parent, or default to first unit
+      const unitToSelect = selectedUnitId 
+        ? formattedUnits.find(u => u.id === selectedUnitId) || formattedUnits[0]
+        : formattedUnits[0];
+      setSelectedUnit(unitToSelect);
     }
   };
 
@@ -487,6 +497,7 @@ Total XP = Sum of all games' XP
                 onEnter={() => {
                   if (unit.isUnlocked) {
                     setSelectedUnit(unit);
+                    onUnitChange?.(unit.id);
                     window.scrollTo({ top: 0, behavior: "smooth" });
                     toast({
                       title: `Unit ${unit.unitNumber} Selected`,
