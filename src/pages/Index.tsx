@@ -10,6 +10,7 @@ import { StoryCreatorGame } from "@/components/StoryCreatorGame";
 import { FlashcardGame } from "@/components/FlashcardGame";
 import { MatchingGame } from "@/components/MatchingGame";
 import { OddOneOutGame } from "@/components/OddOneOutGame";
+import { WordIntuitionGame } from "@/components/WordIntuitionGame";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/useProfile";
 import { TestType } from "@/contexts/TestTypeContext";
@@ -77,6 +78,8 @@ const Index = () => {
         return <MatchingGame {...commonProps} />;
       case "oddoneout":
         return <OddOneOutGame {...commonProps} />;
+      case "intuition":
+        return <WordIntuitionGame {...commonProps} />;
       default:
         return <ReadingGame {...commonProps} />;
     }
