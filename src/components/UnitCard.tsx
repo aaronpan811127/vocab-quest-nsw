@@ -2,7 +2,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { BookOpen, Trophy, Zap, Target } from "lucide-react";
+import { BookOpen, Trophy, Zap, Target, Crown } from "lucide-react";
 
 interface UnitCardProps {
   unitNumber: number;
@@ -14,6 +14,7 @@ interface UnitCardProps {
   totalXp: number;
   isUnlocked: boolean;
   isSelected?: boolean;
+  isPremiumLocked?: boolean;
   onEnter: () => void;
 }
 
@@ -27,6 +28,7 @@ export const UnitCard = ({
   totalXp,
   isUnlocked,
   isSelected,
+  isPremiumLocked,
   onEnter,
 }: UnitCardProps) => {
   const progress = (completedGames / totalGames) * 100;
@@ -105,7 +107,12 @@ export const UnitCard = ({
           className="w-full"
           size="sm"
         >
-          {!isUnlocked ? (
+          {isPremiumLocked ? (
+            <>
+              <Crown className="h-3.5 w-3.5 mr-1.5 text-yellow-500" />
+              Premium
+            </>
+          ) : !isUnlocked ? (
             "🔒 Locked"
           ) : isCompleted ? (
             <>

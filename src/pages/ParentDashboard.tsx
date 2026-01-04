@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSubscription } from "@/contexts/SubscriptionContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,7 +21,10 @@ import {
   AlertCircle,
   ChevronRight,
   Moon,
-  Sun
+  Sun,
+  Check,
+  Crown,
+  Loader2
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useTheme } from "next-themes";
@@ -52,7 +56,9 @@ interface ChildData {
 
 const ParentDashboard = () => {
   const { user, currentRole, signOut } = useAuth();
+  const { tier, subscribed, subscriptionEnd, loading: subLoading, checkSubscription, maxChildren, canViewProgressReports } = useSubscription();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const { theme, setTheme } = useTheme();
   
@@ -60,6 +66,26 @@ const ParentDashboard = () => {
   const [children, setChildren] = useState<ChildData[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddChild, setShowAddChild] = useState(false);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [portalLoading, setPortalLoading] = useState(false);
+
+  // Check for checkout success/cancel
+  useEffect(() => {
+    const checkoutStatus = searchParams.get('checkout');
+    if (checkoutStatus === 'success') {
+      toast({
+        title: "Subscription activated!",
+        description: "Welcome to Premium! You now have access to all features.",
+      });
+      checkSubscription();
+    } else if (checkoutStatus === 'cancelled') {
+      toast({
+        title: "Checkout cancelled",
+        description: "No charges were made.",
+        variant: "destructive",
+      });
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     if (!user) {
@@ -162,6 +188,48 @@ const ParentDashboard = () => {
     navigate("/");
   };
 
+  const handleUpgrade = async () => {
+    setCheckoutLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('create-checkout');
+      if (error) throw error;
+      if (data?.url) {
+        window.open(data.url, '_blank');
+      }
+    } catch (error) {
+      console.error('Error creating checkout:', error);
+      toast({
+        title: "Error",
+        description: "Failed to start checkout. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setCheckoutLoading(false);
+    }
+  };
+
+  const handleManageSubscription = async () => {
+    setPortalLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('customer-portal');
+      if (error) throw error;
+      if (data?.url) {
+        window.open(data.url, '_blank');
+      }
+    } catch (error) {
+      console.error('Error opening portal:', error);
+      toast({
+        title: "Error",
+        description: "Failed to open subscription management. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setPortalLoading(false);
+    }
+  };
+
+  const canAddChild = children.length < maxChildren;
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -224,12 +292,28 @@ const ParentDashboard = () => {
               <div>
                 <h2 className="text-2xl font-bold">Your Children</h2>
                 <p className="text-muted-foreground">
-                  {children.length} student{children.length !== 1 ? 's' : ''} linked
+                  {children.length}/{maxChildren} student{maxChildren !== 1 ? 's' : ''} linked
+                  {!canAddChild && tier === 'free' && (
+                    <span className="text-yellow-500 ml-2">• Upgrade for more</span>
+                  )}
                 </p>
               </div>
-              <Button onClick={() => setShowAddChild(true)} className="bg-secondary hover:bg-secondary/90">
-                <Plus className="h-4 w-4 mr-2" />
-                Add Child
+              <Button 
+                onClick={() => canAddChild ? setShowAddChild(true) : handleUpgrade()} 
+                className={canAddChild ? "bg-secondary hover:bg-secondary/90" : ""}
+                variant={canAddChild ? "default" : "outline"}
+              >
+                {canAddChild ? (
+                  <>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Child
+                  </>
+                ) : (
+                  <>
+                    <Crown className="h-4 w-4 mr-2" />
+                    Upgrade to Add More
+                  </>
+                )}
               </Button>
             </div>
 
@@ -254,6 +338,7 @@ const ParentDashboard = () => {
                     key={child.id} 
                     child={child}
                     onRefresh={fetchParentData}
+                    canViewProgress={canViewProgressReports}
                   />
                 ))}
               </div>
@@ -264,44 +349,122 @@ const ParentDashboard = () => {
           <TabsContent value="subscription" className="space-y-6">
             <div>
               <h2 className="text-2xl font-bold">Subscription & Billing</h2>
-              <p className="text-muted-foreground">Manage your plan and payment details</p>
+              <p className="text-muted-foreground">Choose the plan that's right for you</p>
             </div>
 
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle>Current Plan</CardTitle>
-                    <CardDescription>Your subscription details</CardDescription>
-                  </div>
-                  <Badge variant={parentProfile?.subscription_status === 'active' ? 'default' : 'secondary'}>
-                    {parentProfile?.subscription_status || 'Free'}
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="p-4 bg-muted/50 rounded-lg">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-medium">
-                      {parentProfile?.subscription_tier || 'Free Tier'}
-                    </span>
-                    <span className="text-muted-foreground">
-                      {parentProfile?.subscription_status === 'active' ? 'Active' : 'Limited Access'}
-                    </span>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    {parentProfile?.subscription_status === 'active' 
-                      ? 'Full access to all features and unlimited children'
-                      : 'Upgrade to unlock premium features and add more children'}
-                  </p>
-                </div>
+            <div className="grid gap-6 md:grid-cols-2">
+              {/* Free Plan */}
+              <Card className={`relative ${tier === 'free' ? 'border-primary ring-2 ring-primary/20' : ''}`}>
+                {tier === 'free' && (
+                  <Badge className="absolute -top-2 right-4 bg-primary">Current Plan</Badge>
+                )}
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    Free Tier
+                  </CardTitle>
+                  <CardDescription>Get started for free</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="text-3xl font-bold">$0<span className="text-lg font-normal text-muted-foreground">/month</span></div>
+                  <ul className="space-y-2 text-sm">
+                    <li className="flex items-center gap-2">
+                      <Check className="h-4 w-4 text-green-500" />
+                      Access to first 2 units per test type
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Check className="h-4 w-4 text-green-500" />
+                      Link 1 child
+                    </li>
+                    <li className="flex items-center gap-2 text-muted-foreground">
+                      <AlertCircle className="h-4 w-4" />
+                      No progress reports
+                    </li>
+                  </ul>
+                  {tier === 'free' && (
+                    <Button variant="outline" className="w-full" disabled>
+                      Current Plan
+                    </Button>
+                  )}
+                </CardContent>
+              </Card>
 
-                <Button className="w-full" variant="outline">
-                  <CreditCard className="h-4 w-4 mr-2" />
-                  {parentProfile?.subscription_status === 'active' ? 'Manage Subscription' : 'Upgrade Plan'}
-                </Button>
-              </CardContent>
-            </Card>
+              {/* Premium Plan */}
+              <Card className={`relative ${tier === 'premium' ? 'border-primary ring-2 ring-primary/20' : 'border-yellow-500/50'}`}>
+                {tier === 'premium' ? (
+                  <Badge className="absolute -top-2 right-4 bg-primary">Current Plan</Badge>
+                ) : (
+                  <Badge className="absolute -top-2 right-4 bg-yellow-500">Recommended</Badge>
+                )}
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Crown className="h-5 w-5 text-yellow-500" />
+                    Premium
+                  </CardTitle>
+                  <CardDescription>Full access to all features</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="text-3xl font-bold">$9.99<span className="text-lg font-normal text-muted-foreground">/month</span></div>
+                  <ul className="space-y-2 text-sm">
+                    <li className="flex items-center gap-2">
+                      <Check className="h-4 w-4 text-green-500" />
+                      Access to all units
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Check className="h-4 w-4 text-green-500" />
+                      Link up to 3 children
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Check className="h-4 w-4 text-green-500" />
+                      Full progress reports
+                    </li>
+                  </ul>
+                  {tier === 'premium' ? (
+                    <Button 
+                      variant="outline" 
+                      className="w-full" 
+                      onClick={handleManageSubscription}
+                      disabled={portalLoading}
+                    >
+                      {portalLoading ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <CreditCard className="h-4 w-4 mr-2" />
+                      )}
+                      Manage Subscription
+                    </Button>
+                  ) : (
+                    <Button 
+                      className="w-full bg-yellow-500 hover:bg-yellow-600 text-black" 
+                      onClick={handleUpgrade}
+                      disabled={checkoutLoading}
+                    >
+                      {checkoutLoading ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <Crown className="h-4 w-4 mr-2" />
+                      )}
+                      Upgrade to Premium
+                    </Button>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+
+            {subscribed && subscriptionEnd && (
+              <Card>
+                <CardContent className="flex items-center justify-between p-4">
+                  <div>
+                    <p className="font-medium">Subscription Active</p>
+                    <p className="text-sm text-muted-foreground">
+                      Next billing date: {new Date(subscriptionEnd).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <Button variant="outline" onClick={handleManageSubscription} disabled={portalLoading}>
+                    {portalLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Manage'}
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
 
           {/* Settings Tab */}
