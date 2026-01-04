@@ -5,7 +5,7 @@ interface GameResultActionsProps {
   onPlayAgain: () => void;
   onPracticeMistakes?: () => void;
   onBack: () => void;
-  hasMistakes: boolean;
+  hasMistakes?: boolean;
 }
 
 export const GameResultActions = ({
