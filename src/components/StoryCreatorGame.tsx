@@ -55,9 +55,14 @@ export const StoryCreatorGame = ({ unitId, unitTitle, onComplete, onBack }: Stor
   const playAllWordsRef = useRef<boolean>(false);
 
   useEffect(() => {
+    console.log('StoryCreatorGame MOUNTED - fetching words with false');
     playAllWordsRef.current = false;
     fetchWords(false);
     startTimeRef.current = Date.now();
+    
+    return () => {
+      console.log('StoryCreatorGame UNMOUNTED');
+    };
   }, [unitId]);
 
   const fetchWords = async (playAllWords: boolean = false) => {
