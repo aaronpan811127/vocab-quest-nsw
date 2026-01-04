@@ -578,7 +578,7 @@ Total XP = Sum of all games' XP
                     window.scrollTo({ top: 0, behavior: "smooth" });
                     toast({
                       title: `Unit ${unit.unitNumber} Selected`,
-                      description: `Now studying: ${unit.title}`,
+                      description: `Now studying: Unit ${unit.unitNumber}`,
                     });
                   }
                 }}
