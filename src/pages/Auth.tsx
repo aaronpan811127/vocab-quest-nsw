@@ -32,20 +32,20 @@ const Auth = () => {
       toast({
         title: "Missing fields",
         description: "Please fill in all fields",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
-    
+
     setIsLoading(true);
-    const { error } = await signIn(email, password, 'student');
+    const { error } = await signIn(email, password, "student");
     setIsLoading(false);
-    
+
     if (error) {
       toast({
         title: "Sign in failed",
         description: error.message,
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };
@@ -56,20 +56,20 @@ const Auth = () => {
       toast({
         title: "Email required",
         description: "Please enter your email address",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
-    
+
     setIsLoading(true);
     const { error } = await resetPassword(email);
     setIsLoading(false);
-    
+
     if (error) {
       toast({
         title: "Reset failed",
         description: error.message,
-        variant: "destructive"
+        variant: "destructive",
       });
     } else {
       toast({
@@ -86,7 +86,7 @@ const Auth = () => {
       toast({
         title: "Missing fields",
         description: "Please fill in all fields",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
@@ -95,27 +95,27 @@ const Auth = () => {
       toast({
         title: "Password too short",
         description: "Password must be at least 6 characters",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
-    
+
     setIsLoading(true);
     const { error } = await signUp(email, password, username);
     setIsLoading(false);
-    
+
     if (error) {
       if (/(already registered|already exists)/i.test(error.message)) {
         toast({
           title: "Account exists",
           description: "This email is already registered. Try signing in instead.",
-          variant: "destructive"
+          variant: "destructive",
         });
       } else {
         toast({
           title: "Sign up failed",
           description: error.message,
-          variant: "destructive"
+          variant: "destructive",
         });
       }
     } else {
@@ -133,13 +133,9 @@ const Auth = () => {
         <div className="text-center space-y-2">
           <div className="flex items-center justify-center gap-2">
             <Gamepad2 className="h-10 w-10 text-primary" />
-            <h1 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-              VocabQuest
-            </h1>
+            <h1 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">VocabQuest</h1>
           </div>
-          <Badge className="bg-primary/20 text-primary border-primary/30">
-            Student Portal
-          </Badge>
+          <Badge className="bg-primary/20 text-primary border-primary/30">Student Portal</Badge>
           <p className="text-muted-foreground">Master vocabulary through gaming!</p>
         </div>
 
@@ -147,7 +143,7 @@ const Auth = () => {
         <div className="grid grid-cols-3 gap-4 text-center">
           <div className="space-y-1">
             <BookOpen className="h-6 w-6 mx-auto text-primary" />
-            <p className="text-xs text-muted-foreground">10+ Units</p>
+            <p className="text-xs text-muted-foreground">Learning</p>
           </div>
           <div className="space-y-1">
             <Trophy className="h-6 w-6 mx-auto text-warning" />
@@ -155,7 +151,7 @@ const Auth = () => {
           </div>
           <div className="space-y-1">
             <Sparkles className="h-6 w-6 mx-auto text-success" />
-            <p className="text-xs text-muted-foreground">4 Game Types</p>
+            <p className="text-xs text-muted-foreground">Fun Games</p>
           </div>
         </div>
 
@@ -182,20 +178,10 @@ const Auth = () => {
                       disabled={isLoading}
                     />
                   </div>
-                  <Button 
-                    type="submit" 
-                    className="w-full" 
-                    variant="gaming"
-                    disabled={isLoading}
-                  >
+                  <Button type="submit" className="w-full" variant="gaming" disabled={isLoading}>
                     {isLoading ? "Sending..." : "Send Reset Link"}
                   </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    className="w-full"
-                    onClick={() => setShowForgotPassword(false)}
-                  >
+                  <Button type="button" variant="ghost" className="w-full" onClick={() => setShowForgotPassword(false)}>
                     <ArrowLeft className="h-4 w-4 mr-2" />
                     Back to Sign In
                   </Button>
@@ -216,7 +202,7 @@ const Auth = () => {
                     <TabsTrigger value="signin">Sign In</TabsTrigger>
                     <TabsTrigger value="signup">Sign Up</TabsTrigger>
                   </TabsList>
-                  
+
                   <TabsContent value="signin">
                     <form onSubmit={handleSignIn} className="space-y-4">
                       <div className="space-y-2">
@@ -241,12 +227,7 @@ const Auth = () => {
                           disabled={isLoading}
                         />
                       </div>
-                      <Button 
-                        type="submit" 
-                        className="w-full" 
-                        variant="gaming"
-                        disabled={isLoading}
-                      >
+                      <Button type="submit" className="w-full" variant="gaming" disabled={isLoading}>
                         {isLoading ? "Signing in..." : "Sign In"}
                       </Button>
                       <Button
@@ -259,7 +240,7 @@ const Auth = () => {
                       </Button>
                     </form>
                   </TabsContent>
-                  
+
                   <TabsContent value="signup">
                     <form onSubmit={handleSignUp} className="space-y-4">
                       <div className="space-y-2">
@@ -295,12 +276,7 @@ const Auth = () => {
                           disabled={isLoading}
                         />
                       </div>
-                      <Button 
-                        type="submit" 
-                        className="w-full" 
-                        variant="gaming"
-                        disabled={isLoading}
-                      >
+                      <Button type="submit" className="w-full" variant="gaming" disabled={isLoading}>
                         {isLoading ? "Creating account..." : "Create Account"}
                       </Button>
                     </form>
@@ -313,26 +289,16 @@ const Auth = () => {
 
         <div className="text-center space-y-2">
           <div className="flex flex-col gap-1">
-            <Button 
-              variant="ghost" 
-              className="text-muted-foreground"
-              onClick={() => navigate("/")}
-            >
+            <Button variant="ghost" className="text-muted-foreground" onClick={() => navigate("/")}>
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Home
             </Button>
-            <Button 
-              variant="ghost" 
-              className="text-muted-foreground"
-              onClick={() => navigate("/parent-auth")}
-            >
+            <Button variant="ghost" className="text-muted-foreground" onClick={() => navigate("/parent-auth")}>
               <Users className="h-4 w-4 mr-2" />
               Are you a parent? Sign in here
             </Button>
           </div>
-          <p className="text-xs text-muted-foreground">
-            By continuing, you agree to learn awesome vocabulary! 🎮
-          </p>
+          <p className="text-xs text-muted-foreground">By continuing, you agree to learn awesome vocabulary! 🎮</p>
         </div>
       </div>
     </div>
