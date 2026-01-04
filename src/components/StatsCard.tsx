@@ -1,3 +1,4 @@
+import { ReactNode } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -22,6 +23,7 @@ interface StatsCardProps {
     max: number;
     label?: string;
   };
+  action?: ReactNode;
 }
 
 export const StatsCard = ({
@@ -33,6 +35,7 @@ export const StatsCard = ({
   trend = "neutral",
   tooltip,
   progress,
+  action,
 }: StatsCardProps) => {
   const variantClasses = {
     primary: "border-primary/20 bg-primary/5",
@@ -58,18 +61,21 @@ export const StatsCard = ({
     `}>
       <div className="flex items-center justify-between">
         <p className="text-xs text-muted-foreground font-medium">{title}</p>
-        {tooltip && (
-          <TooltipProvider>
-            <Tooltip delayDuration={100}>
-              <TooltipTrigger asChild>
-                <HelpCircle className="h-3.5 w-3.5 text-muted-foreground cursor-help hover:text-primary transition-colors" />
-              </TooltipTrigger>
-              <TooltipContent className="max-w-sm p-3 z-50" side="top" sideOffset={8}>
-                <div className="text-sm space-y-2 whitespace-pre-line">{tooltip}</div>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        )}
+        <div className="flex items-center gap-2">
+          {action}
+          {tooltip && (
+            <TooltipProvider>
+              <Tooltip delayDuration={100}>
+                <TooltipTrigger asChild>
+                  <HelpCircle className="h-3.5 w-3.5 text-muted-foreground cursor-help hover:text-primary transition-colors" />
+                </TooltipTrigger>
+                <TooltipContent className="max-w-sm p-3 z-50" side="top" sideOffset={8}>
+                  <div className="text-sm space-y-2 whitespace-pre-line">{tooltip}</div>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+        </div>
       </div>
       
       <div>
