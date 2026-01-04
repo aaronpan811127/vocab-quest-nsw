@@ -219,15 +219,14 @@ export const WordIntuitionGame = ({ unitId, unitTitle, onComplete, onBack }: Wor
     if (!user) return;
 
     try {
-      const { data, error } = await supabase.functions.invoke("submit-game", {
+      const { data, error } = await supabase.functions.invoke("submit-intuition-game", {
         body: {
-          unitId,
-          gameType: "intuition",
+          unit_id: unitId,
           score: finalScore,
-          correctAnswers: score,
-          totalQuestions: questions.length,
-          timeSpentSeconds: timeSpent,
-          incorrectAnswers: incorrectAnswers,
+          correct_answers: score,
+          total_questions: questions.length,
+          time_spent_seconds: timeSpent,
+          incorrect_answers: incorrectAnswers,
         },
       });
 
