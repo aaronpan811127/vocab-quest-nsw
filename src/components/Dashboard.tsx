@@ -203,7 +203,7 @@ export const Dashboard = ({ onStartGame, onBack, selectedUnitId, onUnitChange }:
       description: unit.description || "Master vocabulary through interactive games",
       totalWords: Array.isArray(unit.words) ? unit.words.length : 10,
       completedGames: 0,
-      totalGames: 4,
+      totalGames: 8,
       totalXp: 0,
       isUnlocked: index === 0,
     }));
@@ -268,7 +268,7 @@ export const Dashboard = ({ onStartGame, onBack, selectedUnitId, onUnitChange }:
         description: unit.description || "Master vocabulary through interactive games",
         totalWords: Array.isArray(unit.words) ? unit.words.length : 10,
         completedGames,
-        totalGames: 4,
+        totalGames: 8,
         totalXp,
         isUnlocked,
       };
