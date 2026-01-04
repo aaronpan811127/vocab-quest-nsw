@@ -6,7 +6,7 @@ import { GameCard } from "./GameCard";
 import { LeaderboardDialog } from "./LeaderboardDialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Target, Crown, ArrowRight, Layers, ArrowLeft } from "lucide-react";
+import { Target, Crown, ArrowRight, Layers, ArrowLeft, Link2 } from "lucide-react";
 import { useProfile } from "@/hooks/useProfile";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTestType } from "@/contexts/TestTypeContext";
@@ -439,15 +439,26 @@ Total XP = Sum of all games' XP
           <div className="space-y-3 sm:space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
               <h2 className="text-lg sm:text-2xl font-bold">Current Unit: {currentUnit.unitNumber}</h2>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onStartGame && onStartGame("flashcards", currentUnit.id, currentUnit.title)}
-                className="gap-2 w-fit"
-              >
-                <Layers className="h-4 w-4" />
-                Flashcards
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onStartGame && onStartGame("flashcards", currentUnit.id, currentUnit.title)}
+                  className="gap-2"
+                >
+                  <Layers className="h-4 w-4" />
+                  Flashcards
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onStartGame && onStartGame("matching", currentUnit.id, currentUnit.title)}
+                  className="gap-2"
+                >
+                  <Link2 className="h-4 w-4" />
+                  Matching
+                </Button>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-6">
