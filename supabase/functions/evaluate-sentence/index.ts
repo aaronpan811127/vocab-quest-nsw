@@ -88,7 +88,7 @@ Evaluate if:
 1. The word "${word}" (or a valid form like plural/past tense) is actually used in the sentence
 2. The word is used correctly in context (grammatically and semantically)
 3. The sentence makes sense
-4. The sentence must demonstrate user’s understanding of the word otherwise mark as incorrect
+4. The sentence must demonstrate user’s understanding of the word, otherwise mark as incorrect. incorrect example: 'I am meticulous', I jolted. Good example: I am meticulous about my work and make sure no mistakes are made. I jolted awake when I heard a loud noise
 5. If a user input contains profanity, mark as incorrect even if it passes rest of criteria and gently remind them to use respectful language as per our guidelines. 
 
 Respond with a JSON object:
