@@ -459,7 +459,8 @@ Total XP = Sum of all games' XP
                   onPlay={() => {
                     if (!game.isLocked && onStartGame && currentUnit) {
                       const playAllWordsOnStart =
-                        game.isCompleted && (game.gameType === "listening" || game.gameType === "speaking");
+                        game.isCompleted &&
+                        (game.gameType === "listening" || game.gameType === "speaking" || game.gameType === "writing");
 
                       onStartGame(game.gameType, currentUnit.id, currentUnit.title, playAllWordsOnStart);
                     } else if (game.isLocked) {
