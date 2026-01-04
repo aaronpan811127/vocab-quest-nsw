@@ -11,6 +11,7 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import ParentAuth from "./pages/ParentAuth";
 import ParentDashboard from "./pages/ParentDashboard";
+import ChildProgress from "./pages/ChildProgress";
 import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 
@@ -31,6 +32,7 @@ const App = () => (
                   <Route path="/auth" element={<Auth />} />
                   <Route path="/parent-auth" element={<ParentAuth />} />
                   <Route path="/parent-dashboard" element={<ParentDashboard />} />
+                  <Route path="/parent-dashboard/child/:childId" element={<ChildProgress />} />
                   <Route path="/reset-password" element={<ResetPassword />} />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
