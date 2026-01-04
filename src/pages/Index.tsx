@@ -68,7 +68,7 @@ const Index = () => {
       case "speaking":
         return <VoiceMasterGame {...commonProps} playAllWordsOnStart={gameState.playAllWordsOnStart} />;
       case "writing":
-        return <StoryCreatorGame {...commonProps} />;
+        return <StoryCreatorGame {...commonProps} playAllWordsOnStart={gameState.playAllWordsOnStart} />;
       case "flashcards":
         return <FlashcardGame {...commonProps} />;
       default:
