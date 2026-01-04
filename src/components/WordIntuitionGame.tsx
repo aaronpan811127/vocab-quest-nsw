@@ -92,7 +92,7 @@ export const WordIntuitionGame = ({ unitId, unitTitle, onComplete, onBack }: Wor
     setIsGenerating(true);
     try {
       // First get vocabulary words for this unit
-      const { data: vocabulary, error: vocabError } = await supabase
+      let { data: vocabulary, error: vocabError } = await supabase
         .from("vocabulary")
         .select("word")
         .eq("unit_id", unitId);
@@ -104,7 +104,7 @@ export const WordIntuitionGame = ({ unitId, unitTitle, onComplete, onBack }: Wor
       if (vocabulary && vocabulary.length > 0) {
         words = vocabulary.map((v) => v.word);
       } else {
-        // Get words from unit
+        // Get words from unit and generate vocabulary
         const { data: unit, error: unitError } = await supabase
           .from("units")
           .select("words")
@@ -114,7 +114,27 @@ export const WordIntuitionGame = ({ unitId, unitTitle, onComplete, onBack }: Wor
         if (unitError) throw unitError;
 
         if (unit?.words && Array.isArray(unit.words)) {
-          words = unit.words as string[];
+          const unitWords = unit.words as string[];
+          
+          // Generate vocabulary using AI
+          toast({
+            title: "Generating vocabulary...",
+            description: "Creating definitions and examples for words.",
+          });
+          
+          const { data: genData, error: genError } = await supabase.functions.invoke('generate-vocabulary', {
+            body: { unit_id: unitId, words: unitWords }
+          });
+
+          if (genError) {
+            console.error('Error generating vocabulary:', genError);
+            // Fallback to unit words without generated vocabulary
+            words = unitWords;
+          } else if (genData?.success && genData.vocabulary) {
+            words = genData.vocabulary.map((v: { word: string }) => v.word);
+          } else {
+            words = unitWords;
+          }
         }
       }
 
