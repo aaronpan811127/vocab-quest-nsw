@@ -392,34 +392,44 @@ export type Database = {
         Row: {
           correct_answer: string
           created_at: string
-          game_type: string
+          game_id: string
           id: string
           options: Json | null
           passage_id: string | null
           question_text: string
           unit_id: string
+          word: string | null
         }
         Insert: {
           correct_answer: string
           created_at?: string
-          game_type: string
+          game_id: string
           id?: string
           options?: Json | null
           passage_id?: string | null
           question_text: string
           unit_id: string
+          word?: string | null
         }
         Update: {
           correct_answer?: string
           created_at?: string
-          game_type?: string
+          game_id?: string
           id?: string
           options?: Json | null
           passage_id?: string | null
           question_text?: string
           unit_id?: string
+          word?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "question_bank_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "question_bank_passage_id_fkey"
             columns: ["passage_id"]
@@ -714,32 +724,42 @@ export type Database = {
       questions_for_play: {
         Row: {
           created_at: string | null
-          game_type: string | null
+          game_id: string | null
           id: string | null
           options: Json | null
           passage_id: string | null
           question_text: string | null
           unit_id: string | null
+          word: string | null
         }
         Insert: {
           created_at?: string | null
-          game_type?: string | null
+          game_id?: string | null
           id?: string | null
           options?: Json | null
           passage_id?: string | null
           question_text?: string | null
           unit_id?: string | null
+          word?: string | null
         }
         Update: {
           created_at?: string | null
-          game_type?: string | null
+          game_id?: string | null
           id?: string | null
           options?: Json | null
           passage_id?: string | null
           question_text?: string | null
           unit_id?: string | null
+          word?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "question_bank_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "question_bank_passage_id_fkey"
             columns: ["passage_id"]
@@ -766,6 +786,10 @@ export type Database = {
           has_parent: boolean
           message: string
         }[]
+      }
+      check_game_attempt_allowed: {
+        Args: { p_game_id: string; p_unit_id: string; p_user_id: string }
+        Returns: boolean
       }
       get_leaderboard: {
         Args: { limit_count?: number; p_test_type_id?: string }
