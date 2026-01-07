@@ -4,13 +4,18 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { BookOpen, Trophy, Zap, Target, Crown } from "lucide-react";
 
+interface SectionStats {
+  sectionName: string;
+  completedGames: number;
+  totalGames: number;
+}
+
 interface UnitCardProps {
   unitNumber: number;
   title: string;
   description: string;
   totalWords: number;
-  completedGames: number;
-  totalGames: number;
+  sectionStats: SectionStats[];
   totalXp: number;
   isUnlocked: boolean;
   isSelected?: boolean;
@@ -23,16 +28,17 @@ export const UnitCard = ({
   title,
   description,
   totalWords,
-  completedGames,
-  totalGames,
+  sectionStats,
   totalXp,
   isUnlocked,
   isSelected,
   isPremiumLocked,
   onEnter,
 }: UnitCardProps) => {
-  const progress = (completedGames / totalGames) * 100;
-  const isCompleted = completedGames === totalGames;
+  const totalGames = sectionStats.reduce((sum, s) => sum + s.totalGames, 0);
+  const completedGames = sectionStats.reduce((sum, s) => sum + s.completedGames, 0);
+  const progress = totalGames > 0 ? (completedGames / totalGames) * 100 : 0;
+  const isCompleted = totalGames > 0 && completedGames === totalGames;
 
   return (
     <Card
@@ -89,14 +95,26 @@ export const UnitCard = ({
           </div>
         </div>
 
-        {/* Progress */}
-        <div className="space-y-1.5">
-          <div className="flex justify-between items-center">
-            <span className="text-xs text-muted-foreground">
-              Games: {completedGames}/{totalGames}
-            </span>
-          </div>
-          <Progress value={progress} className="h-2 bg-muted/50" />
+        {/* Section Progress */}
+        <div className="space-y-2">
+          {sectionStats.map((section) => {
+            const sectionProgress = section.totalGames > 0 
+              ? (section.completedGames / section.totalGames) * 100 
+              : 0;
+            return (
+              <div key={section.sectionName} className="space-y-1">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-muted-foreground">
+                    {section.sectionName}
+                  </span>
+                  <span className="text-xs font-medium">
+                    {section.completedGames}/{section.totalGames}
+                  </span>
+                </div>
+                <Progress value={sectionProgress} className="h-1.5 bg-muted/50" />
+              </div>
+            );
+          })}
         </div>
 
         {/* Action Button */}
