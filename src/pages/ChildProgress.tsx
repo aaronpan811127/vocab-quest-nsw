@@ -107,6 +107,7 @@ const ChildProgress = () => {
   const [units, setUnits] = useState<Unit[]>([]);
   const [testTypes, setTestTypes] = useState<TestType[]>([]);
   const [games, setGames] = useState<Game[]>([]);
+  const [requiredGamesByTestType, setRequiredGamesByTestType] = useState<Map<string, Set<string>>>(new Map());
   const [selectedTestType, setSelectedTestType] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [childEmail, setChildEmail] = useState<string>("");
@@ -156,12 +157,13 @@ const ChildProgress = () => {
 
       setChildEmail(childLink.student_email);
 
-      // Fetch games first to build lookup map
-      const { data: gamesData } = await supabase
-        .from("games")
-        .select("id, game_type, name");
+      // Fetch games and test_type_games first to build lookup maps
+      const [gamesResult, testTypeGamesResult] = await Promise.all([
+        supabase.from("games").select("id, game_type, name"),
+        supabase.from("test_type_games").select("game_id, test_type_id, required_for_unlock")
+      ]);
 
-      const gamesList = gamesData || [];
+      const gamesList = gamesResult.data || [];
       setGames(gamesList);
 
       // Build game_id to game_type map
@@ -217,6 +219,18 @@ const ChildProgress = () => {
       
       setUnits(unitsResult.data || []);
       setTestTypes(testTypesResult.data || []);
+
+      // Build required games map by test type
+      const reqGamesMap = new Map<string, Set<string>>();
+      (testTypeGamesResult.data || []).forEach((ttg: { game_id: string; test_type_id: string; required_for_unlock: boolean }) => {
+        if (ttg.required_for_unlock) {
+          if (!reqGamesMap.has(ttg.test_type_id)) {
+            reqGamesMap.set(ttg.test_type_id, new Set());
+          }
+          reqGamesMap.get(ttg.test_type_id)!.add(ttg.game_id);
+        }
+      });
+      setRequiredGamesByTestType(reqGamesMap);
 
       // Set default selected test type (first one with stats, or first available)
       if (testTypesResult.data && testTypesResult.data.length > 0) {
@@ -288,7 +302,36 @@ const ChildProgress = () => {
 
   // Calculate stats for selected test type
   const totalAttempts = filteredProgress.reduce((sum, p) => sum + p.attempts, 0);
-  const completedUnits = new Set(filteredProgress.filter(p => p.completed).map(p => p.unit_id)).size;
+  
+  // Count units where ALL required games are completed
+  const completedUnits = useMemo(() => {
+    const requiredGames = requiredGamesByTestType.get(selectedTestType);
+    if (!requiredGames || requiredGames.size === 0) {
+      // Fallback: count units with any completed game
+      return new Set(filteredProgress.filter(p => p.completed).map(p => p.unit_id)).size;
+    }
+
+    // Group progress by unit_id
+    const progressByUnit = new Map<string, Set<string>>();
+    filteredProgress.forEach(p => {
+      if (p.completed && requiredGames.has(p.game_id)) {
+        if (!progressByUnit.has(p.unit_id)) {
+          progressByUnit.set(p.unit_id, new Set());
+        }
+        progressByUnit.get(p.unit_id)!.add(p.game_id);
+      }
+    });
+
+    // Count units where all required games are completed
+    let count = 0;
+    progressByUnit.forEach((completedGameIds) => {
+      if (completedGameIds.size >= requiredGames.size) {
+        count++;
+      }
+    });
+    return count;
+  }, [filteredProgress, requiredGamesByTestType, selectedTestType]);
+
   const averageScore = recentAttempts.length > 0
     ? Math.round(recentAttempts.reduce((sum, a) => sum + a.score, 0) / recentAttempts.length)
     : 0;
