@@ -104,6 +104,7 @@ serve(async (req) => {
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
     // Call the secure database function to validate and process the submission
+    // The function now accepts game_type and looks up game_id internally
     const { data, error } = await supabaseAdmin.rpc('validate_dictation_game_submission', {
       p_user_id: user.id,
       p_unit_id: unit_id,

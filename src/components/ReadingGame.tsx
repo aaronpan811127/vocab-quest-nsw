@@ -84,17 +84,26 @@ export const ReadingGame = ({ unitId, unitTitle, onComplete, onBack }: ReadingGa
       // Get passage IDs the user has already attempted
       const attemptedPassageIds = new Set<string>();
       if (user) {
-        const { data: attempts } = await supabase
-          .from('game_attempts')
-          .select('passage_id')
-          .eq('user_id', user.id)
-          .eq('unit_id', unitId)
+        // First get the game_id for reading
+        const { data: gameData } = await supabase
+          .from('games')
+          .select('id')
           .eq('game_type', 'reading')
-          .not('passage_id', 'is', null);
+          .single();
 
-        attempts?.forEach(a => {
-          if (a.passage_id) attemptedPassageIds.add(a.passage_id);
-        });
+        if (gameData) {
+          const { data: attempts } = await supabase
+            .from('game_attempts')
+            .select('passage_id')
+            .eq('user_id', user.id)
+            .eq('unit_id', unitId)
+            .eq('game_id', gameData.id)
+            .not('passage_id', 'is', null);
+
+          attempts?.forEach(a => {
+            if (a.passage_id) attemptedPassageIds.add(a.passage_id);
+          });
+        }
       }
 
       // Find unattempted passages
