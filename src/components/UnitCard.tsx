@@ -46,11 +46,11 @@ export const UnitCard = ({
             : "border-border/30 opacity-60 cursor-not-allowed"
       }`}
     >
-      <div className="relative p-3 flex items-center gap-3">
+      <div className="relative p-2 flex flex-col items-center gap-1 text-center">
         {/* Unit number badge */}
         <div
           className={`
-            w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0
+            w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold
             ${
               isCompleted
                 ? "bg-success text-success-foreground"
@@ -60,32 +60,24 @@ export const UnitCard = ({
             }
           `}
         >
-          {isCompleted ? <Trophy className="h-4 w-4" /> : unitNumber}
+          {isCompleted ? <Trophy className="h-3.5 w-3.5" /> : unitNumber}
         </div>
 
-        {/* Content */}
-        <div className="flex-1 min-w-0 space-y-0.5">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            {sectionStats.map((section) => (
-              <span key={section.sectionName}>
-                {section.sectionName}: {section.completedGames}/{section.totalGames}
-              </span>
-            ))}
-          </div>
-          <div className="flex items-center gap-1 text-xs">
-            <Zap className="h-3 w-3 text-primary" />
-            <span className="font-medium">{totalXp} XP</span>
-          </div>
+        {/* Section stats */}
+        <div className="text-[10px] text-muted-foreground leading-tight">
+          {sectionStats.map((s) => (
+            <div key={s.sectionName}>{s.completedGames}/{s.totalGames}</div>
+          ))}
         </div>
 
-        {/* Status indicator */}
-        <div className="shrink-0">
-          {isPremiumLocked ? (
-            <Crown className="h-4 w-4 text-yellow-500" />
-          ) : !isUnlocked ? (
-            <Lock className="h-4 w-4 text-muted-foreground" />
-          ) : null}
-        </div>
+        {/* Status icon */}
+        {isPremiumLocked ? (
+          <Crown className="h-3 w-3 text-yellow-500" />
+        ) : !isUnlocked ? (
+          <Lock className="h-3 w-3 text-muted-foreground" />
+        ) : (
+          <div className="text-[10px] font-medium text-primary">{totalXp}xp</div>
+        )}
       </div>
     </Card>
   );

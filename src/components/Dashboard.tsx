@@ -670,7 +670,7 @@ Game XP = (Avg Score over all attempts × 0.5) + Time Bonus
             </Button>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-2">
             {(showAllUnits ? units : units.slice(0, 3)).map((unit) => (
               <UnitCard
                 key={unit.unitNumber}
