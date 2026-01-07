@@ -32,14 +32,19 @@ interface DashboardProps {
   onUnitChange?: (unitId: string | null) => void;
 }
 
+interface SectionStats {
+  sectionName: string;
+  completedGames: number;
+  totalGames: number;
+}
+
 interface Unit {
   id: string;
   unitNumber: number;
   title: string;
   description: string;
   totalWords: number;
-  completedGames: number;
-  totalGames: number;
+  sectionStats: SectionStats[];
   totalXp: number;
   isUnlocked: boolean;
   isPremiumLocked?: boolean;
@@ -220,15 +225,21 @@ export const Dashboard = ({ onStartGame, onBack, selectedUnitId, onUnitChange }:
       return;
     }
 
-    const totalGames = gamesConfig.length || 8;
+    // Build section stats
+    const sortedSections = getSortedSections();
+    const sectionStats: SectionStats[] = sortedSections.map(section => ({
+      sectionName: section.name,
+      completedGames: 0,
+      totalGames: groupedGames[section.code]?.games.length || 0,
+    }));
+
     const formattedUnits: Unit[] = data.map((unit, index) => ({
       id: unit.id,
       unitNumber: unit.unit_number,
       title: unit.title,
       description: unit.description || "Master vocabulary through interactive games",
       totalWords: Array.isArray(unit.words) ? unit.words.length : 10,
-      completedGames: 0,
-      totalGames,
+      sectionStats,
       totalXp: 0,
       isUnlocked: index === 0 && index < maxUnitsPerTestType,
     }));
@@ -277,12 +288,35 @@ export const Dashboard = ({ onStartGame, onBack, selectedUnitId, onUnitChange }:
     const requiredGames = getRequiredGames();
     const requiredGameIds = new Set(requiredGames.map(g => g.game_id));
 
-    const totalGames = gamesConfig.length;
+    // Get sorted sections
+    const sortedSections = getSortedSections();
+
+    // Create a map of game_id to section_code
+    const gameToSectionMap = new Map<string, string>();
+    Object.entries(groupedGames).forEach(([sectionCode, sectionData]) => {
+      sectionData.games.forEach(game => {
+        gameToSectionMap.set(game.game_id, sectionCode);
+      });
+    });
 
     const formattedUnits: Unit[] = unitsData.map((unit, index) => {
       const unitProgress = unitProgressMap.get(unit.id) || [];
-      const completedGames = unitProgress.filter((p) => p.completed).length;
       const totalXp = unitProgress.reduce((sum, p) => sum + (p.total_xp || 0), 0);
+
+      // Calculate section stats
+      const sectionStats: SectionStats[] = sortedSections.map(section => {
+        const sectionGames = groupedGames[section.code]?.games || [];
+        const sectionGameIds = new Set(sectionGames.map(g => g.game_id));
+        const completedInSection = unitProgress.filter(
+          p => p.completed && sectionGameIds.has(p.game_id)
+        ).length;
+        
+        return {
+          sectionName: section.name,
+          completedGames: completedInSection,
+          totalGames: sectionGames.length,
+        };
+      });
 
       // Check subscription limit first
       const isWithinSubscriptionLimit = index < maxUnitsPerTestType;
@@ -305,8 +339,7 @@ export const Dashboard = ({ onStartGame, onBack, selectedUnitId, onUnitChange }:
         title: unit.title,
         description: unit.description || "Master vocabulary through interactive games",
         totalWords: Array.isArray(unit.words) ? unit.words.length : 10,
-        completedGames,
-        totalGames,
+        sectionStats,
         totalXp,
         isUnlocked,
         isPremiumLocked: !isWithinSubscriptionLimit,
