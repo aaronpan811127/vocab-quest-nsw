@@ -35,11 +35,12 @@ interface Question {
 interface OddOneOutGameProps {
   unitId: string;
   unitTitle: string;
+  gameId?: string;
   onComplete: () => void;
   onBack: () => void;
 }
 
-export const OddOneOutGame = ({ unitId, unitTitle, onComplete, onBack }: OddOneOutGameProps) => {
+export const OddOneOutGame = ({ unitId, unitTitle, gameId, onComplete, onBack }: OddOneOutGameProps) => {
   const [words, setWords] = useState<Word[]>([]);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentQuestion, setCurrentQuestion] = useState(0);
@@ -51,8 +52,19 @@ export const OddOneOutGame = ({ unitId, unitTitle, onComplete, onBack }: OddOneO
   const [showCompletion, setShowCompletion] = useState(false);
   const [startTime] = useState(Date.now());
   const [saving, setSaving] = useState(false);
+  const [resolvedGameId, setResolvedGameId] = useState<string | null>(gameId || null);
   const { user } = useAuth();
   const { toast } = useToast();
+
+  useEffect(() => {
+    const resolveGameId = async () => {
+      if (!gameId) {
+        const { data } = await supabase.from('games').select('id').eq('game_type', 'oddoneout').single();
+        if (data) setResolvedGameId(data.id);
+      }
+    };
+    resolveGameId();
+  }, [gameId]);
 
   useEffect(() => {
     fetchVocabulary();
@@ -276,6 +288,8 @@ export const OddOneOutGame = ({ unitId, unitTitle, onComplete, onBack }: OddOneO
     const score = Math.round((correctAnswers / questions.length) * 100);
     const isPerfect = correctAnswers === questions.length;
 
+    if (!resolvedGameId) return;
+
     try {
       // Save game attempt
       const { error } = await supabase
@@ -283,7 +297,7 @@ export const OddOneOutGame = ({ unitId, unitTitle, onComplete, onBack }: OddOneO
         .insert({
           user_id: user.id,
           unit_id: unitId,
-          game_type: 'oddoneout',
+          game_id: resolvedGameId,
           score,
           correct_answers: correctAnswers,
           total_questions: questions.length,
@@ -299,7 +313,7 @@ export const OddOneOutGame = ({ unitId, unitTitle, onComplete, onBack }: OddOneO
         .select('*')
         .eq('user_id', user.id)
         .eq('unit_id', unitId)
-        .eq('game_type', 'oddoneout')
+        .eq('game_id', resolvedGameId)
         .maybeSingle();
 
       if (existingProgress) {
@@ -319,7 +333,7 @@ export const OddOneOutGame = ({ unitId, unitTitle, onComplete, onBack }: OddOneO
           .insert({
             user_id: user.id,
             unit_id: unitId,
-            game_type: 'oddoneout',
+            game_id: resolvedGameId,
             completed: isPerfect,
             attempts: 1,
             total_time_seconds: timeSpent,

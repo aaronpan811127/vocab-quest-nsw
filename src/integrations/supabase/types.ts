@@ -97,7 +97,7 @@ export type Database = {
           completed: boolean
           correct_answers: number
           created_at: string
-          game_type: string
+          game_id: string
           id: string
           passage_id: string | null
           score: number
@@ -110,7 +110,7 @@ export type Database = {
           completed?: boolean
           correct_answers?: number
           created_at?: string
-          game_type: string
+          game_id: string
           id?: string
           passage_id?: string | null
           score?: number
@@ -123,7 +123,7 @@ export type Database = {
           completed?: boolean
           correct_answers?: number
           created_at?: string
-          game_type?: string
+          game_id?: string
           id?: string
           passage_id?: string | null
           score?: number
@@ -133,6 +133,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "game_attempts_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "game_attempts_passage_id_fkey"
             columns: ["passage_id"]
@@ -148,6 +155,66 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      game_sections: {
+        Row: {
+          code: string
+          created_at: string
+          description: string | null
+          display_order: number
+          icon_name: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          icon_name?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          icon_name?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      games: {
+        Row: {
+          created_at: string
+          description: string | null
+          game_type: string
+          icon_name: string | null
+          id: string
+          name: string
+          rules: Json | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          game_type: string
+          icon_name?: string | null
+          id?: string
+          name: string
+          rules?: Json | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          game_type?: string
+          icon_name?: string | null
+          id?: string
+          name?: string
+          rules?: Json | null
+        }
+        Relationships: []
       }
       leaderboard: {
         Row: {
@@ -410,6 +477,64 @@ export type Database = {
           },
         ]
       }
+      test_type_games: {
+        Row: {
+          contributes_to_xp: boolean
+          created_at: string
+          display_order: number
+          game_id: string
+          id: string
+          is_enabled: boolean
+          required_for_unlock: boolean
+          section_id: string
+          test_type_id: string
+        }
+        Insert: {
+          contributes_to_xp?: boolean
+          created_at?: string
+          display_order?: number
+          game_id: string
+          id?: string
+          is_enabled?: boolean
+          required_for_unlock?: boolean
+          section_id: string
+          test_type_id: string
+        }
+        Update: {
+          contributes_to_xp?: boolean
+          created_at?: string
+          display_order?: number
+          game_id?: string
+          id?: string
+          is_enabled?: boolean
+          required_for_unlock?: boolean
+          section_id?: string
+          test_type_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "test_type_games_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "test_type_games_section_id_fkey"
+            columns: ["section_id"]
+            isOneToOne: false
+            referencedRelation: "game_sections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "test_type_games_test_type_id_fkey"
+            columns: ["test_type_id"]
+            isOneToOne: false
+            referencedRelation: "test_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       test_types: {
         Row: {
           code: string
@@ -478,7 +603,7 @@ export type Database = {
           best_score: number
           completed: boolean
           created_at: string
-          game_type: string
+          game_id: string
           id: string
           total_time_seconds: number
           total_xp: number
@@ -491,7 +616,7 @@ export type Database = {
           best_score?: number
           completed?: boolean
           created_at?: string
-          game_type: string
+          game_id: string
           id?: string
           total_time_seconds?: number
           total_xp?: number
@@ -504,7 +629,7 @@ export type Database = {
           best_score?: number
           completed?: boolean
           created_at?: string
-          game_type?: string
+          game_id?: string
           id?: string
           total_time_seconds?: number
           total_xp?: number
@@ -512,7 +637,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "user_progress_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
@@ -644,32 +777,73 @@ export type Database = {
           username: string
         }[]
       }
+      get_test_type_games: {
+        Args: { p_test_type_id: string }
+        Returns: {
+          contributes_to_xp: boolean
+          description: string
+          display_order: number
+          game_id: string
+          game_name: string
+          game_type: string
+          icon_name: string
+          required_for_unlock: boolean
+          rules: Json
+          section_code: string
+          section_display_order: number
+          section_id: string
+          section_name: string
+        }[]
+      }
       get_user_roles: {
         Args: { p_user_id: string }
         Returns: {
           role: string
         }[]
       }
-      validate_dictation_game_submission: {
-        Args: {
-          p_answers: Json
-          p_game_type: string
-          p_time_spent_seconds: number
-          p_unit_id: string
-          p_user_id: string
-        }
-        Returns: Json
-      }
-      validate_game_submission: {
-        Args: {
-          p_answers: Json
-          p_passage_id: string
-          p_time_spent_seconds: number
-          p_unit_id: string
-          p_user_id: string
-        }
-        Returns: Json
-      }
+      validate_dictation_game_submission:
+        | {
+            Args: {
+              p_answers: Json
+              p_game_id: string
+              p_time_spent_seconds: number
+              p_unit_id: string
+              p_user_id: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_answers: Json
+              p_game_type: string
+              p_time_spent_seconds: number
+              p_unit_id: string
+              p_user_id: string
+            }
+            Returns: Json
+          }
+      validate_game_submission:
+        | {
+            Args: {
+              p_answers: Json
+              p_passage_id: string
+              p_time_spent_seconds: number
+              p_unit_id: string
+              p_user_id: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_answers: Json
+              p_game_id: string
+              p_passage_id: string
+              p_time_spent_seconds: number
+              p_unit_id: string
+              p_user_id: string
+            }
+            Returns: Json
+          }
     }
     Enums: {
       [_ in never]: never

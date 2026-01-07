@@ -10,11 +10,7 @@ import {
   Target,
   Crown,
   ArrowRight,
-  Layers,
   ArrowLeft,
-  Link2,
-  CircleOff,
-  Lightbulb,
   BookOpen,
   Trophy,
   CheckCircle2,
@@ -24,11 +20,13 @@ import { useProfile } from "@/hooks/useProfile";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTestType } from "@/contexts/TestTypeContext";
 import { useSubscription } from "@/contexts/SubscriptionContext";
+import { useGamesConfig, GameConfig } from "@/hooks/useGamesConfig";
+import { getGameIcon } from "@/utils/gameIcons";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
 interface DashboardProps {
-  onStartGame?: (gameType: string, unitId: string, unitTitle: string, playAllWordsOnStart?: boolean) => void;
+  onStartGame?: (gameType: string, unitId: string, unitTitle: string, playAllWordsOnStart?: boolean, gameId?: string) => void;
   onBack?: () => void;
   selectedUnitId?: string | null;
   onUnitChange?: (unitId: string | null) => void;
@@ -47,20 +45,25 @@ interface Unit {
   isPremiumLocked?: boolean;
 }
 
+interface GameProgress {
+  gameId: string;
+  bestScore: number;
+  completed: boolean;
+  totalXp: number;
+  totalTimeSeconds: number;
+  attempts: number;
+}
+
 export const Dashboard = ({ onStartGame, onBack, selectedUnitId, onUnitChange }: DashboardProps) => {
   const { user } = useAuth();
   const { profile, loading } = useProfile();
   const { selectedTestType } = useTestType();
   const { maxUnitsPerTestType, tier } = useSubscription();
+  const { games: gamesConfig, groupedGames, loading: gamesLoading, getSortedSections, getRequiredGames } = useGamesConfig(selectedTestType?.id || null);
   const { toast } = useToast();
   const [units, setUnits] = useState<Unit[]>([]);
   const [selectedUnit, setSelectedUnit] = useState<Unit | null>(null);
-  const [gameProgress, setGameProgress] = useState<
-    Record<
-      string,
-      { bestScore: number; completed: boolean; totalXp: number; totalTimeSeconds: number; attempts: number }
-    >
-  >({});
+  const [gameProgress, setGameProgress] = useState<Record<string, GameProgress>>({});
   const [userStats, setUserStats] = useState({ avgScore: 0, unitsCompleted: 0 });
   const [testTypeStats, setTestTypeStats] = useState({ level: 1, totalXp: 0, studyStreak: 0 });
   const [showAllUnits, setShowAllUnits] = useState(false);
@@ -76,7 +79,7 @@ export const Dashboard = ({ onStartGame, onBack, selectedUnitId, onUnitChange }:
     } else if (selectedTestType) {
       fetchUnits();
     }
-  }, [user, selectedTestType]);
+  }, [user, selectedTestType, gamesConfig]);
 
   const fetchTestTypeStats = async () => {
     if (!user || !selectedTestType) return;
@@ -109,7 +112,7 @@ export const Dashboard = ({ onStartGame, onBack, selectedUnitId, onUnitChange }:
       fetchGameProgress(selectedUnit.id);
       fetchGameHistory(selectedUnit.id);
     }
-  }, [user, selectedUnit]);
+  }, [user, selectedUnit, gamesConfig]);
 
   const fetchUserStats = async () => {
     if (!user) return;
@@ -159,20 +162,22 @@ export const Dashboard = ({ onStartGame, onBack, selectedUnitId, onUnitChange }:
       }
     });
 
+    // A unit is complete when all required games are completed
+    const requiredGamesCount = getRequiredGames().length || 4;
     let unitsCompleted = 0;
     unitCompletionMap.forEach((count) => {
-      if (count >= 4) unitsCompleted++;
+      if (count >= requiredGamesCount) unitsCompleted++;
     });
 
     setUserStats({ avgScore, unitsCompleted });
   };
 
   const fetchGameHistory = async (unitId: string) => {
-    if (!user) return;
+    if (!user || gamesConfig.length === 0) return;
 
     const { data, error } = await supabase
       .from("game_attempts")
-      .select("id, game_type, score, created_at")
+      .select("id, game_id, score, created_at")
       .eq("user_id", user.id)
       .eq("unit_id", unitId)
       .order("created_at", { ascending: false });
@@ -184,10 +189,14 @@ export const Dashboard = ({ onStartGame, onBack, selectedUnitId, onUnitChange }:
 
     const historyByGame: Record<string, Array<{ id: string; score: number; created_at: string }>> = {};
     data?.forEach((attempt) => {
-      if (!historyByGame[attempt.game_type]) {
-        historyByGame[attempt.game_type] = [];
+      // Map game_id back to game_type for GameCard compatibility
+      const gameConfig = gamesConfig.find(g => g.game_id === attempt.game_id);
+      const gameType = gameConfig?.game_type || attempt.game_id;
+      
+      if (!historyByGame[gameType]) {
+        historyByGame[gameType] = [];
       }
-      historyByGame[attempt.game_type].push({
+      historyByGame[gameType].push({
         id: attempt.id,
         score: attempt.score,
         created_at: attempt.created_at,
@@ -211,6 +220,7 @@ export const Dashboard = ({ onStartGame, onBack, selectedUnitId, onUnitChange }:
       return;
     }
 
+    const totalGames = gamesConfig.length || 8;
     const formattedUnits: Unit[] = data.map((unit, index) => ({
       id: unit.id,
       unitNumber: unit.unit_number,
@@ -218,14 +228,13 @@ export const Dashboard = ({ onStartGame, onBack, selectedUnitId, onUnitChange }:
       description: unit.description || "Master vocabulary through interactive games",
       totalWords: Array.isArray(unit.words) ? unit.words.length : 10,
       completedGames: 0,
-      totalGames: 8,
+      totalGames,
       totalXp: 0,
       isUnlocked: index === 0 && index < maxUnitsPerTestType,
     }));
 
     setUnits(formattedUnits);
     if (formattedUnits.length > 0) {
-      // Use the persisted selectedUnitId from parent, or default to first unit
       const unitToSelect = selectedUnitId
         ? formattedUnits.find((u) => u.id === selectedUnitId) || formattedUnits[0]
         : formattedUnits[0];
@@ -234,7 +243,7 @@ export const Dashboard = ({ onStartGame, onBack, selectedUnitId, onUnitChange }:
   };
 
   const fetchUnitsWithProgress = async () => {
-    if (!user || !selectedTestType) return;
+    if (!user || !selectedTestType || gamesConfig.length === 0) return;
 
     const { data: unitsData, error: unitsError } = await supabase
       .from("units")
@@ -256,12 +265,19 @@ export const Dashboard = ({ onStartGame, onBack, selectedUnitId, onUnitChange }:
       console.error("Error fetching progress:", progressError);
     }
 
+    // Build a map of unit_id -> progress array
     const unitProgressMap = new Map<string, typeof progressData>();
     progressData?.forEach((p) => {
       const existing = unitProgressMap.get(p.unit_id) || [];
       existing.push(p);
       unitProgressMap.set(p.unit_id, existing);
     });
+
+    // Get required games for unlock check
+    const requiredGames = getRequiredGames();
+    const requiredGameIds = new Set(requiredGames.map(g => g.game_id));
+
+    const totalGames = gamesConfig.length;
 
     const formattedUnits: Unit[] = unitsData.map((unit, index) => {
       const unitProgress = unitProgressMap.get(unit.id) || [];
@@ -275,12 +291,12 @@ export const Dashboard = ({ onStartGame, onBack, selectedUnitId, onUnitChange }:
       if (index > 0 && isWithinSubscriptionLimit) {
         const prevUnitId = unitsData[index - 1].id;
         const prevProgress = unitProgressMap.get(prevUnitId) || [];
-        // Check if all 8 games are completed
-        const allGameTypes = ['flashcards', 'matching', 'oddoneout', 'intuition', 'reading', 'listening', 'speaking', 'writing'];
-        const completedGames = prevProgress.filter(
-          (p) => p.completed && allGameTypes.includes(p.game_type)
+        
+        // Check if all required games are completed in the previous unit
+        const completedRequiredGames = prevProgress.filter(
+          (p) => p.completed && requiredGameIds.has(p.game_id)
         ).length;
-        isUnlocked = completedGames >= 8;
+        isUnlocked = completedRequiredGames >= requiredGames.length;
       }
 
       return {
@@ -290,7 +306,7 @@ export const Dashboard = ({ onStartGame, onBack, selectedUnitId, onUnitChange }:
         description: unit.description || "Master vocabulary through interactive games",
         totalWords: Array.isArray(unit.words) ? unit.words.length : 10,
         completedGames,
-        totalGames: 8,
+        totalGames,
         totalXp,
         isUnlocked,
         isPremiumLocked: !isWithinSubscriptionLimit,
@@ -299,7 +315,6 @@ export const Dashboard = ({ onStartGame, onBack, selectedUnitId, onUnitChange }:
 
     setUnits(formattedUnits);
     if (formattedUnits.length > 0) {
-      // Use the persisted selectedUnitId from parent, or default to first unit
       const unitToSelect = selectedUnitId
         ? formattedUnits.find((u) => u.id === selectedUnitId) || formattedUnits[0]
         : formattedUnits[0];
@@ -308,11 +323,11 @@ export const Dashboard = ({ onStartGame, onBack, selectedUnitId, onUnitChange }:
   };
 
   const fetchGameProgress = async (unitId: string) => {
-    if (!user) return;
+    if (!user || gamesConfig.length === 0) return;
 
     const { data, error } = await supabase
       .from("user_progress")
-      .select("game_type, best_score, completed, total_xp, total_time_seconds, attempts")
+      .select("game_id, best_score, completed, total_xp, total_time_seconds, attempts")
       .eq("user_id", user.id)
       .eq("unit_id", unitId);
 
@@ -321,13 +336,15 @@ export const Dashboard = ({ onStartGame, onBack, selectedUnitId, onUnitChange }:
       return;
     }
 
-    const progress: Record<
-      string,
-      { bestScore: number; completed: boolean; totalXp: number; totalTimeSeconds: number; attempts: number }
-    > = {};
+    const progress: Record<string, GameProgress> = {};
 
     data?.forEach((record) => {
-      progress[record.game_type] = {
+      // Map game_id to game_type for backwards compatibility
+      const gameConfig = gamesConfig.find(g => g.game_id === record.game_id);
+      const gameType = gameConfig?.game_type || record.game_id;
+      
+      progress[gameType] = {
+        gameId: record.game_id,
         bestScore: record.best_score || 0,
         completed: record.completed || false,
         totalXp: record.total_xp || 0,
@@ -395,79 +412,74 @@ Game XP = (Avg Score over all attempts × 0.5) + Time Bonus
       totalXp: progress?.totalXp || 0,
       totalTimeSeconds: progress?.totalTimeSeconds || 0,
       attempts: progress?.attempts || 0,
+      gameId: progress?.gameId || gamesConfig.find(g => g.game_type === gameType)?.game_id || '',
     };
   };
 
-  // Learn section games - practice games, no XP accumulation
-  const learnGames = [
-    {
-      title: "Flashcards",
-      description: "Review words with interactive flashcards",
-      gameType: "flashcards" as const,
-      ...getGameData("flashcards"),
-      isLocked: false,
-      icon: Layers,
-    },
-    {
-      title: "Matching",
-      description: "Match words with their definitions",
-      gameType: "matching" as const,
-      ...getGameData("matching"),
-      isLocked: false,
-      icon: Link2,
-    },
-    {
-      title: "Odd One Out",
-      description: "Find the word that doesn't belong",
-      gameType: "oddoneout" as const,
-      ...getGameData("oddoneout"),
-      isLocked: false,
-      icon: CircleOff,
-    },
-    {
-      title: "Word Intuition",
-      description: "Test your word sense with context clues",
-      gameType: "intuition" as const,
-      ...getGameData("intuition"),
-      isLocked: false,
-      icon: Lightbulb,
-    },
-  ];
+  // Get sorted sections
+  const sortedSections = getSortedSections();
+  
+  // Build games by section dynamically
+  const gamesBySection: Record<string, Array<{
+    title: string;
+    description: string;
+    gameType: string;
+    gameId: string;
+    progress: number;
+    isCompleted: boolean;
+    isLocked: boolean;
+    totalXp: number;
+    totalTimeSeconds: number;
+    attempts: number;
+    icon: React.ComponentType<{ className?: string }>;
+    contributesToXp: boolean;
+  }>> = {};
 
-  // Check if all Learn games are completed
+  // Check if all games in previous sections are completed
+  const getSectionUnlockStatus = (sectionDisplayOrder: number): boolean => {
+    if (sectionDisplayOrder <= 1) return true; // First section is always unlocked
+    
+    // Check all games in sections with lower display order
+    for (const section of sortedSections) {
+      if (section.displayOrder < sectionDisplayOrder) {
+        const sectionGames = groupedGames[section.code]?.games || [];
+        const allCompleted = sectionGames.every(g => {
+          const progress = gameProgress[g.game_type];
+          return progress?.completed;
+        });
+        if (!allCompleted) return false;
+      }
+    }
+    return true;
+  };
+
+  sortedSections.forEach(section => {
+    const sectionGames = groupedGames[section.code]?.games || [];
+    const sectionUnlocked = getSectionUnlockStatus(section.displayOrder);
+    
+    gamesBySection[section.code] = sectionGames.map(game => {
+      const data = getGameData(game.game_type);
+      return {
+        title: game.game_name,
+        description: game.description || '',
+        gameType: game.game_type,
+        gameId: game.game_id,
+        progress: data.progress,
+        isCompleted: data.isCompleted,
+        isLocked: !sectionUnlocked,
+        totalXp: data.totalXp,
+        totalTimeSeconds: data.totalTimeSeconds,
+        attempts: data.attempts,
+        icon: getGameIcon(game.icon_name),
+        contributesToXp: game.contributes_to_xp,
+      };
+    });
+  });
+
+  // For backward compatibility with existing UI
+  const learnGames = gamesBySection['learn'] || [];
+  const challengeGames = gamesBySection['challenge'] || [];
   const allLearnGamesCompleted = learnGames.every((game) => game.isCompleted);
-
-  // Challenge section games - XP earning games (locked until all Learn games completed)
-  const challengeGames = [
-    {
-      title: "Reading Quest",
-      description: "Embark on reading adventures with comprehension challenges",
-      gameType: "reading" as const,
-      ...getGameData("reading"),
-      isLocked: !allLearnGamesCompleted,
-    },
-    {
-      title: "Audio Challenge",
-      description: "Listen and spell words perfectly to advance",
-      gameType: "listening" as const,
-      ...getGameData("listening"),
-      isLocked: !allLearnGamesCompleted,
-    },
-    {
-      title: "Voice Master",
-      description: "Speak clearly and accurately to unlock achievements",
-      gameType: "speaking" as const,
-      ...getGameData("speaking"),
-      isLocked: !allLearnGamesCompleted,
-    },
-    {
-      title: "Story Creator",
-      description: "Craft creative sentences using your new vocabulary",
-      gameType: "writing" as const,
-      ...getGameData("writing"),
-      isLocked: !allLearnGamesCompleted,
-    },
-  ];
 
   if (!selectedTestType) {
     return (
@@ -481,6 +493,17 @@ Game XP = (Avg Score over all attempts × 0.5) + Time Bonus
               Go Back
             </Button>
           )}
+        </div>
+      </div>
+    );
+  }
+
+  if (gamesLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-hero flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto" />
+          <p className="text-muted-foreground">Loading games...</p>
         </div>
       </div>
     );
@@ -535,7 +558,7 @@ Game XP = (Avg Score over all attempts × 0.5) + Time Bonus
                     key={game.title}
                     variant="outline"
                     className={`h-auto py-4 flex flex-col items-center gap-2 hover:bg-primary/10 hover:border-primary/50 transition-all relative ${game.isCompleted ? 'border-green-500/50 bg-green-500/5' : ''}`}
-                    onClick={() => onStartGame && onStartGame(game.gameType, currentUnit.id, `Unit ${currentUnit.unitNumber}`)}
+                    onClick={() => onStartGame && onStartGame(game.gameType, currentUnit.id, `Unit ${currentUnit.unitNumber}`, false, game.gameId)}
                   >
                     {game.isCompleted && (
                       <CheckCircle2 className="h-4 w-4 text-green-500 absolute top-2 right-2" />
@@ -570,7 +593,15 @@ Game XP = (Avg Score over all attempts × 0.5) + Time Bonus
                 {challengeGames.map((game) => (
                   <GameCard
                     key={game.title}
-                    {...game}
+                    title={game.title}
+                    description={game.description}
+                    gameType={game.gameType as any}
+                    progress={game.progress}
+                    isCompleted={game.isCompleted}
+                    isLocked={game.isLocked}
+                    totalXp={game.totalXp}
+                    totalTimeSeconds={game.totalTimeSeconds}
+                    attempts={game.attempts}
                     history={gameHistory[game.gameType] || []}
                     onPlay={() => {
                       if (!game.isLocked && onStartGame && currentUnit) {
@@ -580,9 +611,7 @@ Game XP = (Avg Score over all attempts × 0.5) + Time Bonus
                             game.gameType === "speaking" ||
                             game.gameType === "writing");
 
-                        onStartGame(game.gameType, currentUnit.id, `Unit ${currentUnit.unitNumber}`, playAllWordsOnStart);
-                      } else if (game.isLocked) {
-                        console.log(`${game.title} coming soon!`);
+                        onStartGame(game.gameType, currentUnit.id, `Unit ${currentUnit.unitNumber}`, playAllWordsOnStart, game.gameId);
                       }
                     }}
                   />
