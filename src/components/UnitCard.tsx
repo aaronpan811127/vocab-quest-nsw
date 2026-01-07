@@ -1,8 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { BookOpen, Trophy, Zap, Target, Crown } from "lucide-react";
+import { Trophy, Zap, Crown, Lock } from "lucide-react";
 
 interface SectionStats {
   sectionName: string;
@@ -25,9 +23,6 @@ interface UnitCardProps {
 
 export const UnitCard = ({
   unitNumber,
-  title,
-  description,
-  totalWords,
   sectionStats,
   totalXp,
   isUnlocked,
@@ -42,95 +37,55 @@ export const UnitCard = ({
 
   return (
     <Card
-      className={`group relative overflow-hidden border bg-card/50 backdrop-blur-sm transition-all duration-300 hover:shadow-card animate-slide-up ${
+      onClick={() => isUnlocked && onEnter()}
+      className={`group relative overflow-hidden border transition-all duration-200 cursor-pointer ${
         isSelected
-          ? "border-primary shadow-md shadow-primary/20 ring-1 ring-primary/30"
-          : "border-border/50 hover:border-primary/30"
+          ? "border-primary bg-primary/5 ring-1 ring-primary/30"
+          : isUnlocked
+            ? "border-border/50 hover:border-primary/30 hover:bg-muted/30"
+            : "border-border/30 opacity-60 cursor-not-allowed"
       }`}
     >
-      {/* Selected indicator */}
-      {isSelected && <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-primary" />}
-
-      {/* Animated background gradient */}
-      <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-secondary/5 to-accent/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-
-      {/* Unit number badge */}
-      <div className="absolute -top-1.5 -right-1.5">
+      <div className="relative p-3 flex items-center gap-3">
+        {/* Unit number badge */}
         <div
           className={`
-          w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold
-          ${
-            isCompleted
-              ? "bg-gradient-success text-success-foreground"
-              : isUnlocked
-                ? "bg-gradient-primary text-primary-foreground"
-                : "bg-muted text-muted-foreground"
-          }
-          shadow-md
-        `}
+            w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0
+            ${
+              isCompleted
+                ? "bg-success text-success-foreground"
+                : isUnlocked
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground"
+            }
+          `}
         >
-          {unitNumber}
-        </div>
-      </div>
-
-      <div className="relative p-4 space-y-3">
-        {/* Header */}
-        <div className="space-y-1">
-          <div className="flex items-center gap-1.5">
-            {isCompleted && <Trophy className="h-4 w-4 text-success fill-current" />}
-          </div>
+          {isCompleted ? <Trophy className="h-4 w-4" /> : unitNumber}
         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-2 gap-2 text-xs">
-          <div className="flex items-center gap-1">
-            <Target className="h-3 w-3 text-accent" />
-            <span className="text-muted-foreground">Words:</span>
-            <span className="font-medium">{totalWords}</span>
+        {/* Content */}
+        <div className="flex-1 min-w-0 space-y-0.5">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            {sectionStats.map((section) => (
+              <span key={section.sectionName}>
+                {section.sectionName}: {section.completedGames}/{section.totalGames}
+              </span>
+            ))}
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 text-xs">
             <Zap className="h-3 w-3 text-primary" />
-            <span className="text-muted-foreground">XP:</span>
-            <span className="font-medium">{totalXp}</span>
+            <span className="font-medium">{totalXp} XP</span>
           </div>
         </div>
 
-        {/* Section Stats */}
-        <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs">
-          {sectionStats.map((section) => (
-            <div key={section.sectionName} className="flex items-center gap-1">
-              <span className="text-muted-foreground">{section.sectionName}:</span>
-              <span className="font-medium">{section.completedGames}/{section.totalGames}</span>
-            </div>
-          ))}
-        </div>
-
-        {/* Action Button */}
-        <Button
-          onClick={onEnter}
-          disabled={!isUnlocked}
-          variant={isCompleted ? "success" : isUnlocked ? "hero" : "ghost"}
-          className="w-full"
-          size="sm"
-        >
+        {/* Status indicator */}
+        <div className="shrink-0">
           {isPremiumLocked ? (
-            <>
-              <Crown className="h-3.5 w-3.5 mr-1.5 text-yellow-500" />
-              Premium
-            </>
+            <Crown className="h-4 w-4 text-yellow-500" />
           ) : !isUnlocked ? (
-            "🔒 Locked"
-          ) : isCompleted ? (
-            <>
-              <Trophy className="h-3.5 w-3.5 mr-1.5" />
-              Review Unit
-            </>
-          ) : progress > 0 ? (
-            "Continue Unit"
-          ) : (
-            "Start Unit"
-          )}
-        </Button>
+            <Lock className="h-4 w-4 text-muted-foreground" />
+          ) : null}
+        </div>
       </div>
     </Card>
   );
