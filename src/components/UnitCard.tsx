@@ -60,8 +60,9 @@ export const UnitCard = ({
             }
           `}
         >
-          {isCompleted ? <Trophy className="h-3.5 w-3.5" /> : unitNumber}
+          {unitNumber}
         </div>
+        {isCompleted && <Trophy className="h-3 w-3 text-success absolute -top-0.5 -right-0.5" />}
 
         {/* Section stats */}
         <div className="text-[10px] text-muted-foreground leading-tight">
