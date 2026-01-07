@@ -80,26 +80,35 @@ export const StoryCreatorGame = ({ unitId, unitTitle, onComplete, onBack, playAl
         console.log("Not Playing all words:", wordList.length);
         // Initial play: prioritize incorrect words from last 3 attempts
         if (user) {
-          const { data: prevAttempts } = await supabase
-            .from("game_attempts")
+          // First get the game_id for writing
+          const { data: gameData } = await supabase
+            .from("games")
             .select("id")
-            .eq("user_id", user.id)
-            .eq("unit_id", unitId)
             .eq("game_type", "writing")
-            .order("created_at", { ascending: false })
-            .limit(3);
+            .single();
 
-          if (prevAttempts && prevAttempts.length > 0) {
-            const attemptIds = prevAttempts.map((a) => a.id);
+          if (gameData) {
+            const { data: prevAttempts } = await supabase
+              .from("game_attempts")
+              .select("id")
+              .eq("user_id", user.id)
+              .eq("unit_id", unitId)
+              .eq("game_id", gameData.id)
+              .order("created_at", { ascending: false })
+              .limit(3);
 
-            const { data: incorrectAnswers } = await supabase
-              .from("attempt_incorrect_answers_dictation")
-              .select("incorrect_word")
-              .in("attempt_id", attemptIds);
+            if (prevAttempts && prevAttempts.length > 0) {
+              const attemptIds = prevAttempts.map((a) => a.id);
 
-            if (incorrectAnswers && incorrectAnswers.length > 0) {
-              const incorrectSet = new Set(incorrectAnswers.map((a) => a.incorrect_word.toLowerCase()));
-              priorityWords = wordList.filter((word) => incorrectSet.has(word.toLowerCase()));
+              const { data: incorrectAnswers } = await supabase
+                .from("attempt_incorrect_answers_dictation")
+                .select("incorrect_word")
+                .in("attempt_id", attemptIds);
+
+              if (incorrectAnswers && incorrectAnswers.length > 0) {
+                const incorrectSet = new Set(incorrectAnswers.map((a) => a.incorrect_word.toLowerCase()));
+                priorityWords = wordList.filter((word) => incorrectSet.has(word.toLowerCase()));
+              }
             }
           }
         }

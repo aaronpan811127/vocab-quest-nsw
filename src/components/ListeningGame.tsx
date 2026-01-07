@@ -115,28 +115,37 @@ export const ListeningGame = ({
       } else {
         // Initial play: prioritize incorrect words from last 3 attempts
         if (user) {
-          const { data: prevAttempts } = await supabase
-            .from("game_attempts")
+          // First get the game_id for listening
+          const { data: gameData } = await supabase
+            .from("games")
             .select("id")
-            .eq("user_id", user.id)
-            .eq("unit_id", unitId)
             .eq("game_type", "listening")
-            .order("created_at", { ascending: false })
-            .limit(3);
+            .single();
 
-          if (prevAttempts && prevAttempts.length > 0) {
-            const attemptIds = prevAttempts.map((a) => a.id);
+          if (gameData) {
+            const { data: prevAttempts } = await supabase
+              .from("game_attempts")
+              .select("id")
+              .eq("user_id", user.id)
+              .eq("unit_id", unitId)
+              .eq("game_id", gameData.id)
+              .order("created_at", { ascending: false })
+              .limit(3);
 
-            // Get incorrect words from last 3 attempts only
-            const { data: incorrectAnswers } = await supabase
-              .from("attempt_incorrect_answers_dictation")
-              .select("incorrect_word")
-              .in("attempt_id", attemptIds);
+            if (prevAttempts && prevAttempts.length > 0) {
+              const attemptIds = prevAttempts.map((a) => a.id);
 
-            if (incorrectAnswers && incorrectAnswers.length > 0) {
-              // Get unique incorrect words that are still in the unit's word list
-              const incorrectSet = new Set(incorrectAnswers.map((a) => a.incorrect_word.toLowerCase()));
-              priorityWords = wordList.filter((word) => incorrectSet.has(word.toLowerCase()));
+              // Get incorrect words from last 3 attempts only
+              const { data: incorrectAnswers } = await supabase
+                .from("attempt_incorrect_answers_dictation")
+                .select("incorrect_word")
+                .in("attempt_id", attemptIds);
+
+              if (incorrectAnswers && incorrectAnswers.length > 0) {
+                // Get unique incorrect words that are still in the unit's word list
+                const incorrectSet = new Set(incorrectAnswers.map((a) => a.incorrect_word.toLowerCase()));
+                priorityWords = wordList.filter((word) => incorrectSet.has(word.toLowerCase()));
+              }
             }
           }
         }
