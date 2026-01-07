@@ -95,26 +95,14 @@ export const UnitCard = ({
           </div>
         </div>
 
-        {/* Section Progress */}
-        <div className="space-y-2">
-          {sectionStats.map((section) => {
-            const sectionProgress = section.totalGames > 0 
-              ? (section.completedGames / section.totalGames) * 100 
-              : 0;
-            return (
-              <div key={section.sectionName} className="space-y-1">
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-muted-foreground">
-                    {section.sectionName}
-                  </span>
-                  <span className="text-xs font-medium">
-                    {section.completedGames}/{section.totalGames}
-                  </span>
-                </div>
-                <Progress value={sectionProgress} className="h-1.5 bg-muted/50" />
-              </div>
-            );
-          })}
+        {/* Section Stats */}
+        <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs">
+          {sectionStats.map((section) => (
+            <div key={section.sectionName} className="flex items-center gap-1">
+              <span className="text-muted-foreground">{section.sectionName}:</span>
+              <span className="font-medium">{section.completedGames}/{section.totalGames}</span>
+            </div>
+          ))}
         </div>
 
         {/* Action Button */}
