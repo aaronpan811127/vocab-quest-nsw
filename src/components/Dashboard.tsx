@@ -284,9 +284,8 @@ export const Dashboard = ({ onStartGame, onBack, selectedUnitId, onUnitChange }:
       unitProgressMap.set(p.unit_id, existing);
     });
 
-    // Get required games for unlock check
-    const requiredGames = getRequiredGames();
-    const requiredGameIds = new Set(requiredGames.map(g => g.game_id));
+    // For unit unlock, we require ALL games to be completed (not just required_for_unlock ones)
+    const allGameIds = new Set(gamesConfig.map(g => g.game_id));
 
     // Get sorted sections
     const sortedSections = getSortedSections();
@@ -326,11 +325,11 @@ export const Dashboard = ({ onStartGame, onBack, selectedUnitId, onUnitChange }:
         const prevUnitId = unitsData[index - 1].id;
         const prevProgress = unitProgressMap.get(prevUnitId) || [];
         
-        // Check if all required games are completed in the previous unit
-        const completedRequiredGames = prevProgress.filter(
-          (p) => p.completed && requiredGameIds.has(p.game_id)
+        // Check if ALL games are completed in the previous unit
+        const completedGames = prevProgress.filter(
+          (p) => p.completed && allGameIds.has(p.game_id)
         ).length;
-        isUnlocked = completedRequiredGames >= requiredGames.length;
+        isUnlocked = completedGames >= gamesConfig.length;
       }
 
       return {
@@ -512,7 +511,9 @@ Game XP = (Avg Score over all attempts × 0.5) + Time Bonus
   // For backward compatibility with existing UI
   const learnGames = gamesBySection['learn'] || [];
   const challengeGames = gamesBySection['challenge'] || [];
+  const testGames = gamesBySection['test'] || [];
   const allLearnGamesCompleted = learnGames.every((game) => game.isCompleted);
+  const allChallengeGamesCompleted = challengeGames.every((game) => game.isCompleted);
 
   if (!selectedTestType) {
     return (
@@ -651,6 +652,51 @@ Game XP = (Avg Score over all attempts × 0.5) + Time Bonus
                 ))}
               </div>
             </div>
+
+            {/* Test Section */}
+            {testGames.length > 0 && (
+              <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className={`flex items-center gap-2 ${allChallengeGamesCompleted ? 'text-emerald-500' : 'text-muted-foreground'}`}>
+                    {allChallengeGamesCompleted ? (
+                      <Target className="h-5 w-5" />
+                    ) : (
+                      <Lock className="h-5 w-5" />
+                    )}
+                    <h3 className="text-lg font-semibold">Test</h3>
+                  </div>
+                  {allChallengeGamesCompleted ? (
+                    <span className="text-sm text-muted-foreground">Complete to unlock next unit</span>
+                  ) : (
+                    <Badge variant="outline" className="text-xs">
+                      Complete all Challenge games to unlock
+                    </Badge>
+                  )}
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-6">
+                  {testGames.map((game) => (
+                    <GameCard
+                      key={game.title}
+                      title={game.title}
+                      description={game.description}
+                      gameType={game.gameType as any}
+                      progress={game.progress}
+                      isCompleted={game.isCompleted}
+                      isLocked={game.isLocked}
+                      totalXp={game.totalXp}
+                      totalTimeSeconds={game.totalTimeSeconds}
+                      attempts={game.attempts}
+                      history={gameHistory[game.gameType] || []}
+                      onPlay={() => {
+                        if (!game.isLocked && onStartGame && currentUnit) {
+                          onStartGame(game.gameType, currentUnit.id, `Unit ${currentUnit.unitNumber}`, false, game.gameId);
+                        }
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
