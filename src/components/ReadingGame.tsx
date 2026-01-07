@@ -120,11 +120,12 @@ export const ReadingGame = ({ unitId, unitTitle, onComplete, onBack }: ReadingGa
       const selectedPassage = unattemptedPassages[Math.floor(Math.random() * unattemptedPassages.length)];
 
       // Fetch questions for this passage (using secure view that excludes correct_answer)
+      const readingGameId = '8832f06f-9eed-4330-b663-7e1afc654780';
       const { data: questionsData, error: questionsError } = await supabase
         .from('questions_for_play')
-        .select('id, question_text, options, passage_id, unit_id, game_type')
+        .select('id, question_text, options, passage_id, unit_id, game_id')
         .eq('passage_id', selectedPassage.id)
-        .eq('game_type', 'reading');
+        .eq('game_id', readingGameId);
 
       if (questionsError) throw questionsError;
 
@@ -252,11 +253,12 @@ export const ReadingGame = ({ unitId, unitTitle, onComplete, onBack }: ReadingGa
       highlighted_words: passageData.highlighted_words || []
     });
 
+    const readingGameId = '8832f06f-9eed-4330-b663-7e1afc654780';
     const { data: questionsData } = await supabase
       .from('questions_for_play')
-      .select('id, question_text, options, passage_id, unit_id, game_type')
+      .select('id, question_text, options, passage_id, unit_id, game_id')
       .eq('passage_id', passageData.id)
-      .eq('game_type', 'reading');
+      .eq('game_id', readingGameId);
 
     if (questionsData && questionsData.length > 0) {
       const formattedQuestions: Question[] = questionsData.map(q => ({

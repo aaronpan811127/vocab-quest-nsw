@@ -11,6 +11,8 @@ import { FlashcardGame } from "@/components/FlashcardGame";
 import { MatchingGame } from "@/components/MatchingGame";
 import { OddOneOutGame } from "@/components/OddOneOutGame";
 import { WordIntuitionGame } from "@/components/WordIntuitionGame";
+import { ContextMasterGame } from "@/components/ContextMasterGame";
+import { ClozeChallengeGame } from "@/components/ClozeChallengeGame";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/useProfile";
 import { TestType } from "@/contexts/TestTypeContext";
@@ -80,6 +82,10 @@ const Index = () => {
         return <OddOneOutGame {...commonProps} />;
       case "intuition":
         return <WordIntuitionGame {...commonProps} />;
+      case "context_master":
+        return <ContextMasterGame {...commonProps} />;
+      case "cloze_challenge":
+        return <ClozeChallengeGame {...commonProps} />;
       default:
         return <ReadingGame {...commonProps} />;
     }
