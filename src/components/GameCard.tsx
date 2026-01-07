@@ -26,7 +26,7 @@ interface GameHistoryEntry {
 interface GameCardProps {
   title: string;
   description: string;
-  gameType: "reading" | "listening" | "speaking" | "writing" | "flashcards";
+  gameType: string;
   progress: number;
   isCompleted: boolean;
   isLocked: boolean;
@@ -37,7 +37,7 @@ interface GameCardProps {
   history?: GameHistoryEntry[];
 }
 
-const gameIcons = {
+const gameIcons: Record<string, React.ComponentType<{ className?: string }>> = {
   reading: BookOpen,
   listening: Headphones,
   speaking: Mic,
@@ -68,7 +68,7 @@ export const GameCard = ({
   history = [],
 }: GameCardProps) => {
   const [showHistory, setShowHistory] = useState(false);
-  const Icon = gameIcons[gameType];
+  const Icon = gameIcons[gameType] || Target;
   const hasStats = totalXp > 0 || attempts > 0;
 
   return (
