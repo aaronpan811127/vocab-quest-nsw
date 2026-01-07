@@ -8,6 +8,9 @@ import {
   CircleOff,
   Lightbulb,
   Trophy,
+  Target,
+  FileQuestion,
+  ClipboardCheck,
   LucideIcon,
 } from "lucide-react";
 
@@ -22,6 +25,9 @@ export const iconMap: Record<string, LucideIcon> = {
   CircleOff,
   Lightbulb,
   Trophy,
+  Target,
+  FileQuestion,
+  ClipboardCheck,
 };
 
 export const getGameIcon = (iconName: string): LucideIcon => {

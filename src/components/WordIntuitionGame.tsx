@@ -47,11 +47,12 @@ export const WordIntuitionGame = ({ unitId, unitTitle, onComplete, onBack }: Wor
     setIsLoading(true);
     try {
       // First, try to fetch existing questions from question_bank
+      const intuitionGameId = '05155f78-2977-44cd-8d77-b6ec5a7b78cc';
       const { data: existingQuestions, error: fetchError } = await supabase
         .from("question_bank")
         .select("*")
         .eq("unit_id", unitId)
-        .eq("game_type", "intuition");
+        .eq("game_id", intuitionGameId);
 
       if (fetchError) {
         console.error("Error fetching questions:", fetchError);

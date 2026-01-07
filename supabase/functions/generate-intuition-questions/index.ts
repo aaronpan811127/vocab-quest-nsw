@@ -63,27 +63,33 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Check which words already have questions in this unit
+    const intuitionGameId = '05155f78-2977-44cd-8d77-b6ec5a7b78cc';
     const { data: existingQuestions, error: fetchError } = await supabase
       .from("question_bank")
-      .select("id, question_text, correct_answer, options")
+      .select("id, question_text, correct_answer, options, word")
       .eq("unit_id", unit_id)
-      .eq("game_type", "intuition");
+      .eq("game_id", intuitionGameId);
 
     if (fetchError) {
       console.error("Error fetching existing questions:", fetchError);
       throw new Error("Failed to check existing questions");
     }
 
-    // Extract words that already have questions by parsing the options JSON
+    // Extract words that already have questions from the word column
     const existingWords = new Set<string>();
     existingQuestions?.forEach((q) => {
-      try {
-        const options = typeof q.options === "string" ? JSON.parse(q.options) : q.options;
-        if (options?.word) {
-          existingWords.add(options.word.toLowerCase());
+      if (q.word) {
+        existingWords.add(q.word.toLowerCase());
+      } else {
+        // Fallback for legacy data: try to get word from options
+        try {
+          const options = typeof q.options === "string" ? JSON.parse(q.options) : q.options;
+          if (options?.word) {
+            existingWords.add(options.word.toLowerCase());
+          }
+        } catch (e) {
+          console.error("Error parsing options:", e);
         }
-      } catch (e) {
-        console.error("Error parsing options:", e);
       }
     });
 
@@ -193,9 +199,11 @@ IMPORTANT: Write plain sentences without any special formatting or markdown.`;
 
     // supabase client already created above
 
+    const intuitionGameId = '05155f78-2977-44cd-8d77-b6ec5a7b78cc';
     const questionRecords = questionsData.map((item: any) => ({
       unit_id,
-      game_type: "intuition",
+      game_id: intuitionGameId,
+      word: item.word.toLowerCase(),
       question_text: item.sentence,
       correct_answer: item.correct_answer,
       options: JSON.stringify({
