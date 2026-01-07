@@ -47,6 +47,11 @@ export const UnitCard = ({
       }`}
     >
       <div className="relative p-2 flex flex-col items-center gap-1 text-center">
+        {/* Trophy for completed */}
+        {isCompleted && (
+          <Trophy className="h-3 w-3 text-success absolute top-1 right-1" />
+        )}
+
         {/* Unit number badge */}
         <div
           className={`
@@ -62,12 +67,14 @@ export const UnitCard = ({
         >
           {unitNumber}
         </div>
-        {isCompleted && <Trophy className="h-3 w-3 text-success absolute -top-0.5 -right-0.5" />}
 
-        {/* Section stats */}
-        <div className="text-[10px] text-muted-foreground leading-tight">
-          {sectionStats.map((s) => (
-            <div key={s.sectionName}>{s.completedGames}/{s.totalGames}</div>
+        {/* Section stats in a row */}
+        <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+          {sectionStats.map((s, i) => (
+            <span key={s.sectionName}>
+              {s.completedGames}/{s.totalGames}
+              {i < sectionStats.length - 1 && <span className="mx-0.5">·</span>}
+            </span>
           ))}
         </div>
 
