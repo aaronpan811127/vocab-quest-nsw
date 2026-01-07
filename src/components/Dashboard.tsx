@@ -284,8 +284,9 @@ export const Dashboard = ({ onStartGame, onBack, selectedUnitId, onUnitChange }:
       unitProgressMap.set(p.unit_id, existing);
     });
 
-    // For unit unlock, we require ALL games to be completed (not just required_for_unlock ones)
-    const allGameIds = new Set(gamesConfig.map(g => g.game_id));
+    // For unit unlock, use required_for_unlock field from database
+    const requiredGames = getRequiredGames();
+    const requiredGameIds = new Set(requiredGames.map(g => g.game_id));
 
     // Get sorted sections
     const sortedSections = getSortedSections();
@@ -325,11 +326,11 @@ export const Dashboard = ({ onStartGame, onBack, selectedUnitId, onUnitChange }:
         const prevUnitId = unitsData[index - 1].id;
         const prevProgress = unitProgressMap.get(prevUnitId) || [];
         
-        // Check if ALL games are completed in the previous unit
-        const completedGames = prevProgress.filter(
-          (p) => p.completed && allGameIds.has(p.game_id)
+        // Check if all required_for_unlock games are completed in the previous unit
+        const completedRequiredGames = prevProgress.filter(
+          (p) => p.completed && requiredGameIds.has(p.game_id)
         ).length;
-        isUnlocked = completedGames >= gamesConfig.length;
+        isUnlocked = requiredGames.length > 0 && completedRequiredGames >= requiredGames.length;
       }
 
       return {
@@ -504,16 +505,54 @@ Game XP = (Avg Score over all attempts × 0.5) + Time Bonus
         attempts: data.attempts,
         icon: getGameIcon(game.icon_name),
         contributesToXp: game.contributes_to_xp,
+        requiredForUnlock: game.required_for_unlock,
       };
     });
   });
 
-  // For backward compatibility with existing UI
-  const learnGames = gamesBySection['learn'] || [];
-  const challengeGames = gamesBySection['challenge'] || [];
-  const testGames = gamesBySection['test'] || [];
-  const allLearnGamesCompleted = learnGames.every((game) => game.isCompleted);
-  const allChallengeGamesCompleted = challengeGames.every((game) => game.isCompleted);
+  // Helper to check if previous section is completed
+  const isPrevSectionCompleted = (sectionIndex: number): boolean => {
+    if (sectionIndex <= 0) return true;
+    const prevSection = sortedSections[sectionIndex - 1];
+    const prevGames = gamesBySection[prevSection.code] || [];
+    return prevGames.every(g => g.isCompleted);
+  };
+
+  // Helper to get section icon based on code
+  const getSectionIcon = (code: string, isUnlocked: boolean) => {
+    if (!isUnlocked) return Lock;
+    switch (code) {
+      case 'learn': return BookOpen;
+      case 'challenge': return Trophy;
+      default: return Target;
+    }
+  };
+
+  // Helper to get section color based on code
+  const getSectionColor = (code: string, isUnlocked: boolean) => {
+    if (!isUnlocked) return 'text-muted-foreground';
+    switch (code) {
+      case 'learn': return 'text-primary';
+      case 'challenge': return 'text-amber-500';
+      default: return 'text-emerald-500';
+    }
+  };
+
+  // Helper to get section description
+  const getSectionDescription = (code: string, isUnlocked: boolean, prevSectionName?: string) => {
+    if (!isUnlocked && prevSectionName) {
+      return `Complete all ${prevSectionName} games to unlock`;
+    }
+    switch (code) {
+      case 'learn': return 'Practice and master vocabulary';
+      case 'challenge': return 'Earn XP and level up';
+      default: return 'Complete to unlock next unit';
+    }
+  };
+
+  // First section games for simplified Learn display
+  const firstSection = sortedSections[0];
+  const learnGames = firstSection ? gamesBySection[firstSection.code] || [] : [];
 
   if (!selectedTestType) {
     return (
@@ -577,126 +616,93 @@ Game XP = (Avg Score over all attempts × 0.5) + Time Bonus
               <h2 className="text-lg sm:text-2xl font-bold">Current Unit: {currentUnit.unitNumber}</h2>
             </div>
 
-            {/* Learn Section */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2 text-primary">
-                  <BookOpen className="h-5 w-5" />
-                  <h3 className="text-lg font-semibold">Learn</h3>
-                </div>
-                <span className="text-sm text-muted-foreground">Practice and master vocabulary</span>
-              </div>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-                {learnGames.map((game) => (
-                  <Button
-                    key={game.title}
-                    variant="outline"
-                    className={`h-auto py-4 flex flex-col items-center gap-2 hover:bg-primary/10 hover:border-primary/50 transition-all relative ${game.isCompleted ? 'border-green-500/50 bg-green-500/5' : ''}`}
-                    onClick={() => onStartGame && onStartGame(game.gameType, currentUnit.id, `Unit ${currentUnit.unitNumber}`, false, game.gameId)}
-                  >
-                    {game.isCompleted && (
-                      <CheckCircle2 className="h-4 w-4 text-green-500 absolute top-2 right-2" />
-                    )}
-                    <game.icon className="h-6 w-6 text-primary" />
-                    <span className="font-medium">{game.title}</span>
-                  </Button>
-                ))}
-              </div>
-            </div>
-
-            {/* Challenge Section */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-3">
-                <div className={`flex items-center gap-2 ${allLearnGamesCompleted ? 'text-amber-500' : 'text-muted-foreground'}`}>
-                  {allLearnGamesCompleted ? (
-                    <Trophy className="h-5 w-5" />
-                  ) : (
-                    <Lock className="h-5 w-5" />
-                  )}
-                  <h3 className="text-lg font-semibold">Challenge</h3>
-                </div>
-                {allLearnGamesCompleted ? (
-                  <span className="text-sm text-muted-foreground">Earn XP and level up</span>
-                ) : (
-                  <Badge variant="outline" className="text-xs">
-                    Complete all Learn games to unlock
-                  </Badge>
-                )}
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-6">
-                {challengeGames.map((game) => (
-                  <GameCard
-                    key={game.title}
-                    title={game.title}
-                    description={game.description}
-                    gameType={game.gameType as any}
-                    progress={game.progress}
-                    isCompleted={game.isCompleted}
-                    isLocked={game.isLocked}
-                    totalXp={game.totalXp}
-                    totalTimeSeconds={game.totalTimeSeconds}
-                    attempts={game.attempts}
-                    history={gameHistory[game.gameType] || []}
-                    onPlay={() => {
-                      if (!game.isLocked && onStartGame && currentUnit) {
-                        const playAllWordsOnStart =
-                          game.isCompleted &&
-                          (game.gameType === "listening" ||
-                            game.gameType === "speaking" ||
-                            game.gameType === "writing");
-
-                        onStartGame(game.gameType, currentUnit.id, `Unit ${currentUnit.unitNumber}`, playAllWordsOnStart, game.gameId);
-                      }
-                    }}
-                  />
-                ))}
-              </div>
-            </div>
-
-            {/* Test Section */}
-            {testGames.length > 0 && (
+            {/* First Section (Learn) - Simple button layout */}
+            {firstSection && learnGames.length > 0 && (
               <div className="space-y-4">
                 <div className="flex items-center gap-3">
-                  <div className={`flex items-center gap-2 ${allChallengeGamesCompleted ? 'text-emerald-500' : 'text-muted-foreground'}`}>
-                    {allChallengeGamesCompleted ? (
-                      <Target className="h-5 w-5" />
-                    ) : (
-                      <Lock className="h-5 w-5" />
-                    )}
-                    <h3 className="text-lg font-semibold">Test</h3>
+                  <div className="flex items-center gap-2 text-primary">
+                    <BookOpen className="h-5 w-5" />
+                    <h3 className="text-lg font-semibold">{firstSection.name}</h3>
                   </div>
-                  {allChallengeGamesCompleted ? (
-                    <span className="text-sm text-muted-foreground">Complete to unlock next unit</span>
-                  ) : (
-                    <Badge variant="outline" className="text-xs">
-                      Complete all Challenge games to unlock
-                    </Badge>
-                  )}
+                  <span className="text-sm text-muted-foreground">Practice and master vocabulary</span>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-6">
-                  {testGames.map((game) => (
-                    <GameCard
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+                  {learnGames.map((game) => (
+                    <Button
                       key={game.title}
-                      title={game.title}
-                      description={game.description}
-                      gameType={game.gameType as any}
-                      progress={game.progress}
-                      isCompleted={game.isCompleted}
-                      isLocked={game.isLocked}
-                      totalXp={game.totalXp}
-                      totalTimeSeconds={game.totalTimeSeconds}
-                      attempts={game.attempts}
-                      history={gameHistory[game.gameType] || []}
-                      onPlay={() => {
-                        if (!game.isLocked && onStartGame && currentUnit) {
-                          onStartGame(game.gameType, currentUnit.id, `Unit ${currentUnit.unitNumber}`, false, game.gameId);
-                        }
-                      }}
-                    />
+                      variant="outline"
+                      className={`h-auto py-4 flex flex-col items-center gap-2 hover:bg-primary/10 hover:border-primary/50 transition-all relative ${game.isCompleted ? 'border-green-500/50 bg-green-500/5' : ''}`}
+                      onClick={() => onStartGame && onStartGame(game.gameType, currentUnit.id, `Unit ${currentUnit.unitNumber}`, false, game.gameId)}
+                    >
+                      {game.isCompleted && (
+                        <CheckCircle2 className="h-4 w-4 text-green-500 absolute top-2 right-2" />
+                      )}
+                      <game.icon className="h-6 w-6 text-primary" />
+                      <span className="font-medium">{game.title}</span>
+                    </Button>
                   ))}
                 </div>
               </div>
             )}
+
+            {/* Dynamic Sections (skip first section which is rendered above) */}
+            {sortedSections.slice(1).map((section, index) => {
+              const sectionGames = gamesBySection[section.code] || [];
+              if (sectionGames.length === 0) return null;
+              
+              const sectionIndex = index + 1; // Account for skipped first section
+              const isUnlocked = isPrevSectionCompleted(sectionIndex);
+              const prevSection = sortedSections[sectionIndex - 1];
+              const SectionIcon = getSectionIcon(section.code, isUnlocked);
+              const sectionColor = getSectionColor(section.code, isUnlocked);
+              const sectionDesc = getSectionDescription(section.code, isUnlocked, prevSection?.name);
+
+              return (
+                <div key={section.code} className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div className={`flex items-center gap-2 ${sectionColor}`}>
+                      <SectionIcon className="h-5 w-5" />
+                      <h3 className="text-lg font-semibold">{section.name}</h3>
+                    </div>
+                    {isUnlocked ? (
+                      <span className="text-sm text-muted-foreground">{sectionDesc}</span>
+                    ) : (
+                      <Badge variant="outline" className="text-xs">
+                        {sectionDesc}
+                      </Badge>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-6">
+                    {sectionGames.map((game) => (
+                      <GameCard
+                        key={game.title}
+                        title={game.title}
+                        description={game.description}
+                        gameType={game.gameType}
+                        progress={game.progress}
+                        isCompleted={game.isCompleted}
+                        isLocked={!isUnlocked}
+                        totalXp={game.totalXp}
+                        totalTimeSeconds={game.totalTimeSeconds}
+                        attempts={game.attempts}
+                        history={gameHistory[game.gameType] || []}
+                        onPlay={() => {
+                          if (isUnlocked && onStartGame && currentUnit) {
+                            const playAllWordsOnStart =
+                              game.isCompleted &&
+                              (game.gameType === "listening" ||
+                                game.gameType === "speaking" ||
+                                game.gameType === "writing");
+
+                            onStartGame(game.gameType, currentUnit.id, `Unit ${currentUnit.unitNumber}`, playAllWordsOnStart, game.gameId);
+                          }
+                        }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
 
