@@ -28,11 +28,12 @@ interface Word {
 interface FlashcardGameProps {
   unitId: string;
   unitTitle: string;
+  gameId?: string;
   onComplete: () => void;
   onBack: () => void;
 }
 
-export const FlashcardGame = ({ unitId, unitTitle, onComplete, onBack }: FlashcardGameProps) => {
+export const FlashcardGame = ({ unitId, unitTitle, gameId, onComplete, onBack }: FlashcardGameProps) => {
   const [words, setWords] = useState<Word[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
@@ -41,13 +42,29 @@ export const FlashcardGame = ({ unitId, unitTitle, onComplete, onBack }: Flashca
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [startTime] = useState(Date.now());
+  const [resolvedGameId, setResolvedGameId] = useState<string | null>(gameId || null);
   const femaleVoiceRef = useRef<SpeechSynthesisVoice | null>(null);
   const { toast } = useToast();
+
+  // Resolve game_id if not provided
+  useEffect(() => {
+    const resolveGameId = async () => {
+      if (!gameId) {
+        const { data } = await supabase
+          .from('games')
+          .select('id')
+          .eq('game_type', 'flashcards')
+          .single();
+        if (data) setResolvedGameId(data.id);
+      }
+    };
+    resolveGameId();
+  }, [gameId]);
 
   // Save progress to database when all words are learned
   const saveProgress = async () => {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!user || !resolvedGameId) return;
 
     const timeSpentSeconds = Math.floor((Date.now() - startTime) / 1000);
 
@@ -57,7 +74,7 @@ export const FlashcardGame = ({ unitId, unitTitle, onComplete, onBack }: Flashca
       .select('*')
       .eq('user_id', user.id)
       .eq('unit_id', unitId)
-      .eq('game_type', 'flashcards')
+      .eq('game_id', resolvedGameId)
       .maybeSingle();
 
     if (existingProgress) {
@@ -77,7 +94,7 @@ export const FlashcardGame = ({ unitId, unitTitle, onComplete, onBack }: Flashca
         .insert({
           user_id: user.id,
           unit_id: unitId,
-          game_type: 'flashcards',
+          game_id: resolvedGameId,
           completed: true,
           attempts: 1,
           total_time_seconds: timeSpentSeconds,
@@ -501,51 +518,49 @@ export const FlashcardGame = ({ unitId, unitTitle, onComplete, onBack }: Flashca
           </div>
         </div>
 
-        {/* Controls */}
+        {/* Navigation Controls */}
         <div className="flex items-center justify-between gap-2">
           <Button 
             variant="outline" 
             onClick={handlePrevious}
             disabled={currentIndex === 0}
             size="sm"
-            className="px-2 sm:px-4"
           >
-            <ArrowLeft className="h-4 w-4 sm:mr-2" />
-            <span className="hidden sm:inline">Previous</span>
+            <ArrowLeft className="h-4 w-4" />
           </Button>
 
-          <div className="flex gap-1 sm:gap-2">
-            <Button variant="ghost" size="icon" onClick={handleShuffle} className="h-8 w-8 sm:h-9 sm:w-9">
-              <Shuffle className="h-4 w-4 sm:h-5 sm:w-5" />
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" onClick={handleShuffle}>
+              <Shuffle className="h-4 w-4" />
             </Button>
-            <Button variant="ghost" size="icon" onClick={handleReset} className="h-8 w-8 sm:h-9 sm:w-9">
-              <RotateCcw className="h-4 w-4 sm:h-5 sm:w-5" />
+            <Button variant="ghost" size="sm" onClick={handleReset}>
+              <RotateCcw className="h-4 w-4" />
             </Button>
           </div>
 
-          {!learnedWords.has(currentWord.id) ? (
-            <Button 
-              variant="hero" 
-              onClick={handleMarkLearned}
-              size="sm"
-              className="px-2 sm:px-4"
-            >
-              <Check className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">Mark Learned</span>
-              <span className="sm:hidden">Done</span>
-            </Button>
-          ) : (
-            <Button 
-              variant="outline" 
-              onClick={handleNext}
-              disabled={currentIndex === words.length - 1}
-              size="sm"
-              className="px-2 sm:px-4"
-            >
-              <span className="hidden sm:inline">Next</span>
-              <ArrowRight className="h-4 w-4 sm:ml-2" />
-            </Button>
-          )}
+          <Button 
+            variant="game" 
+            onClick={handleMarkLearned}
+            disabled={learnedWords.has(currentWord.id)}
+            size="sm"
+          >
+            <Check className="h-4 w-4 mr-1" />
+            Learned
+          </Button>
+
+          <Button 
+            variant="outline" 
+            onClick={handleNext}
+            disabled={currentIndex === words.length - 1}
+            size="sm"
+          >
+            <ArrowRight className="h-4 w-4" />
+          </Button>
+        </div>
+
+        {/* Card Counter */}
+        <div className="text-center text-sm text-muted-foreground">
+          Card {currentIndex + 1} of {words.length}
         </div>
       </div>
     </div>

@@ -26,6 +26,7 @@ interface Word {
 interface MatchingGameProps {
   unitId: string;
   unitTitle: string;
+  gameId?: string;
   onComplete: () => void;
   onBack: () => void;
 }
@@ -38,7 +39,7 @@ interface MatchItem {
   isMatched: boolean;
 }
 
-export const MatchingGame = ({ unitId, unitTitle, onComplete, onBack }: MatchingGameProps) => {
+export const MatchingGame = ({ unitId, unitTitle, gameId, onComplete, onBack }: MatchingGameProps) => {
   const [words, setWords] = useState<Word[]>([]);
   const [items, setItems] = useState<MatchItem[]>([]);
   const [selectedItem, setSelectedItem] = useState<MatchItem | null>(null);
@@ -49,8 +50,24 @@ export const MatchingGame = ({ unitId, unitTitle, onComplete, onBack }: Matching
   const [error, setError] = useState<string | null>(null);
   const [startTime] = useState<number>(Date.now());
   const [moves, setMoves] = useState(0);
+  const [resolvedGameId, setResolvedGameId] = useState<string | null>(gameId || null);
   const { toast } = useToast();
   const { user } = useAuth();
+
+  // Resolve game_id if not provided
+  useEffect(() => {
+    const resolveGameId = async () => {
+      if (!gameId) {
+        const { data } = await supabase
+          .from('games')
+          .select('id')
+          .eq('game_type', 'matching')
+          .single();
+        if (data) setResolvedGameId(data.id);
+      }
+    };
+    resolveGameId();
+  }, [gameId]);
 
   useEffect(() => {
     fetchVocabulary();
@@ -208,7 +225,7 @@ export const MatchingGame = ({ unitId, unitTitle, onComplete, onBack }: Matching
   };
 
   const saveGameAttempt = async () => {
-    if (!user) return;
+    if (!user || !resolvedGameId) return;
 
     const timeSpent = Math.round((Date.now() - startTime) / 1000);
     const score = Math.round((words.length / Math.max(moves, words.length)) * 100);
@@ -218,7 +235,7 @@ export const MatchingGame = ({ unitId, unitTitle, onComplete, onBack }: Matching
       await supabase.from('game_attempts').insert({
         user_id: user.id,
         unit_id: unitId,
-        game_type: 'matching',
+        game_id: resolvedGameId,
         score: Math.min(score, 100),
         correct_answers: words.length,
         total_questions: words.length,
@@ -232,7 +249,7 @@ export const MatchingGame = ({ unitId, unitTitle, onComplete, onBack }: Matching
         .select('*')
         .eq('user_id', user.id)
         .eq('unit_id', unitId)
-        .eq('game_type', 'matching')
+        .eq('game_id', resolvedGameId)
         .maybeSingle();
 
       if (existingProgress) {
@@ -252,7 +269,7 @@ export const MatchingGame = ({ unitId, unitTitle, onComplete, onBack }: Matching
           .insert({
             user_id: user.id,
             unit_id: unitId,
-            game_type: 'matching',
+            game_id: resolvedGameId,
             completed: true,
             attempts: 1,
             total_time_seconds: timeSpent,

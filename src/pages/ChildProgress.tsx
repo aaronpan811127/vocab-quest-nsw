@@ -47,9 +47,16 @@ interface ChildStats {
   test_type_id: string;
 }
 
-interface GameAttempt {
+interface Game {
   id: string;
   game_type: string;
+  name: string;
+}
+
+interface GameAttempt {
+  id: string;
+  game_id: string;
+  game_type: string; // Derived from games table
   score: number;
   correct_answers: number;
   total_questions: number;
@@ -61,7 +68,8 @@ interface GameAttempt {
 interface UnitProgress {
   id: string;
   unit_id: string;
-  game_type: string;
+  game_id: string;
+  game_type: string; // Derived from games table
   attempts: number;
   best_score: number;
   total_xp: number;
@@ -82,7 +90,7 @@ interface TestType {
 }
 
 // Learning games: vocabulary building, practice
-const LEARNING_GAMES = ['flashcards', 'matching', 'oddoneout', 'word_intuition', 'story'];
+const LEARNING_GAMES = ['flashcards', 'matching', 'oddoneout', 'intuition'];
 // Compete games: active recall, dictation, comprehension
 const COMPETE_GAMES = ['listening', 'speaking', 'reading', 'writing'];
 
@@ -98,6 +106,7 @@ const ChildProgress = () => {
   const [unitProgress, setUnitProgress] = useState<UnitProgress[]>([]);
   const [units, setUnits] = useState<Unit[]>([]);
   const [testTypes, setTestTypes] = useState<TestType[]>([]);
+  const [games, setGames] = useState<Game[]>([]);
   const [selectedTestType, setSelectedTestType] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [childEmail, setChildEmail] = useState<string>("");
@@ -147,8 +156,16 @@ const ChildProgress = () => {
 
       setChildEmail(childLink.student_email);
 
-      // Get date range for last 7 days
-      const sevenDaysAgo = subDays(new Date(), 7).toISOString();
+      // Fetch games first to build lookup map
+      const { data: gamesData } = await supabase
+        .from("games")
+        .select("id, game_type, name");
+
+      const gamesList = gamesData || [];
+      setGames(gamesList);
+
+      // Build game_id to game_type map
+      const gameIdToType = new Map(gamesList.map(g => [g.id, g.game_type]));
 
       // Fetch all data in parallel
       const [profileResult, statsResult, attemptsResult, progressResult, unitsResult, testTypesResult] = await Promise.all([
@@ -163,13 +180,13 @@ const ChildProgress = () => {
           .eq("user_id", childId),
         supabase
           .from("game_attempts")
-          .select("id, game_type, score, correct_answers, total_questions, time_spent_seconds, created_at, unit_id")
+          .select("id, game_id, score, correct_answers, total_questions, time_spent_seconds, created_at, unit_id")
           .eq("user_id", childId)
           .eq("completed", true)
           .order("created_at", { ascending: false }),
         supabase
           .from("user_progress")
-          .select("*")
+          .select("id, unit_id, game_id, attempts, best_score, total_xp, completed")
           .eq("user_id", childId),
         supabase
           .from("units")
@@ -183,8 +200,21 @@ const ChildProgress = () => {
 
       setChildProfile(profileResult.data);
       setAllChildStats(statsResult.data || []);
-      setAllAttempts(attemptsResult.data || []);
-      setUnitProgress(progressResult.data || []);
+      
+      // Map game_id to game_type for attempts
+      const mappedAttempts: GameAttempt[] = (attemptsResult.data || []).map(a => ({
+        ...a,
+        game_type: gameIdToType.get(a.game_id) || 'unknown'
+      }));
+      setAllAttempts(mappedAttempts);
+
+      // Map game_id to game_type for progress
+      const mappedProgress: UnitProgress[] = (progressResult.data || []).map(p => ({
+        ...p,
+        game_type: gameIdToType.get(p.game_id) || 'unknown'
+      }));
+      setUnitProgress(mappedProgress);
+      
       setUnits(unitsResult.data || []);
       setTestTypes(testTypesResult.data || []);
 
@@ -488,44 +518,19 @@ const ChildProgress = () => {
                           <div className="flex items-center gap-2">
                             <div className="w-3 h-3 rounded-sm bg-primary" />
                             <span className="text-sm text-muted-foreground">Learning</span>
-                            <span className="text-xs text-muted-foreground">(Flashcards, Matching, etc.)</span>
                           </div>
                           <div className="flex items-center gap-2">
                             <div className="w-3 h-3 rounded-sm bg-destructive" />
                             <span className="text-sm text-muted-foreground">Compete</span>
-                            <span className="text-xs text-muted-foreground">(Reading, Writing, Listening, Speaking)</span>
                           </div>
                         </div>
-                        <ChartContainer config={chartConfig} className="h-[250px] w-full">
-                          <BarChart data={dailyTimeData} accessibilityLayer>
-                            <XAxis 
-                              dataKey="date" 
-                              tickLine={false} 
-                              axisLine={false}
-                              tickMargin={8}
-                            />
-                            <YAxis 
-                              tickLine={false} 
-                              axisLine={false}
-                              tickMargin={8}
-                              tickFormatter={(value) => `${value}m`}
-                            />
-                            <ChartTooltip 
-                              content={<ChartTooltipContent />}
-                              formatter={(value, name) => [`${value} min`, name === 'learning' ? 'Learning' : 'Compete']}
-                            />
-                            <Bar 
-                              dataKey="learning" 
-                              fill="var(--color-learning)" 
-                              radius={[4, 4, 0, 0]}
-                              stackId="time"
-                            />
-                            <Bar 
-                              dataKey="compete" 
-                              fill="var(--color-compete)" 
-                              radius={[4, 4, 0, 0]}
-                              stackId="time"
-                            />
+                        <ChartContainer config={chartConfig} className="h-[200px] w-full">
+                          <BarChart data={dailyTimeData} barGap={2}>
+                            <XAxis dataKey="date" tickLine={false} axisLine={false} />
+                            <YAxis tickLine={false} axisLine={false} />
+                            <ChartTooltip content={<ChartTooltipContent />} />
+                            <Bar dataKey="learning" fill="var(--color-learning)" radius={[4, 4, 0, 0]} />
+                            <Bar dataKey="compete" fill="var(--color-compete)" radius={[4, 4, 0, 0]} />
                           </BarChart>
                         </ChartContainer>
                       </>
@@ -540,12 +545,12 @@ const ChildProgress = () => {
                       <TrendingUp className="h-5 w-5" />
                       Recent Activity
                     </CardTitle>
-                    <CardDescription>Last 10 completed game attempts</CardDescription>
+                    <CardDescription>Last 10 game attempts</CardDescription>
                   </CardHeader>
                   <CardContent>
                     {recentAttempts.length === 0 ? (
                       <p className="text-center py-8 text-muted-foreground">
-                        No game attempts yet for {tt.name}
+                        No recent activity
                       </p>
                     ) : (
                       <Table>
@@ -554,28 +559,32 @@ const ChildProgress = () => {
                             <TableHead>Date</TableHead>
                             <TableHead>Game</TableHead>
                             <TableHead>Unit</TableHead>
-                            <TableHead className="text-center">Score</TableHead>
-                            <TableHead className="text-center">Accuracy</TableHead>
+                            <TableHead className="text-right">Score</TableHead>
                             <TableHead className="text-right">Time</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
                           {recentAttempts.map((attempt) => (
                             <TableRow key={attempt.id}>
-                              <TableCell className="font-medium">
-                                {format(new Date(attempt.created_at), 'MMM d, h:mm a')}
+                              <TableCell className="text-muted-foreground">
+                                {format(parseISO(attempt.created_at), 'MMM d, h:mm a')}
                               </TableCell>
-                              <TableCell>{formatGameType(attempt.game_type)}</TableCell>
+                              <TableCell>
+                                <Badge variant="outline">
+                                  {formatGameType(attempt.game_type)}
+                                </Badge>
+                              </TableCell>
                               <TableCell className="max-w-[200px] truncate">
                                 {getUnitTitle(attempt.unit_id)}
                               </TableCell>
-                              <TableCell className="text-center">
-                                <Badge variant={attempt.score >= 80 ? "default" : "secondary"}>
+                              <TableCell className="text-right">
+                                <span className={
+                                  attempt.score >= 80 ? "text-green-500 font-medium" :
+                                  attempt.score >= 50 ? "text-yellow-500 font-medium" :
+                                  "text-red-500 font-medium"
+                                }>
                                   {attempt.score}%
-                                </Badge>
-                              </TableCell>
-                              <TableCell className="text-center">
-                                {attempt.correct_answers}/{attempt.total_questions}
+                                </span>
                               </TableCell>
                               <TableCell className="text-right text-muted-foreground">
                                 {formatTime(attempt.time_spent_seconds)}
@@ -595,48 +604,32 @@ const ChildProgress = () => {
                       <BookOpen className="h-5 w-5" />
                       Unit Progress
                     </CardTitle>
-                    <CardDescription>Progress across {tt.name} units</CardDescription>
+                    <CardDescription>Progress across all units</CardDescription>
                   </CardHeader>
                   <CardContent>
                     {filteredUnits.length === 0 ? (
                       <p className="text-center py-8 text-muted-foreground">
-                        No units available for {tt.name}
-                      </p>
-                    ) : filteredProgress.length === 0 ? (
-                      <p className="text-center py-8 text-muted-foreground">
-                        No progress yet for {tt.name}
+                        No units available
                       </p>
                     ) : (
                       <div className="space-y-4">
-                        {filteredUnits.filter(u => filteredProgress.some(p => p.unit_id === u.id)).map((unit) => {
-                          const progress = filteredProgress.filter(p => p.unit_id === unit.id);
-                          const totalXP = progress.reduce((sum, p) => sum + p.total_xp, 0);
-                          const bestScore = Math.max(...progress.map(p => p.best_score), 0);
-                          const isCompleted = progress.some(p => p.completed);
+                        {filteredUnits.map((unit) => {
+                          const unitProgressData = filteredProgress.filter(p => p.unit_id === unit.id);
+                          const completedGames = unitProgressData.filter(p => p.completed).length;
+                          const totalGames = 8; // Total games per unit
+                          const progressPercent = (completedGames / totalGames) * 100;
                           
                           return (
-                            <div key={unit.id} className="border rounded-lg p-4">
-                              <div className="flex items-center justify-between mb-2">
-                                <div className="flex items-center gap-2">
-                                  <span className="font-medium">
-                                    Unit {unit.unit_number}: {unit.title}
-                                  </span>
-                                  {isCompleted && (
-                                    <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/20">
-                                      Completed
-                                    </Badge>
-                                  )}
-                                </div>
+                            <div key={unit.id} className="space-y-2">
+                              <div className="flex items-center justify-between">
+                                <span className="font-medium">
+                                  Unit {unit.unit_number}: {unit.title}
+                                </span>
                                 <span className="text-sm text-muted-foreground">
-                                  {totalXP} XP earned
+                                  {completedGames}/{totalGames} games
                                 </span>
                               </div>
-                              <div className="flex items-center gap-4">
-                                <Progress value={bestScore} className="flex-1" />
-                                <span className="text-sm font-medium w-12 text-right">
-                                  {bestScore}%
-                                </span>
-                              </div>
+                              <Progress value={progressPercent} className="h-2" />
                             </div>
                           );
                         })}
@@ -647,14 +640,6 @@ const ChildProgress = () => {
               </TabsContent>
             ))}
           </Tabs>
-        )}
-
-        {testTypes.length === 0 && (
-          <Card>
-            <CardContent className="flex items-center justify-center py-12">
-              <p className="text-muted-foreground">No test types available</p>
-            </CardContent>
-          </Card>
         )}
       </main>
     </div>
