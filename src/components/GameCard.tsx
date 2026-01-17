@@ -35,6 +35,7 @@ interface GameCardProps {
   totalTimeSeconds?: number;
   attempts?: number;
   history?: GameHistoryEntry[];
+  hasActiveSession?: boolean;
 }
 
 const gameIcons: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -66,6 +67,7 @@ export const GameCard = ({
   totalTimeSeconds = 0,
   attempts = 0,
   history = [],
+  hasActiveSession = false,
 }: GameCardProps) => {
   const [showHistory, setShowHistory] = useState(false);
   const Icon = gameIcons[gameType] || Target;
@@ -137,7 +139,7 @@ export const GameCard = ({
           <Button
             onClick={onPlay}
             disabled={isLocked}
-            variant={isCompleted ? "success" : isLocked ? "ghost" : "game"}
+            variant={isCompleted ? "success" : hasActiveSession ? "warning" : isLocked ? "ghost" : "game"}
             className="w-full"
             size="lg"
           >
@@ -145,6 +147,11 @@ export const GameCard = ({
               <>
                 <Lock className="h-4 w-4 mr-2" />
                 Complete Previous Games
+              </>
+            ) : hasActiveSession ? (
+              <>
+                <Clock className="h-4 w-4 mr-2" />
+                Resume Test
               </>
             ) : isCompleted ? (
               <>
