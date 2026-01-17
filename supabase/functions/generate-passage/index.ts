@@ -208,11 +208,25 @@ Respond with ONLY this JSON structure (no markdown, no explanation):
 
     console.log('Inserted passage:', insertedPassage.id);
 
+    // Look up the game_id for 'reading' game type
+    const { data: gameData, error: gameError } = await supabaseAdmin
+      .from('games')
+      .select('id')
+      .eq('game_type', 'reading')
+      .single();
+
+    if (gameError || !gameData) {
+      console.error('Failed to find reading game:', gameError);
+      // Clean up the passage
+      await supabaseAdmin.from('reading_passages').delete().eq('id', insertedPassage.id);
+      throw new Error('Reading game configuration not found');
+    }
+
     // Insert the generated questions
     const questionsToInsert = generatedContent.questions.map((q: any) => ({
       passage_id: insertedPassage.id,
       unit_id,
-      game_type: 'reading',
+      game_id: gameData.id,
       question_text: q.question_text,
       options: q.options,
       correct_answer: q.correct_answer,
