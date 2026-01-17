@@ -251,7 +251,7 @@ serve(async (req) => {
           best_score: Math.max(existingProgress.best_score || 0, score),
           total_time_seconds: time_spent_seconds,
           total_xp: 0, // Test games don't give XP
-          completed: isPerfect,
+          completed: true, // Test games are completed after any attempt (single attempt allowed)
           updated_at: new Date().toISOString()
         })
         .eq('id', existingProgress.id);
@@ -266,7 +266,7 @@ serve(async (req) => {
           total_xp: 0,
           total_time_seconds: time_spent_seconds,
           attempts: 1,
-          completed: isPerfect
+          completed: true // Test games are completed after any attempt (single attempt allowed)
         });
     }
 
