@@ -322,15 +322,28 @@ const ChildProgress = () => {
       }
     });
 
-    // Count units where all required games are completed
+    // Count units where ALL required games are completed
     let count = 0;
-    progressByUnit.forEach((completedGameIds) => {
-      if (completedGameIds.size >= requiredGames.size) {
+    progressByUnit.forEach((completedGameIds, unitId) => {
+      // Check that every required game is in the completed set
+      let allCompleted = true;
+      requiredGames.forEach(gameId => {
+        if (!completedGameIds.has(gameId)) {
+          allCompleted = false;
+        }
+      });
+      if (allCompleted) {
         count++;
       }
     });
     return count;
   }, [filteredProgress, requiredGamesByTestType, selectedTestType]);
+
+  // Get required games count for the selected test type
+  const requiredGamesCount = useMemo(() => {
+    const requiredGames = requiredGamesByTestType.get(selectedTestType);
+    return requiredGames?.size || 8;
+  }, [requiredGamesByTestType, selectedTestType]);
 
   const averageScore = recentAttempts.length > 0
     ? Math.round(recentAttempts.reduce((sum, a) => sum + a.score, 0) / recentAttempts.length)
@@ -581,6 +594,47 @@ const ChildProgress = () => {
                   </CardContent>
                 </Card>
 
+                {/* Unit Progress */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <BookOpen className="h-5 w-5" />
+                      Unit Progress
+                    </CardTitle>
+                    <CardDescription>Progress across all units</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {filteredUnits.length === 0 ? (
+                      <p className="text-center py-8 text-muted-foreground">
+                        No units available
+                      </p>
+                    ) : (
+                      <div className="space-y-4">
+                        {filteredUnits.map((unit) => {
+                          const unitProgressData = filteredProgress.filter(p => p.unit_id === unit.id);
+                          const completedGames = unitProgressData.filter(p => p.completed).length;
+                          const totalGames = requiredGamesCount;
+                          const progressPercent = totalGames > 0 ? (completedGames / totalGames) * 100 : 0;
+                          
+                          return (
+                            <div key={unit.id} className="space-y-2">
+                              <div className="flex items-center justify-between">
+                                <span className="font-medium">
+                                  Unit {unit.unit_number}: {unit.title}
+                                </span>
+                                <span className="text-sm text-muted-foreground">
+                                  {completedGames}/{totalGames} games
+                                </span>
+                              </div>
+                              <Progress value={progressPercent} className="h-2" />
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
                 {/* Recent Activity */}
                 <Card>
                   <CardHeader>
@@ -636,47 +690,6 @@ const ChildProgress = () => {
                           ))}
                         </TableBody>
                       </Table>
-                    )}
-                  </CardContent>
-                </Card>
-
-                {/* Unit Progress */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <BookOpen className="h-5 w-5" />
-                      Unit Progress
-                    </CardTitle>
-                    <CardDescription>Progress across all units</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    {filteredUnits.length === 0 ? (
-                      <p className="text-center py-8 text-muted-foreground">
-                        No units available
-                      </p>
-                    ) : (
-                      <div className="space-y-4">
-                        {filteredUnits.map((unit) => {
-                          const unitProgressData = filteredProgress.filter(p => p.unit_id === unit.id);
-                          const completedGames = unitProgressData.filter(p => p.completed).length;
-                          const totalGames = 8; // Total games per unit
-                          const progressPercent = (completedGames / totalGames) * 100;
-                          
-                          return (
-                            <div key={unit.id} className="space-y-2">
-                              <div className="flex items-center justify-between">
-                                <span className="font-medium">
-                                  Unit {unit.unit_number}: {unit.title}
-                                </span>
-                                <span className="text-sm text-muted-foreground">
-                                  {completedGames}/{totalGames} games
-                                </span>
-                              </div>
-                              <Progress value={progressPercent} className="h-2" />
-                            </div>
-                          );
-                        })}
-                      </div>
                     )}
                   </CardContent>
                 </Card>
