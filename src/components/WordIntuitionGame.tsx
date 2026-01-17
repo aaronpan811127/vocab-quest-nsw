@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { GameResultActions } from "./GameResultActions";
+import { useCelebration } from "@/hooks/useCelebration";
 
 interface WordIntuitionGameProps {
   unitId: string;
@@ -27,6 +28,8 @@ interface Question {
 export const WordIntuitionGame = ({ unitId, unitTitle, onComplete, onBack }: WordIntuitionGameProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { celebrate } = useCelebration();
+  const hasCelebrated = useRef(false);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [allQuestions, setAllQuestions] = useState<Question[]>([]); // Store all questions for "Play Again"
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -42,6 +45,18 @@ export const WordIntuitionGame = ({ unitId, unitTitle, onComplete, onBack }: Wor
   useEffect(() => {
     loadQuestions();
   }, [unitId]);
+
+  // Trigger celebration when game is complete
+  useEffect(() => {
+    if (gameComplete && !hasCelebrated.current) {
+      hasCelebrated.current = true;
+      celebrate({
+        score: score,
+        totalQuestions: questions.length,
+        gameName: 'Word Intuition'
+      });
+    }
+  }, [gameComplete, score, questions.length, celebrate]);
 
   const loadQuestions = async () => {
     setIsLoading(true);

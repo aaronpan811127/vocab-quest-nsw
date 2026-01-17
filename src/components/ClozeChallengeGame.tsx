@@ -16,6 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTestType } from "@/contexts/TestTypeContext";
 import { useToast } from "@/hooks/use-toast";
+import { useCelebration } from "@/hooks/useCelebration";
 
 interface Question {
   id: string;
@@ -48,12 +49,21 @@ export const ClozeChallengeGame = ({ unitId, unitTitle, onComplete, onBack }: Cl
   const { user } = useAuth();
   const { selectedTestType } = useTestType();
   const { toast } = useToast();
+  const { celebrate } = useCelebration();
   const startTimeRef = useRef<number>(Date.now());
+  const hasCelebrated = useRef(false);
 
   useEffect(() => {
     checkAttemptAndLoad();
     startTimeRef.current = Date.now();
   }, [unitId]);
+
+  useEffect(() => {
+    if (showResults && !hasCelebrated.current) {
+      hasCelebrated.current = true;
+      celebrate({ score: serverCorrectCount, totalQuestions: questions.length, gameName: 'Cloze Challenge' });
+    }
+  }, [showResults, serverCorrectCount, questions.length, celebrate]);
 
   const checkAttemptAndLoad = async () => {
     setLoading(true);

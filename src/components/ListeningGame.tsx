@@ -10,6 +10,7 @@ import { GameResultActions } from "./GameResultActions";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { useCelebration } from "@/hooks/useCelebration";
 
 interface ListeningGameProps {
   unitId: string;
@@ -49,6 +50,8 @@ export const ListeningGame = ({
 
   const { user } = useAuth();
   const { toast } = useToast();
+  const { celebrate } = useCelebration();
+  const hasCelebrated = useRef(false);
   const startTimeRef = useRef<number>(Date.now());
   const inputRef = useRef<HTMLInputElement>(null);
   const synthRef = useRef<SpeechSynthesis | null>(null);
@@ -82,6 +85,19 @@ export const ListeningGame = ({
       inputRef.current.focus();
     }
   }, [hasPlayed, showFeedback]);
+
+  // Trigger celebration when showing results
+  useEffect(() => {
+    if (showResults && !hasCelebrated.current) {
+      hasCelebrated.current = true;
+      const correctCount = questions.filter(q => q.isCorrect).length;
+      celebrate({
+        score: correctCount,
+        totalQuestions: questions.length,
+        gameName: 'Listening Challenge'
+      });
+    }
+  }, [showResults, questions, celebrate]);
 
   const fetchWords = async (playAllWords: boolean = false) => {
     console.log("ListeningGame fetchWords called with playAllWords:", playAllWords);

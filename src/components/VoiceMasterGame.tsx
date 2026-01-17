@@ -9,6 +9,7 @@ import { GameResultActions } from "./GameResultActions";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { useCelebration } from "@/hooks/useCelebration";
 
 interface VoiceMasterGameProps {
   unitId: string;
@@ -52,7 +53,9 @@ export const VoiceMasterGame = ({
 
   const { user } = useAuth();
   const { toast } = useToast();
+  const { celebrate } = useCelebration();
   const startTimeRef = useRef<number>(Date.now());
+  const hasCelebrated = useRef(false);
   const synthRef = useRef<SpeechSynthesis | null>(null);
   const recognitionRef = useRef<any>(null);
   const wordsRef = useRef<string[]>([]);
@@ -75,6 +78,14 @@ export const VoiceMasterGame = ({
 
     fetchWords(playAllWordsOnStart);
     startTimeRef.current = Date.now();
+
+  useEffect(() => {
+    if (showResults && !hasCelebrated.current) {
+      hasCelebrated.current = true;
+      const correctCount = questions.filter(q => q.isCorrect).length;
+      celebrate({ score: correctCount, totalQuestions: questions.length, gameName: 'Voice Master' });
+    }
+  }, [showResults, questions, celebrate]);
 
     return () => {
       if (synthRef.current) {

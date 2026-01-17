@@ -16,6 +16,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { useCelebration } from "@/hooks/useCelebration";
 
 interface Question {
   id: string;
@@ -54,12 +55,26 @@ export const ReadingGame = ({ unitId, unitTitle, onComplete, onBack }: ReadingGa
   const [serverCorrectCount, setServerCorrectCount] = useState(0);
   const { user } = useAuth();
   const { toast } = useToast();
+  const { celebrate } = useCelebration();
   const startTimeRef = useRef<number>(Date.now());
+  const hasCelebrated = useRef(false);
 
   useEffect(() => {
     fetchPassageAndQuestions();
     startTimeRef.current = Date.now();
   }, [unitId]);
+
+  // Trigger celebration when showing results
+  useEffect(() => {
+    if (showResults && !hasCelebrated.current) {
+      hasCelebrated.current = true;
+      celebrate({
+        score: serverCorrectCount || getCorrectCount(),
+        totalQuestions: questions.length,
+        gameName: 'Reading Quest'
+      });
+    }
+  }, [showResults, serverCorrectCount, questions.length, celebrate]);
 
   const fetchPassageAndQuestions = async () => {
     setLoading(true);

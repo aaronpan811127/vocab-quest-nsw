@@ -17,6 +17,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTestType } from "@/contexts/TestTypeContext";
 import { useToast } from "@/hooks/use-toast";
+import { useCelebration } from "@/hooks/useCelebration";
 
 interface Question {
   id: string;
@@ -49,12 +50,26 @@ export const ContextMasterGame = ({ unitId, unitTitle, onComplete, onBack }: Con
   const { user } = useAuth();
   const { selectedTestType } = useTestType();
   const { toast } = useToast();
+  const { celebrate } = useCelebration();
   const startTimeRef = useRef<number>(Date.now());
+  const hasCelebrated = useRef(false);
 
   useEffect(() => {
     checkAttemptAndLoad();
     startTimeRef.current = Date.now();
   }, [unitId]);
+
+  // Trigger celebration when showing results
+  useEffect(() => {
+    if (showResults && !hasCelebrated.current) {
+      hasCelebrated.current = true;
+      celebrate({
+        score: serverCorrectCount,
+        totalQuestions: questions.length,
+        gameName: 'Context Master'
+      });
+    }
+  }, [showResults, serverCorrectCount, questions.length, celebrate]);
 
   const checkAttemptAndLoad = async () => {
     setLoading(true);
