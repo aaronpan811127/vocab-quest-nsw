@@ -240,22 +240,30 @@ export const VoiceMasterGame = ({
     synthRef.current.speak(utterance);
   }, []);
 
+  const isStoppingRef = useRef(false);
+
   const startListening = useCallback(() => {
+    if (isListening) return; // Prevent double start
+    
     const SpeechRecognitionAPI = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognitionAPI) return;
 
+    isStoppingRef.current = false;
     recognitionRef.current = new SpeechRecognitionAPI();
     recognitionRef.current.continuous = false;
     recognitionRef.current.interimResults = false;
     recognitionRef.current.lang = "en-US";
 
     recognitionRef.current.onstart = () => {
-      setIsListening(true);
+      if (!isStoppingRef.current) {
+        setIsListening(true);
+      }
     };
 
     recognitionRef.current.onresult = (event) => {
       const transcript = event.results[0][0].transcript.trim().toLowerCase();
-      // Stop listening immediately after getting result
+      isStoppingRef.current = true;
+      setIsListening(false);
       if (recognitionRef.current) {
         try {
           recognitionRef.current.stop();
@@ -263,12 +271,12 @@ export const VoiceMasterGame = ({
           // Ignore stop errors
         }
       }
-      setIsListening(false);
       handleSpeechResult(transcript);
     };
 
     recognitionRef.current.onerror = (event) => {
       console.error("Speech recognition error:", event.error);
+      isStoppingRef.current = true;
       setIsListening(false);
       if (event.error === "no-speech") {
         toast({
@@ -279,23 +287,26 @@ export const VoiceMasterGame = ({
     };
 
     recognitionRef.current.onend = () => {
-      setIsListening(false);
+      if (!isStoppingRef.current) {
+        setIsListening(false);
+      }
     };
 
     recognitionRef.current.start();
-  }, []);
+  }, [isListening, toast]);
 
   const stopListening = useCallback(() => {
+    isStoppingRef.current = true;
+    setIsListening(false);
+    
     if (recognitionRef.current) {
       try {
         recognitionRef.current.abort();
-        recognitionRef.current.stop();
       } catch (e) {
         // Ignore errors during stop
       }
       recognitionRef.current = null;
     }
-    setIsListening(false);
   }, []);
 
   const handleSpeechResult = useCallback((transcript: string) => {
