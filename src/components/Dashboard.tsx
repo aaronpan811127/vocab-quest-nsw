@@ -300,6 +300,26 @@ export const Dashboard = ({ onStartGame, onBack, selectedUnitId, onUnitChange }:
       });
     });
 
+    // Build a map of game_id to max_attempts for quick lookup
+    const gameMaxAttemptsMap = new Map<string, number | null>();
+    gamesConfig.forEach(game => {
+      const maxAttempts = (game.rules as any)?.max_attempts;
+      gameMaxAttemptsMap.set(
+        game.game_id,
+        typeof maxAttempts === 'number' ? maxAttempts : null
+      );
+    });
+
+    // Helper to check if a game should be considered "completed" for stats
+    const isGameEffectivelyCompleted = (p: { game_id: string; completed: boolean; attempts: number; best_score: number }) => {
+      const maxAttempts = gameMaxAttemptsMap.get(p.game_id);
+      // For single-attempt games, treat as completed if attempted
+      if (maxAttempts === 1 && (p.attempts > 0 || p.best_score > 0)) {
+        return true;
+      }
+      return p.completed;
+    };
+
     const formattedUnits: Unit[] = unitsData.map((unit, index) => {
       const unitProgress = unitProgressMap.get(unit.id) || [];
       const totalXp = unitProgress.reduce((sum, p) => sum + (p.total_xp || 0), 0);
@@ -309,7 +329,7 @@ export const Dashboard = ({ onStartGame, onBack, selectedUnitId, onUnitChange }:
         const sectionGames = groupedGames[section.code]?.games || [];
         const sectionGameIds = new Set(sectionGames.map(g => g.game_id));
         const completedInSection = unitProgress.filter(
-          p => p.completed && sectionGameIds.has(p.game_id)
+          p => isGameEffectivelyCompleted(p) && sectionGameIds.has(p.game_id)
         ).length;
         
         return {
@@ -329,7 +349,7 @@ export const Dashboard = ({ onStartGame, onBack, selectedUnitId, onUnitChange }:
         
         // Check if all required_for_unlock games are completed in the previous unit
         const completedRequiredGames = prevProgress.filter(
-          (p) => p.completed && requiredGameIds.has(p.game_id)
+          (p) => isGameEffectivelyCompleted(p) && requiredGameIds.has(p.game_id)
         ).length;
         isUnlocked = requiredGames.length > 0 && completedRequiredGames >= requiredGames.length;
       }
