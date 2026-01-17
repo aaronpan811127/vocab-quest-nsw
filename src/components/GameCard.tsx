@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   BookOpen,
@@ -16,6 +17,7 @@ import {
   Target,
   Layers,
   CheckCircle2,
+  AlertTriangle,
 } from "lucide-react";
 
 interface GameHistoryEntry {
@@ -156,6 +158,16 @@ export const GameCard = ({
 
           {/* Description */}
           <p className="text-sm text-muted-foreground leading-relaxed">{description}</p>
+
+          {/* Single attempt warning for test games */}
+          {maxAttempts === 1 && !isTestCompleted && (
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-warning/10 border border-warning/30">
+              <AlertTriangle className="h-4 w-4 text-warning flex-shrink-0" />
+              <span className="text-xs font-medium text-warning">
+                One attempt only – make it count!
+              </span>
+            </div>
+          )}
 
         {/* Stats - different display based on game type and section */}
         {!isLocked && hasStats && (
