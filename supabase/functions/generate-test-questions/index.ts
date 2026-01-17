@@ -197,15 +197,15 @@ IMPORTANT:
 Words to create questions for: ${wordRequests}
 
 For each question:
-1. Create a sentence with a blank (______) where a word should go
-2. The blank does NOT need to be filled with the word from the list - it can be any appropriate word
-3. The sentence should test understanding of vocabulary in context
-4. Include 4 answer options (one correct, three distractors)
+1. Create a sentence with a blank (______) where the vocabulary word from the list should go
+2. The correct answer MUST BE the vocabulary word being tested - the blank is where that word fits
+3. The sentence should test understanding of the vocabulary word in context
+4. Include 4 answer options (the correct vocabulary word and three distractors)
 5. Include 3 "trap" distractor options that:
    - Seem correct at first glance
    - Have similar but subtly different meanings
    - Would be wrong based on careful reading of the context
-6. Make sure the correct answer is the only one that fits grammatically and semantically
+6. Make sure the vocabulary word is the only one that fits grammatically and semantically
 
 Return ONLY a valid JSON array with this exact structure, no other text:
 [
@@ -226,7 +226,8 @@ Return ONLY a valid JSON array with this exact structure, no other text:
 ]
 
 IMPORTANT:
-- The "word" field indicates which vocabulary word this question is testing, but the answer may be different
+- The "word" field is the vocabulary word being tested AND it MUST be the correct_answer
+- The blank in the sentence is where the vocabulary word fits
 - Questions should be age-appropriate for ${gradeLevel}
 - Distractors should be plausible but clearly wrong with careful reading
 - No markdown formatting - plain text only`;
