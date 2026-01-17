@@ -287,7 +287,13 @@ export const VoiceMasterGame = ({
 
   const stopListening = useCallback(() => {
     if (recognitionRef.current) {
-      recognitionRef.current.stop();
+      try {
+        recognitionRef.current.abort();
+        recognitionRef.current.stop();
+      } catch (e) {
+        // Ignore errors during stop
+      }
+      recognitionRef.current = null;
     }
     setIsListening(false);
   }, []);
