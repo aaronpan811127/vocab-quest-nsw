@@ -15,6 +15,7 @@ import {
   Clock,
   Target,
   Layers,
+  CheckCircle2,
 } from "lucide-react";
 
 interface GameHistoryEntry {
@@ -36,6 +37,7 @@ interface GameCardProps {
   attempts?: number;
   history?: GameHistoryEntry[];
   activeSessionTimeRemaining?: number | null; // seconds remaining, null if no active session
+  maxAttempts?: number | null; // null means unlimited attempts
 }
 
 const gameIcons: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -75,12 +77,16 @@ export const GameCard = ({
   attempts = 0,
   history = [],
   activeSessionTimeRemaining = null,
+  maxAttempts = null,
 }: GameCardProps) => {
   const [showHistory, setShowHistory] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState(activeSessionTimeRemaining);
   const Icon = gameIcons[gameType] || Target;
   const hasStats = totalXp > 0 || attempts > 0;
   const hasActiveSession = activeSessionTimeRemaining !== null && activeSessionTimeRemaining > 0;
+  
+  // Check if this is a single-attempt test that's already been completed
+  const isTestCompleted = isCompleted && maxAttempts === 1;
 
   // Sync state when prop changes
   useEffect(() => {
@@ -176,15 +182,20 @@ export const GameCard = ({
           {/* Action Button */}
           <Button
             onClick={onPlay}
-            disabled={isLocked}
-            variant={isCompleted ? "success" : hasActiveSession ? "warning" : isLocked ? "ghost" : "game"}
-            className="w-full"
+            disabled={isLocked || isTestCompleted}
+            variant={isTestCompleted ? "outline" : isCompleted ? "success" : hasActiveSession ? "warning" : isLocked ? "ghost" : "game"}
+            className={`w-full ${isTestCompleted ? "opacity-75" : ""}`}
             size="lg"
           >
             {isLocked ? (
               <>
                 <Lock className="h-4 w-4 mr-2" />
                 Complete Previous Games
+              </>
+            ) : isTestCompleted ? (
+              <>
+                <CheckCircle2 className="h-4 w-4 mr-2" />
+                Completed
               </>
             ) : hasActiveSession ? (
               <>
