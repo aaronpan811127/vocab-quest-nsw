@@ -240,75 +240,6 @@ export const VoiceMasterGame = ({
     synthRef.current.speak(utterance);
   }, []);
 
-  const isStoppingRef = useRef(false);
-
-  const startListening = useCallback(() => {
-    if (isListening) return; // Prevent double start
-    
-    const SpeechRecognitionAPI = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognitionAPI) return;
-
-    isStoppingRef.current = false;
-    recognitionRef.current = new SpeechRecognitionAPI();
-    recognitionRef.current.continuous = false;
-    recognitionRef.current.interimResults = false;
-    recognitionRef.current.lang = "en-US";
-
-    recognitionRef.current.onstart = () => {
-      if (!isStoppingRef.current) {
-        setIsListening(true);
-      }
-    };
-
-    recognitionRef.current.onresult = (event) => {
-      const transcript = event.results[0][0].transcript.trim().toLowerCase();
-      isStoppingRef.current = true;
-      setIsListening(false);
-      if (recognitionRef.current) {
-        try {
-          recognitionRef.current.stop();
-        } catch (e) {
-          // Ignore stop errors
-        }
-      }
-      handleSpeechResult(transcript);
-    };
-
-    recognitionRef.current.onerror = (event) => {
-      console.error("Speech recognition error:", event.error);
-      isStoppingRef.current = true;
-      setIsListening(false);
-      if (event.error === "no-speech") {
-        toast({
-          title: "No speech detected",
-          description: "Please try speaking again.",
-        });
-      }
-    };
-
-    recognitionRef.current.onend = () => {
-      if (!isStoppingRef.current) {
-        setIsListening(false);
-      }
-    };
-
-    recognitionRef.current.start();
-  }, [isListening, toast]);
-
-  const stopListening = useCallback(() => {
-    isStoppingRef.current = true;
-    setIsListening(false);
-    
-    if (recognitionRef.current) {
-      try {
-        recognitionRef.current.abort();
-      } catch (e) {
-        // Ignore errors during stop
-      }
-      recognitionRef.current = null;
-    }
-  }, []);
-
   const handleSpeechResult = useCallback((transcript: string) => {
     const currentWord = wordsRef.current[currentIndexRef.current];
 
@@ -333,6 +264,124 @@ export const VoiceMasterGame = ({
     setCurrentFeedback({ isCorrect, correctWord: currentWord, userSaid: transcript });
     setShowFeedback(true);
   }, []);
+
+  const isStoppingRef = useRef(false);
+
+  const cleanupRecognition = useCallback((recognition?: any) => {
+    const rec = recognition ?? recognitionRef.current;
+
+    // Always reflect UI as stopped immediately
+    setIsListening(false);
+
+    if (!rec) return;
+
+    try {
+      rec.onstart = null;
+      rec.onresult = null;
+      rec.onerror = null;
+      rec.onend = null;
+    } catch {
+      // ignore
+    }
+
+    // Some browsers respond better to abort(), others to stop(); do both safely.
+    try {
+      rec.abort();
+    } catch {
+      // ignore
+    }
+
+    try {
+      rec.stop();
+    } catch {
+      // ignore
+    }
+
+    if (recognitionRef.current === rec) {
+      recognitionRef.current = null;
+    }
+  }, []);
+
+  const startListening = useCallback(() => {
+    const SpeechRecognitionAPI =
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognitionAPI) return;
+
+    // Prevent orphaned sessions if user taps quickly
+    if (recognitionRef.current) return;
+
+    const recognition = new SpeechRecognitionAPI();
+    recognitionRef.current = recognition;
+
+    isStoppingRef.current = false;
+
+    // Make toggle responsive even before onstart fires
+    setIsListening(true);
+
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.lang = "en-US";
+
+    recognition.onstart = () => {
+      if (recognitionRef.current === recognition && !isStoppingRef.current) {
+        setIsListening(true);
+      }
+    };
+
+    recognition.onresult = (event: any) => {
+      const transcript =
+        event?.results?.[0]?.[0]?.transcript?.trim?.()?.toLowerCase?.() ?? "";
+
+      isStoppingRef.current = true;
+      cleanupRecognition(recognition);
+
+      if (transcript) {
+        handleSpeechResult(transcript);
+      }
+    };
+
+    recognition.onerror = (event: any) => {
+      console.error("Speech recognition error:", event.error);
+      isStoppingRef.current = true;
+      cleanupRecognition(recognition);
+
+      if (event.error === "no-speech") {
+        toast({
+          title: "No speech detected",
+          description: "Please try speaking again.",
+        });
+      }
+    };
+
+    recognition.onend = () => {
+      // Ensure we fully release the instance after any stop/abort path
+      if (recognitionRef.current === recognition) {
+        recognitionRef.current = null;
+      }
+      setIsListening(false);
+    };
+
+    try {
+      recognition.start();
+    } catch {
+      cleanupRecognition(recognition);
+    }
+  }, [cleanupRecognition, handleSpeechResult, toast]);
+
+  const stopListening = useCallback(() => {
+    isStoppingRef.current = true;
+    cleanupRecognition();
+  }, [cleanupRecognition]);
+
+  const toggleListening = useCallback(() => {
+    // Use the recognition instance as the source of truth (state can lag)
+    if (recognitionRef.current || isListening) {
+      stopListening();
+    } else {
+      startListening();
+    }
+  }, [isListening, startListening, stopListening]);
+
 
   const handleNext = async () => {
     setShowFeedback(false);
@@ -650,7 +699,7 @@ export const VoiceMasterGame = ({
               {/* Microphone Button */}
               <div className="relative">
                 <Button
-                  onClick={isListening ? stopListening : startListening}
+                  onClick={toggleListening}
                   variant={isListening ? "destructive" : "game"}
                   size="lg"
                   className={`w-32 h-32 rounded-full ${isListening ? "animate-pulse" : ""}`}
