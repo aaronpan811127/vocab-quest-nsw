@@ -61,13 +61,30 @@ serve(async (req) => {
 
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
+    // Look up the game_id for 'intuition' game type
+    const { data: gameData, error: gameError } = await supabaseAdmin
+      .from('games')
+      .select('id')
+      .eq('game_type', 'intuition')
+      .single();
+
+    if (gameError || !gameData) {
+      console.error('Failed to find intuition game:', gameError);
+      return new Response(
+        JSON.stringify({ success: false, error: 'Game configuration not found' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const gameId = gameData.id;
+
     // Insert game attempt only - NO XP accumulation for intuition game
     const { error: attemptError } = await supabaseAdmin
       .from('game_attempts')
       .insert({
         user_id: user.id,
         unit_id,
-        game_type: 'intuition',
+        game_id: gameId,
         score,
         correct_answers,
         total_questions,
@@ -89,7 +106,7 @@ serve(async (req) => {
       .select('id, attempts, total_time_seconds, best_score, total_xp, completed')
       .eq('user_id', user.id)
       .eq('unit_id', unit_id)
-      .eq('game_type', 'intuition')
+      .eq('game_id', gameId)
       .maybeSingle();
 
     if (progressFetchError) {
@@ -127,7 +144,7 @@ serve(async (req) => {
         .insert({
           user_id: user.id,
           unit_id,
-          game_type: 'intuition',
+          game_id: gameId,
           best_score: score,
           total_xp: 0,
           total_time_seconds: time_spent_seconds,
