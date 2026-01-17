@@ -101,6 +101,7 @@ export type Database = {
           id: string
           passage_id: string | null
           score: number
+          session_data: Json | null
           started_at: string | null
           time_spent_seconds: number
           total_duration_seconds: number | null
@@ -116,6 +117,7 @@ export type Database = {
           id?: string
           passage_id?: string | null
           score?: number
+          session_data?: Json | null
           started_at?: string | null
           time_spent_seconds?: number
           total_duration_seconds?: number | null
@@ -131,6 +133,7 @@ export type Database = {
           id?: string
           passage_id?: string | null
           score?: number
+          session_data?: Json | null
           started_at?: string | null
           time_spent_seconds?: number
           total_duration_seconds?: number | null

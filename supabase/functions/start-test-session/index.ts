@@ -73,7 +73,7 @@ serve(async (req) => {
     // Check for existing incomplete session
     const { data: existingSession, error: sessionError } = await supabase
       .from('game_attempts')
-      .select('id, started_at, total_duration_seconds')
+      .select('id, started_at, total_duration_seconds, session_data')
       .eq('user_id', user.id)
       .eq('unit_id', unit_id)
       .eq('game_id', game_id)
@@ -87,7 +87,7 @@ serve(async (req) => {
     const totalDuration = total_questions * seconds_per_question;
 
     if (existingSession) {
-      // Return existing session with remaining time
+      // Return existing session with remaining time and progress data
       const startedAt = new Date(existingSession.started_at).getTime();
       const now = Date.now();
       const elapsedSeconds = Math.floor((now - startedAt) / 1000);
@@ -101,7 +101,8 @@ serve(async (req) => {
           total_duration_seconds: existingSession.total_duration_seconds || totalDuration,
           remaining_seconds: remainingSeconds,
           is_expired: remainingSeconds <= 0,
-          resumed: true
+          resumed: true,
+          session_data: existingSession.session_data || null
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
