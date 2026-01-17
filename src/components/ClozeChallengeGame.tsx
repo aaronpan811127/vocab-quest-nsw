@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -17,6 +17,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useTestType } from "@/contexts/TestTypeContext";
 import { useToast } from "@/hooks/use-toast";
 import { useCelebration } from "@/hooks/useCelebration";
+import { useGameTimer } from "@/hooks/useGameTimer";
+import { GameTimer } from "@/components/GameTimer";
 
 interface Question {
   id: string;
@@ -33,6 +35,7 @@ interface ClozeChallengeGameProps {
 }
 
 const CLOZE_CHALLENGE_GAME_ID = 'd7e0f1a2-b3c4-5d6e-8f7a-8b9c0d1e2f3a';
+const DEFAULT_SECONDS_PER_QUESTION = 30;
 
 export const ClozeChallengeGame = ({ unitId, unitTitle, onComplete, onBack }: ClozeChallengeGameProps) => {
   const [currentQuestion, setCurrentQuestion] = useState(0);
@@ -46,12 +49,39 @@ export const ClozeChallengeGame = ({ unitId, unitTitle, onComplete, onBack }: Cl
   const [serverCorrectCount, setServerCorrectCount] = useState(0);
   const [alreadyAttempted, setAlreadyAttempted] = useState(false);
   const [previousScore, setPreviousScore] = useState<number | null>(null);
+  const [secondsPerQuestion, setSecondsPerQuestion] = useState(DEFAULT_SECONDS_PER_QUESTION);
+  const [timerActive, setTimerActive] = useState(false);
   const { user } = useAuth();
   const { selectedTestType } = useTestType();
   const { toast } = useToast();
   const { celebrate } = useCelebration();
   const startTimeRef = useRef<number>(Date.now());
   const hasCelebrated = useRef(false);
+  const isSubmittingRef = useRef(false);
+
+  // Timer time-up handler
+  const handleTimeUp = useCallback(async () => {
+    if (isSubmittingRef.current || showResults) return;
+    isSubmittingRef.current = true;
+    setTimerActive(false);
+    setSaving(true);
+    
+    toast({
+      title: "Time's Up!",
+      description: "Your test is being submitted automatically.",
+      variant: "destructive"
+    });
+    
+    await submitTestInternal();
+    setShowResults(true);
+  }, [showResults, toast]);
+
+  const timer = useGameTimer({
+    totalQuestions: questions.length,
+    secondsPerQuestion,
+    onTimeUp: handleTimeUp,
+    isActive: timerActive && !showResults && !loading && questions.length > 0
+  });
 
   useEffect(() => {
     checkAttemptAndLoad();
@@ -68,12 +98,28 @@ export const ClozeChallengeGame = ({ unitId, unitTitle, onComplete, onBack }: Cl
   const checkAttemptAndLoad = async () => {
     setLoading(true);
     setError(null);
+    setTimerActive(false);
     
     try {
       if (!user) {
         setError("Please log in to take this test.");
         setLoading(false);
         return;
+      }
+
+      // Fetch game rules for timer configuration
+      const { data: gameData, error: gameError } = await supabase
+        .from('games')
+        .select('rules')
+        .eq('id', CLOZE_CHALLENGE_GAME_ID)
+        .single();
+
+      if (!gameError && gameData?.rules) {
+        const rules = gameData.rules as Record<string, unknown>;
+        const configuredSeconds = rules.seconds_per_question;
+        if (typeof configuredSeconds === 'number' && configuredSeconds > 0) {
+          setSecondsPerQuestion(configuredSeconds);
+        }
       }
 
       // Check if already attempted
@@ -136,7 +182,13 @@ export const ClozeChallengeGame = ({ unitId, unitTitle, onComplete, onBack }: Cl
 
       // Shuffle and take 15 questions
       const shuffled = allQuestions.sort(() => Math.random() - 0.5);
-      setQuestions(shuffled.slice(0, Math.min(15, shuffled.length)));
+      const selectedQuestions = shuffled.slice(0, Math.min(15, shuffled.length));
+      setQuestions(selectedQuestions);
+      
+      // Start timer after questions are loaded
+      if (selectedQuestions.length > 0) {
+        setTimerActive(true);
+      }
 
     } catch (err) {
       console.error('Error loading cloze challenge game:', err);
@@ -156,21 +208,24 @@ export const ClozeChallengeGame = ({ unitId, unitTitle, onComplete, onBack }: Cl
     if (currentQuestion < questions.length - 1) {
       setCurrentQuestion(currentQuestion + 1);
     } else {
+      if (isSubmittingRef.current) return;
+      isSubmittingRef.current = true;
+      setTimerActive(false);
       setSaving(true);
-      await submitTest();
+      await submitTestInternal();
       setShowResults(true);
     }
   };
 
-  const submitTest = async () => {
+  const submitTestInternal = async () => {
     if (!user) return;
     
     try {
       const timeSpentSeconds = Math.round((Date.now() - startTimeRef.current) / 1000);
       
       const answers = selectedAnswers.map((answerIndex, questionIndex) => ({
-        question_id: questions[questionIndex].id,
-        answer_index: answerIndex
+        question_id: questions[questionIndex]?.id,
+        answer_index: answerIndex ?? -1 // -1 for unanswered questions
       }));
 
       const { data, error } = await supabase.functions.invoke('submit-test-game', {
@@ -337,6 +392,15 @@ export const ClozeChallengeGame = ({ unitId, unitTitle, onComplete, onBack }: Cl
             One Attempt Only
           </Badge>
         </div>
+
+        {/* Timer */}
+        <GameTimer
+          formattedTime={timer.formattedTime}
+          percentage={timer.percentage}
+          timerColor={timer.timerColor}
+          progressColor={timer.progressColor}
+          isExpired={timer.isExpired}
+        />
 
         {/* Progress */}
         <div className="space-y-2">
