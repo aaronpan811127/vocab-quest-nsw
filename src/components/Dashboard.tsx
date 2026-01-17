@@ -528,17 +528,29 @@ Game XP = (Avg Score over all attempts × 0.5) + Time Bonus
   sortedSections.forEach(section => {
     const sectionGames = groupedGames[section.code]?.games || [];
     const sectionUnlocked = getSectionUnlockStatus(section.displayOrder);
-    
+
     gamesBySection[section.code] = sectionGames.map(game => {
       const data = getGameData(game.game_type);
-      const maxAttempts = typeof game.rules?.max_attempts === 'number' ? game.rules.max_attempts : null;
+
+      const maxAttemptsRaw = (game.rules as any)?.max_attempts;
+      const maxAttempts =
+        typeof maxAttemptsRaw === "number"
+          ? maxAttemptsRaw
+          : typeof maxAttemptsRaw === "string" && maxAttemptsRaw.trim() !== ""
+            ? Number(maxAttemptsRaw)
+            : null;
+
+      const isSingleAttemptTest = maxAttempts === 1;
+      const isAttemptUsed = isSingleAttemptTest && (data.attempts > 0 || data.progress > 0);
+
       return {
         title: game.game_name,
         description: game.description || '',
         gameType: game.game_type,
         gameId: game.game_id,
         progress: data.progress,
-        isCompleted: data.isCompleted,
+        // For single-attempt tests, treat any attempt as completed (locks the game)
+        isCompleted: data.isCompleted || isAttemptUsed,
         isLocked: !sectionUnlocked,
         totalXp: data.totalXp,
         totalTimeSeconds: data.totalTimeSeconds,
