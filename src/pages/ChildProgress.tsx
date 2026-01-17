@@ -611,8 +611,12 @@ const ChildProgress = () => {
                     ) : (
                       <div className="space-y-4">
                         {filteredUnits.map((unit) => {
+                          const requiredGames = requiredGamesByTestType.get(selectedTestType);
                           const unitProgressData = filteredProgress.filter(p => p.unit_id === unit.id);
-                          const completedGames = unitProgressData.filter(p => p.completed).length;
+                          // Only count completed games that are in the required games set
+                          const completedGames = unitProgressData.filter(p => 
+                            p.completed && requiredGames?.has(p.game_id)
+                          ).length;
                           const totalGames = requiredGamesCount;
                           const progressPercent = totalGames > 0 ? (completedGames / totalGames) * 100 : 0;
                           
@@ -623,7 +627,7 @@ const ChildProgress = () => {
                                   Unit {unit.unit_number}: {unit.title}
                                 </span>
                                 <span className="text-sm text-muted-foreground">
-                                  {completedGames}/{totalGames} games
+                                  {completedGames}/{totalGames}
                                 </span>
                               </div>
                               <Progress value={progressPercent} className="h-2" />
