@@ -59,19 +59,31 @@ export const SubscriptionProvider = ({ children }: { children: ReactNode }) => {
       
       if (error) {
         console.error('Error checking subscription:', error);
-        setState(prev => ({ ...prev, loading: false }));
+        // On error, default to free tier rather than blocking the app
+        setState({
+          tier: 'free',
+          subscribed: false,
+          subscriptionEnd: null,
+          loading: false,
+        });
         return;
       }
 
       setState({
-        tier: data.tier || 'free',
-        subscribed: data.subscribed || false,
-        subscriptionEnd: data.subscription_end || null,
+        tier: data?.tier || 'free',
+        subscribed: data?.subscribed || false,
+        subscriptionEnd: data?.subscription_end || null,
         loading: false,
       });
     } catch (err) {
       console.error('Error checking subscription:', err);
-      setState(prev => ({ ...prev, loading: false }));
+      // On error, default to free tier rather than blocking the app
+      setState({
+        tier: 'free',
+        subscribed: false,
+        subscriptionEnd: null,
+        loading: false,
+      });
     }
   };
 
