@@ -67,11 +67,29 @@ serve(async (req) => {
     // Client with service role to call the secure function
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
+    // Look up the game_id for 'reading' game type
+    const { data: gameData, error: gameError } = await supabaseAdmin
+      .from('games')
+      .select('id')
+      .eq('game_type', 'reading')
+      .single();
+
+    if (gameError || !gameData) {
+      console.error('Failed to find reading game:', gameError);
+      return new Response(
+        JSON.stringify({ success: false, error: 'Reading game configuration not found' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log('Using game_id:', gameData.id);
+
     // Call the secure database function to validate and process the submission
     const { data, error } = await supabaseAdmin.rpc('validate_game_submission', {
       p_user_id: user.id,
       p_unit_id: unit_id,
       p_passage_id: passage_id,
+      p_game_id: gameData.id,
       p_answers: answers,
       p_time_spent_seconds: time_spent_seconds
     });
