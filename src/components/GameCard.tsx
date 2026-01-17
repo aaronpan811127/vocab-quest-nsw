@@ -38,6 +38,7 @@ interface GameCardProps {
   history?: GameHistoryEntry[];
   activeSessionTimeRemaining?: number | null; // seconds remaining, null if no active session
   maxAttempts?: number | null; // null means unlimited attempts
+  sectionCode?: string; // e.g., 'learn', 'challenge', 'test'
 }
 
 const gameIcons: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -78,6 +79,7 @@ export const GameCard = ({
   history = [],
   activeSessionTimeRemaining = null,
   maxAttempts = null,
+  sectionCode = '',
 }: GameCardProps) => {
   const [showHistory, setShowHistory] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState(activeSessionTimeRemaining);
@@ -87,6 +89,12 @@ export const GameCard = ({
   
   // Check if this is a single-attempt test that's already been completed
   const isTestCompleted = isCompleted && maxAttempts === 1;
+  
+  // Calculate average score for challenge section games
+  const isChallenge = sectionCode === 'challenge';
+  const averageScore = history.length > 0 
+    ? Math.round(history.reduce((sum, h) => sum + h.score, 0) / history.length)
+    : 0;
 
   // Sync state when prop changes
   useEffect(() => {
@@ -149,9 +157,9 @@ export const GameCard = ({
           {/* Description */}
           <p className="text-sm text-muted-foreground leading-relaxed">{description}</p>
 
-        {/* Stats - different display for test games vs regular games */}
+        {/* Stats - different display based on game type and section */}
         {!isLocked && hasStats && (
-          <div className="grid grid-cols-2 gap-2 py-2 px-3 rounded-lg bg-muted/30 border border-border/50">
+          <div className={`grid ${isChallenge ? 'grid-cols-3' : 'grid-cols-2'} gap-2 py-2 px-3 rounded-lg bg-muted/30 border border-border/50`}>
             {maxAttempts === 1 ? (
               // Test games: show Score instead of XP
               <div className="flex flex-col items-center">
@@ -171,6 +179,16 @@ export const GameCard = ({
                 <span className="text-[10px] text-muted-foreground">XP</span>
               </div>
             )}
+            {/* Average score - only for challenge section */}
+            {isChallenge && (
+              <div className="flex flex-col items-center border-l border-border/50">
+                <div className="flex items-center gap-1 text-primary">
+                  <Target className="h-3.5 w-3.5" />
+                  <span className="text-sm font-semibold">{averageScore}%</span>
+                </div>
+                <span className="text-[10px] text-muted-foreground">Avg Score</span>
+              </div>
+            )}
             <div className="flex flex-col items-center border-l border-border/50">
               <div className="flex items-center gap-1 text-muted-foreground">
                 <Clock className="h-3.5 w-3.5" />
@@ -181,8 +199,8 @@ export const GameCard = ({
           </div>
         )}
 
-        {/* Progress bar - only for non-test games */}
-        {!isLocked && maxAttempts !== 1 && (
+        {/* Progress bar - only for non-test and non-challenge games */}
+        {!isLocked && maxAttempts !== 1 && !isChallenge && (
           <div className="space-y-2">
             <div className="flex justify-between text-xs">
               <span className="text-muted-foreground">Best Score</span>

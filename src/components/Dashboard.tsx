@@ -819,6 +819,7 @@ Game XP = (Avg Score over all attempts × 0.5) + Time Bonus
                         history={gameHistory[game.gameType] || []}
                         activeSessionTimeRemaining={activeSessionTimes[game.gameId] ?? null}
                         maxAttempts={game.maxAttempts}
+                        sectionCode={section.code}
                         onPlay={() => {
                           if (isUnlocked && !game.isCompleted || game.maxAttempts !== 1) {
                             if (onStartGame && currentUnit) {
