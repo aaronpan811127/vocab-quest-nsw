@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useCelebration } from "@/hooks/useCelebration";
 
 interface Word {
   id: string;
@@ -45,6 +46,8 @@ export const FlashcardGame = ({ unitId, unitTitle, gameId, onComplete, onBack }:
   const [resolvedGameId, setResolvedGameId] = useState<string | null>(gameId || null);
   const femaleVoiceRef = useRef<SpeechSynthesisVoice | null>(null);
   const { toast } = useToast();
+  const { celebrate } = useCelebration();
+  const hasCelebrated = useRef(false);
 
   // Resolve game_id if not provided
   useEffect(() => {
@@ -60,6 +63,18 @@ export const FlashcardGame = ({ unitId, unitTitle, gameId, onComplete, onBack }:
     };
     resolveGameId();
   }, [gameId]);
+
+  // Trigger celebration when all words are learned
+  useEffect(() => {
+    if (words.length > 0 && learnedWords.size === words.length && !hasCelebrated.current) {
+      hasCelebrated.current = true;
+      celebrate({
+        score: words.length,
+        totalQuestions: words.length,
+        gameName: 'Flashcards'
+      });
+    }
+  }, [learnedWords.size, words.length, celebrate]);
 
   // Save progress to database when all words are learned
   const saveProgress = async () => {

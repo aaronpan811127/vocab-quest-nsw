@@ -10,6 +10,7 @@ import { GameResultActions } from "./GameResultActions";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { useCelebration } from "@/hooks/useCelebration";
 
 interface StoryCreatorGameProps {
   unitId: string;
@@ -43,12 +44,22 @@ export const StoryCreatorGame = ({ unitId, unitTitle, onComplete, onBack, playAl
 
   const { user } = useAuth();
   const { toast } = useToast();
+  const { celebrate } = useCelebration();
   const startTimeRef = useRef<number>(Date.now());
+  const hasCelebrated = useRef(false);
 
   useEffect(() => {
     fetchWords(playAllWordsOnStart);
     startTimeRef.current = Date.now();
   }, [unitId, playAllWordsOnStart]);
+
+  useEffect(() => {
+    if (showResults && !hasCelebrated.current) {
+      hasCelebrated.current = true;
+      const correctCount = questions.filter(q => q.isCorrect).length;
+      celebrate({ score: correctCount, totalQuestions: questions.length, gameName: 'Story Creator' });
+    }
+  }, [showResults, questions, celebrate]);
 
   const fetchWords = async (playAllWords: boolean) => {
     setLoading(true);

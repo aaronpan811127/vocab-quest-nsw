@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -16,6 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { GameResultActions } from "./GameResultActions";
+import { useCelebration } from "@/hooks/useCelebration";
 
 interface Word {
   id: string;
@@ -55,6 +56,8 @@ export const OddOneOutGame = ({ unitId, unitTitle, gameId, onComplete, onBack }:
   const [resolvedGameId, setResolvedGameId] = useState<string | null>(gameId || null);
   const { user } = useAuth();
   const { toast } = useToast();
+  const { celebrate } = useCelebration();
+  const hasCelebrated = useRef(false);
 
   useEffect(() => {
     const resolveGameId = async () => {
@@ -69,6 +72,18 @@ export const OddOneOutGame = ({ unitId, unitTitle, gameId, onComplete, onBack }:
   useEffect(() => {
     fetchVocabulary();
   }, [unitId]);
+
+  // Trigger celebration when showing completion
+  useEffect(() => {
+    if (showCompletion && !hasCelebrated.current) {
+      hasCelebrated.current = true;
+      celebrate({
+        score: correctAnswers,
+        totalQuestions: questions.length,
+        gameName: 'Odd One Out'
+      });
+    }
+  }, [showCompletion, correctAnswers, questions.length, celebrate]);
 
   const fetchVocabulary = async () => {
     setLoading(true);

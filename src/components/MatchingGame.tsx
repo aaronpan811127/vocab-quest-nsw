@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -16,6 +16,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { useCelebration } from "@/hooks/useCelebration";
 
 interface Word {
   id: string;
@@ -53,6 +54,8 @@ export const MatchingGame = ({ unitId, unitTitle, gameId, onComplete, onBack }: 
   const [resolvedGameId, setResolvedGameId] = useState<string | null>(gameId || null);
   const { toast } = useToast();
   const { user } = useAuth();
+  const { celebrate } = useCelebration();
+  const hasCelebrated = useRef(false);
 
   // Resolve game_id if not provided
   useEffect(() => {
@@ -291,6 +294,19 @@ export const MatchingGame = ({ unitId, unitTitle, gameId, onComplete, onBack }: 
       saveGameAttempt();
     }
   }, [isComplete]);
+
+  // Trigger celebration when game is complete
+  useEffect(() => {
+    if (isComplete && !hasCelebrated.current) {
+      hasCelebrated.current = true;
+      const celebrationScore = Math.round((words.length / Math.max(moves, words.length)) * 100);
+      celebrate({
+        score: Math.round(celebrationScore / 100 * words.length),
+        totalQuestions: words.length,
+        gameName: 'Matching Game'
+      });
+    }
+  }, [isComplete, words.length, moves, celebrate]);
 
   if (loading) {
     return (
