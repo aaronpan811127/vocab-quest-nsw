@@ -75,7 +75,7 @@ export const Dashboard = ({ onStartGame, onBack, selectedUnitId, onUnitChange }:
   const [gameHistory, setGameHistory] = useState<
     Record<string, Array<{ id: string; score: number; created_at: string }>>
   >({});
-  const [activeSessions, setActiveSessions] = useState<Set<string>>(new Set());
+  const [activeSessionTimes, setActiveSessionTimes] = useState<Record<string, number>>({});
 
   useEffect(() => {
     if (user && selectedTestType) {
@@ -409,21 +409,22 @@ export const Dashboard = ({ onStartGame, onBack, selectedUnitId, onUnitChange }:
       return;
     }
 
-    const activeGameIds = new Set<string>();
+    const sessionTimes: Record<string, number> = {};
     const now = Date.now();
 
     data?.forEach((session) => {
       if (session.started_at && session.total_duration_seconds) {
         const startedAt = new Date(session.started_at).getTime();
         const expiresAt = startedAt + (session.total_duration_seconds * 1000);
+        const remainingMs = expiresAt - now;
         // Only mark as active if not yet expired
-        if (now < expiresAt) {
-          activeGameIds.add(session.game_id);
+        if (remainingMs > 0) {
+          sessionTimes[session.game_id] = Math.floor(remainingMs / 1000);
         }
       }
     });
 
-    setActiveSessions(activeGameIds);
+    setActiveSessionTimes(sessionTimes);
   };
 
   const displayName = profile?.username || user?.email?.split("@")[0] || "Player";
@@ -723,7 +724,7 @@ Game XP = (Avg Score over all attempts × 0.5) + Time Bonus
                         totalTimeSeconds={game.totalTimeSeconds}
                         attempts={game.attempts}
                         history={gameHistory[game.gameType] || []}
-                        hasActiveSession={activeSessions.has(game.gameId)}
+                        activeSessionTimeRemaining={activeSessionTimes[game.gameId] ?? null}
                         onPlay={() => {
                           if (isUnlocked && onStartGame && currentUnit) {
                             const playAllWordsOnStart =
