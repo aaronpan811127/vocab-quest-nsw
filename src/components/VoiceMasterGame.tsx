@@ -79,14 +79,6 @@ export const VoiceMasterGame = ({
     fetchWords(playAllWordsOnStart);
     startTimeRef.current = Date.now();
 
-  useEffect(() => {
-    if (showResults && !hasCelebrated.current) {
-      hasCelebrated.current = true;
-      const correctCount = questions.filter(q => q.isCorrect).length;
-      celebrate({ score: correctCount, totalQuestions: questions.length, gameName: 'Voice Master' });
-    }
-  }, [showResults, questions, celebrate]);
-
     return () => {
       if (synthRef.current) {
         synthRef.current.cancel();
@@ -103,6 +95,14 @@ export const VoiceMasterGame = ({
       setIsListening(false);
     };
   }, [unitId, playAllWordsOnStart]);
+
+  useEffect(() => {
+    if (showResults && !hasCelebrated.current) {
+      hasCelebrated.current = true;
+      const correctCount = questions.filter(q => q.isCorrect).length;
+      celebrate({ score: correctCount, totalQuestions: questions.length, gameName: 'Voice Master' });
+    }
+  }, [showResults, questions, celebrate]);
 
   // Keep refs in sync with state
   useEffect(() => {
