@@ -504,6 +504,7 @@ Game XP = (Avg Score over all attempts × 0.5) + Time Bonus
     attempts: number;
     icon: React.ComponentType<{ className?: string }>;
     contributesToXp: boolean;
+    maxAttempts: number | null;
   }>> = {};
 
   // Check if all games in previous sections are completed
@@ -530,6 +531,7 @@ Game XP = (Avg Score over all attempts × 0.5) + Time Bonus
     
     gamesBySection[section.code] = sectionGames.map(game => {
       const data = getGameData(game.game_type);
+      const maxAttempts = typeof game.rules?.max_attempts === 'number' ? game.rules.max_attempts : null;
       return {
         title: game.game_name,
         description: game.description || '',
@@ -544,6 +546,7 @@ Game XP = (Avg Score over all attempts × 0.5) + Time Bonus
         icon: getGameIcon(game.icon_name),
         contributesToXp: game.contributes_to_xp,
         requiredForUnlock: game.required_for_unlock,
+        maxAttempts,
       };
     });
   });
@@ -725,15 +728,18 @@ Game XP = (Avg Score over all attempts × 0.5) + Time Bonus
                         attempts={game.attempts}
                         history={gameHistory[game.gameType] || []}
                         activeSessionTimeRemaining={activeSessionTimes[game.gameId] ?? null}
+                        maxAttempts={game.maxAttempts}
                         onPlay={() => {
-                          if (isUnlocked && onStartGame && currentUnit) {
-                            const playAllWordsOnStart =
-                              game.isCompleted &&
-                              (game.gameType === "listening" ||
-                                game.gameType === "speaking" ||
-                                game.gameType === "writing");
+                          if (isUnlocked && !game.isCompleted || game.maxAttempts !== 1) {
+                            if (onStartGame && currentUnit) {
+                              const playAllWordsOnStart =
+                                game.isCompleted &&
+                                (game.gameType === "listening" ||
+                                  game.gameType === "speaking" ||
+                                  game.gameType === "writing");
 
-                            onStartGame(game.gameType, currentUnit.id, `Unit ${currentUnit.unitNumber}`, playAllWordsOnStart, game.gameId);
+                              onStartGame(game.gameType, currentUnit.id, `Unit ${currentUnit.unitNumber}`, playAllWordsOnStart, game.gameId);
+                            }
                           }
                         }}
                       />
