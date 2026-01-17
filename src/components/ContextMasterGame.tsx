@@ -61,11 +61,14 @@ export const ContextMasterGame = ({ unitId, unitTitle, onComplete, onBack }: Con
     alreadyCompleted, 
     previousScore, 
     startSession,
+    saveProgress,
     isLoading: sessionLoading 
   } = useTestSession();
   const startTimeRef = useRef<number>(Date.now());
   const hasCelebrated = useRef(false);
   const isSubmittingRef = useRef(false);
+  const sessionIdRef = useRef<string | null>(null);
+  const questionIdsRef = useRef<string[]>([]);
 
   // Timer time-up handler
   const handleTimeUp = useCallback(async () => {
@@ -170,54 +173,86 @@ export const ContextMasterGame = ({ unitId, unitTitle, onComplete, onBack }: Con
         throw new Error(data.error || 'Failed to load questions');
       }
 
-      // Format and randomize questions
-      const allQuestions = data.questions.map((q: any) => ({
+      // Format questions
+      const allQuestions: Question[] = data.questions.map((q: any) => ({
         id: q.id,
         question_text: q.question_text,
         options: typeof q.options === 'string' ? JSON.parse(q.options) : q.options,
         word: q.word
       }));
-
-      // Shuffle and take 15 questions
-      const shuffled = allQuestions.sort(() => Math.random() - 0.5);
-      const selectedQuestions = shuffled.slice(0, Math.min(15, shuffled.length));
-      setQuestions(selectedQuestions);
       
-      // Start or resume test session
-      if (selectedQuestions.length > 0) {
-        const testSession = await startSession({
-          unitId,
-          gameId: CONTEXT_MASTER_GAME_ID,
-          totalQuestions: selectedQuestions.length,
-          secondsPerQuestion: configuredSecondsPerQuestion
-        });
+      // Start or resume test session first to check for saved progress
+      const testSession = await startSession({
+        unitId,
+        gameId: CONTEXT_MASTER_GAME_ID,
+        totalQuestions: Math.min(15, allQuestions.length),
+        secondsPerQuestion: configuredSecondsPerQuestion
+      });
 
-        if (testSession) {
-          if (testSession.isExpired) {
-            // Session already expired - auto-submit
+      let selectedQuestions: Question[];
+      
+      // Check if we have saved session data with question order
+      if (testSession?.sessionData?.question_ids && testSession.sessionData.question_ids.length > 0) {
+        // Restore questions in the saved order
+        const questionMap = new Map(allQuestions.map(q => [q.id, q]));
+        selectedQuestions = testSession.sessionData.question_ids
+          .map(id => questionMap.get(id))
+          .filter((q): q is Question => q !== undefined);
+        
+        // Restore answers and current question
+        if (testSession.sessionData.selected_answers) {
+          setSelectedAnswers(testSession.sessionData.selected_answers);
+        }
+        if (typeof testSession.sessionData.current_question === 'number') {
+          setCurrentQuestion(testSession.sessionData.current_question);
+        }
+      } else {
+        // New session - shuffle and take 15 questions
+        const shuffled = allQuestions.sort(() => Math.random() - 0.5);
+        selectedQuestions = shuffled.slice(0, Math.min(15, shuffled.length));
+      }
+      
+      setQuestions(selectedQuestions);
+      questionIdsRef.current = selectedQuestions.map(q => q.id);
+
+      if (testSession) {
+        sessionIdRef.current = testSession.sessionId;
+        
+        // Save initial question order if new session
+        if (!testSession.resumed && selectedQuestions.length > 0) {
+          saveProgress({
+            sessionId: testSession.sessionId,
+            currentQuestion: 0,
+            selectedAnswers: [],
+            questionIds: selectedQuestions.map(q => q.id)
+          });
+        }
+        
+        if (testSession.isExpired) {
+          // Session already expired - auto-submit
+          toast({
+            title: "Session Expired",
+            description: "Your test time has expired. Submitting with current answers.",
+            variant: "destructive"
+          });
+          isSubmittingRef.current = true;
+          setSaving(true);
+          await submitTestInternal();
+          setShowResults(true);
+        } else {
+          // Set initial time from session
+          setInitialTimeRemaining(testSession.remainingSeconds);
+          startTimeRef.current = new Date(testSession.startedAt).getTime();
+          
+          if (testSession.resumed && testSession.sessionData) {
+            const answeredCount = testSession.sessionData.selected_answers?.filter((a: number) => a !== undefined && a !== -1).length || 0;
             toast({
-              title: "Session Expired",
-              description: "Your test time has expired. Submitting with current answers.",
-              variant: "destructive"
+              title: "Session Resumed",
+              description: `Continuing from question ${(testSession.sessionData.current_question || 0) + 1}. ${answeredCount} answered.`,
             });
-            isSubmittingRef.current = true;
-            setSaving(true);
-            await submitTestInternal();
-            setShowResults(true);
-          } else {
-            // Set initial time from session
-            setInitialTimeRemaining(testSession.remainingSeconds);
-            startTimeRef.current = new Date(testSession.startedAt).getTime();
-            
-            if (testSession.resumed) {
-              toast({
-                title: "Session Resumed",
-                description: `You have ${Math.floor(testSession.remainingSeconds / 60)}:${(testSession.remainingSeconds % 60).toString().padStart(2, '0')} remaining.`,
-              });
-            }
-            
-            setTimerActive(true);
           }
+          
+          setTimerActive(true);
         }
       }
 
@@ -229,15 +264,36 @@ export const ContextMasterGame = ({ unitId, unitTitle, onComplete, onBack }: Con
     }
   };
 
-  const handleAnswerSelect = (answerIndex: number) => {
+  const handleAnswerSelect = async (answerIndex: number) => {
     const newAnswers = [...selectedAnswers];
     newAnswers[currentQuestion] = answerIndex;
     setSelectedAnswers(newAnswers);
+    
+    // Save progress after each answer
+    if (sessionIdRef.current) {
+      saveProgress({
+        sessionId: sessionIdRef.current,
+        currentQuestion,
+        selectedAnswers: newAnswers,
+        questionIds: questionIdsRef.current
+      });
+    }
   };
 
   const handleNext = async () => {
     if (currentQuestion < questions.length - 1) {
-      setCurrentQuestion(currentQuestion + 1);
+      const nextQuestion = currentQuestion + 1;
+      setCurrentQuestion(nextQuestion);
+      
+      // Save progress when moving to next question
+      if (sessionIdRef.current) {
+        saveProgress({
+          sessionId: sessionIdRef.current,
+          currentQuestion: nextQuestion,
+          selectedAnswers,
+          questionIds: questionIdsRef.current
+        });
+      }
     } else {
       if (isSubmittingRef.current) return;
       isSubmittingRef.current = true;

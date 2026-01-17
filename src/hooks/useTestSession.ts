@@ -2,6 +2,13 @@ import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
+interface SessionData {
+  current_question: number;
+  selected_answers: number[];
+  question_ids: string[];
+  updated_at: string;
+}
+
 interface TestSession {
   sessionId: string;
   startedAt: string;
@@ -9,6 +16,7 @@ interface TestSession {
   remainingSeconds: number;
   isExpired: boolean;
   resumed: boolean;
+  sessionData: SessionData | null;
 }
 
 interface UseTestSessionResult {
@@ -23,6 +31,12 @@ interface UseTestSessionResult {
     totalQuestions: number;
     secondsPerQuestion: number;
   }) => Promise<TestSession | null>;
+  saveProgress: (params: {
+    sessionId: string;
+    currentQuestion: number;
+    selectedAnswers: number[];
+    questionIds: string[];
+  }) => Promise<boolean>;
 }
 
 export const useTestSession = (): UseTestSessionResult => {
@@ -79,7 +93,8 @@ export const useTestSession = (): UseTestSessionResult => {
         totalDurationSeconds: data.total_duration_seconds,
         remainingSeconds: data.remaining_seconds,
         isExpired: data.is_expired,
-        resumed: data.resumed
+        resumed: data.resumed,
+        sessionData: data.session_data || null
       };
 
       setSession(testSession);
@@ -94,12 +109,42 @@ export const useTestSession = (): UseTestSessionResult => {
     }
   }, [user]);
 
+  const saveProgress = useCallback(async ({
+    sessionId,
+    currentQuestion,
+    selectedAnswers,
+    questionIds
+  }: {
+    sessionId: string;
+    currentQuestion: number;
+    selectedAnswers: number[];
+    questionIds: string[];
+  }): Promise<boolean> => {
+    try {
+      const { data, error: invokeError } = await supabase.functions.invoke('save-test-progress', {
+        body: {
+          session_id: sessionId,
+          current_question: currentQuestion,
+          selected_answers: selectedAnswers,
+          question_ids: questionIds
+        }
+      });
+
+      if (invokeError) throw invokeError;
+      return data?.success === true;
+    } catch (err) {
+      console.error('Error saving test progress:', err);
+      return false;
+    }
+  }, []);
+
   return {
     session,
     isLoading,
     error,
     alreadyCompleted,
     previousScore,
-    startSession
+    startSession,
+    saveProgress
   };
 };
