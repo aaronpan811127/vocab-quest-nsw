@@ -255,6 +255,15 @@ export const VoiceMasterGame = ({
 
     recognitionRef.current.onresult = (event) => {
       const transcript = event.results[0][0].transcript.trim().toLowerCase();
+      // Stop listening immediately after getting result
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.stop();
+        } catch (e) {
+          // Ignore stop errors
+        }
+      }
+      setIsListening(false);
       handleSpeechResult(transcript);
     };
 
