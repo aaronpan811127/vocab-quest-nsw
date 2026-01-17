@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -35,7 +35,7 @@ interface GameCardProps {
   totalTimeSeconds?: number;
   attempts?: number;
   history?: GameHistoryEntry[];
-  hasActiveSession?: boolean;
+  activeSessionTimeRemaining?: number | null; // seconds remaining, null if no active session
 }
 
 const gameIcons: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -55,6 +55,13 @@ const formatTime = (seconds: number): string => {
   return `${hours}h ${remainingMins}m`;
 };
 
+const formatTimeRemaining = (seconds: number): string => {
+  if (seconds <= 0) return "0:00";
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
+};
+
 export const GameCard = ({
   title,
   description,
@@ -67,11 +74,35 @@ export const GameCard = ({
   totalTimeSeconds = 0,
   attempts = 0,
   history = [],
-  hasActiveSession = false,
+  activeSessionTimeRemaining = null,
 }: GameCardProps) => {
   const [showHistory, setShowHistory] = useState(false);
+  const [timeRemaining, setTimeRemaining] = useState(activeSessionTimeRemaining);
   const Icon = gameIcons[gameType] || Target;
   const hasStats = totalXp > 0 || attempts > 0;
+  const hasActiveSession = activeSessionTimeRemaining !== null && activeSessionTimeRemaining > 0;
+
+  // Sync state when prop changes
+  useEffect(() => {
+    setTimeRemaining(activeSessionTimeRemaining);
+  }, [activeSessionTimeRemaining]);
+
+  // Live countdown effect
+  useEffect(() => {
+    if (!hasActiveSession || timeRemaining === null || timeRemaining <= 0) return;
+    
+    const interval = setInterval(() => {
+      setTimeRemaining(prev => {
+        if (prev === null || prev <= 1) {
+          clearInterval(interval);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [hasActiveSession]);
 
   return (
     <>
@@ -94,12 +125,19 @@ export const GameCard = ({
               <h3 className="font-semibold text-lg">{title}</h3>
             </div>
 
-            {isCompleted && (
+            {isCompleted ? (
               <div className="flex items-center gap-1 text-success">
                 <Trophy className="h-4 w-4" />
                 <Star className="h-4 w-4 fill-current" />
               </div>
-            )}
+            ) : hasActiveSession && timeRemaining !== null ? (
+              <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-warning/20 border border-warning/30 animate-pulse">
+                <Clock className="h-3.5 w-3.5 text-warning" />
+                <span className="text-xs font-semibold text-warning">
+                  {formatTimeRemaining(timeRemaining)}
+                </span>
+              </div>
+            ) : null}
           </div>
 
           {/* Description */}
