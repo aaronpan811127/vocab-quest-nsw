@@ -7,6 +7,16 @@ import { LeaderboardDialog } from "./LeaderboardDialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Target,
   Crown,
   ArrowRight,
@@ -15,6 +25,7 @@ import {
   Trophy,
   CheckCircle2,
   Lock,
+  AlertTriangle,
 } from "lucide-react";
 import { useProfile } from "@/hooks/useProfile";
 import { useAuth } from "@/contexts/AuthContext";
@@ -76,6 +87,12 @@ export const Dashboard = ({ onStartGame, onBack, selectedUnitId, onUnitChange }:
     Record<string, Array<{ id: string; score: number; created_at: string }>>
   >({});
   const [activeSessionTimes, setActiveSessionTimes] = useState<Record<string, number>>({});
+  const [testConfirmDialog, setTestConfirmDialog] = useState<{
+    open: boolean;
+    gameType: string;
+    gameId: string;
+    gameName: string;
+  } | null>(null);
 
   useEffect(() => {
     if (user && selectedTestType) {
@@ -821,15 +838,25 @@ Game XP = (Avg Score over all attempts × 0.5) + Time Bonus
                         maxAttempts={game.maxAttempts}
                         sectionCode={section.code}
                         onPlay={() => {
-                          if (isUnlocked && !game.isCompleted || game.maxAttempts !== 1) {
+                          if (isUnlocked && (!game.isCompleted || game.maxAttempts !== 1)) {
                             if (onStartGame && currentUnit) {
-                              const playAllWordsOnStart =
-                                game.isCompleted &&
-                                (game.gameType === "listening" ||
-                                  game.gameType === "speaking" ||
-                                  game.gameType === "writing");
+                              // Show confirmation dialog for test games (single attempt)
+                              if (game.maxAttempts === 1 && !activeSessionTimes[game.gameId]) {
+                                setTestConfirmDialog({
+                                  open: true,
+                                  gameType: game.gameType,
+                                  gameId: game.gameId,
+                                  gameName: game.title,
+                                });
+                              } else {
+                                const playAllWordsOnStart =
+                                  game.isCompleted &&
+                                  (game.gameType === "listening" ||
+                                    game.gameType === "speaking" ||
+                                    game.gameType === "writing");
 
-                              onStartGame(game.gameType, currentUnit.id, `Unit ${currentUnit.unitNumber}`, playAllWordsOnStart, game.gameId);
+                                onStartGame(game.gameType, currentUnit.id, `Unit ${currentUnit.unitNumber}`, playAllWordsOnStart, game.gameId);
+                              }
                             }
                           }
                         }}
@@ -879,6 +906,49 @@ Game XP = (Avg Score over all attempts × 0.5) + Time Bonus
             ))}
           </div>
         </div>
+
+        {/* Test Confirmation Dialog */}
+        <AlertDialog 
+          open={testConfirmDialog?.open ?? false} 
+          onOpenChange={(open) => !open && setTestConfirmDialog(null)}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-warning" />
+                Start {testConfirmDialog?.gameName}?
+              </AlertDialogTitle>
+              <AlertDialogDescription className="space-y-3">
+                <p>
+                  This test allows <strong>only one attempt</strong>. Once you start, you cannot retake it.
+                </p>
+                <div className="p-3 rounded-lg bg-warning/10 border border-warning/30 text-warning text-sm">
+                  <strong>Important:</strong> Make sure you're ready before starting. Your score will be final.
+                </div>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => {
+                  if (testConfirmDialog && onStartGame && currentUnit) {
+                    onStartGame(
+                      testConfirmDialog.gameType, 
+                      currentUnit.id, 
+                      `Unit ${currentUnit.unitNumber}`, 
+                      false, 
+                      testConfirmDialog.gameId
+                    );
+                  }
+                  setTestConfirmDialog(null);
+                }}
+                className="bg-primary hover:bg-primary/90"
+              >
+                I'm Ready, Start Test
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );
