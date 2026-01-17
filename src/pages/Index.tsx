@@ -15,6 +15,7 @@ import { ContextMasterGame } from "@/components/ContextMasterGame";
 import { ClozeChallengeGame } from "@/components/ClozeChallengeGame";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/useProfile";
+import { useExpiredSessionCheck } from "@/hooks/useExpiredSessionCheck";
 import { TestType } from "@/contexts/TestTypeContext";
 
 interface GameState {
@@ -30,6 +31,9 @@ const Index = () => {
   const [selectedUnitId, setSelectedUnitId] = useState<string | null>(null);
   const { user } = useAuth();
   const { profile, updateProfile } = useProfile();
+  
+  // Check for expired test sessions on dashboard load
+  useExpiredSessionCheck();
 
   // Load saved unit from profile on mount
   useEffect(() => {

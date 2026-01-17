@@ -18,6 +18,7 @@ import { useTestType } from "@/contexts/TestTypeContext";
 import { useToast } from "@/hooks/use-toast";
 import { useCelebration } from "@/hooks/useCelebration";
 import { useGameTimer } from "@/hooks/useGameTimer";
+import { useTestSession } from "@/hooks/useTestSession";
 import { GameTimer } from "@/components/GameTimer";
 
 interface Question {
@@ -47,14 +48,20 @@ export const ClozeChallengeGame = ({ unitId, unitTitle, onComplete, onBack }: Cl
   const [saving, setSaving] = useState(false);
   const [serverScore, setServerScore] = useState(0);
   const [serverCorrectCount, setServerCorrectCount] = useState(0);
-  const [alreadyAttempted, setAlreadyAttempted] = useState(false);
-  const [previousScore, setPreviousScore] = useState<number | null>(null);
   const [secondsPerQuestion, setSecondsPerQuestion] = useState(DEFAULT_SECONDS_PER_QUESTION);
   const [timerActive, setTimerActive] = useState(false);
+  const [initialTimeRemaining, setInitialTimeRemaining] = useState<number | undefined>(undefined);
   const { user } = useAuth();
   const { selectedTestType } = useTestType();
   const { toast } = useToast();
   const { celebrate } = useCelebration();
+  const { 
+    session, 
+    alreadyCompleted, 
+    previousScore, 
+    startSession,
+    isLoading: sessionLoading 
+  } = useTestSession();
   const startTimeRef = useRef<number>(Date.now());
   const hasCelebrated = useRef(false);
   const isSubmittingRef = useRef(false);
@@ -80,12 +87,12 @@ export const ClozeChallengeGame = ({ unitId, unitTitle, onComplete, onBack }: Cl
     totalQuestions: questions.length,
     secondsPerQuestion,
     onTimeUp: handleTimeUp,
-    isActive: timerActive && !showResults && !loading && questions.length > 0
+    isActive: timerActive && !showResults && !loading && questions.length > 0,
+    initialTimeRemaining
   });
 
   useEffect(() => {
     checkAttemptAndLoad();
-    startTimeRef.current = Date.now();
   }, [unitId]);
 
   useEffect(() => {
@@ -114,29 +121,14 @@ export const ClozeChallengeGame = ({ unitId, unitTitle, onComplete, onBack }: Cl
         .eq('id', CLOZE_CHALLENGE_GAME_ID)
         .single();
 
+      let configuredSecondsPerQuestion = DEFAULT_SECONDS_PER_QUESTION;
       if (!gameError && gameData?.rules) {
         const rules = gameData.rules as Record<string, unknown>;
         const configuredSeconds = rules.seconds_per_question;
         if (typeof configuredSeconds === 'number' && configuredSeconds > 0) {
-          setSecondsPerQuestion(configuredSeconds);
+          configuredSecondsPerQuestion = configuredSeconds;
+          setSecondsPerQuestion(configuredSecondsPerQuestion);
         }
-      }
-
-      // Check if already attempted
-      const { data: attempts, error: attemptError } = await supabase
-        .from('game_attempts')
-        .select('score')
-        .eq('user_id', user.id)
-        .eq('unit_id', unitId)
-        .eq('game_id', CLOZE_CHALLENGE_GAME_ID);
-
-      if (attemptError) throw attemptError;
-
-      if (attempts && attempts.length > 0) {
-        setAlreadyAttempted(true);
-        setPreviousScore(attempts[0].score);
-        setLoading(false);
-        return;
       }
 
       // Fetch unit words
@@ -185,9 +177,42 @@ export const ClozeChallengeGame = ({ unitId, unitTitle, onComplete, onBack }: Cl
       const selectedQuestions = shuffled.slice(0, Math.min(15, shuffled.length));
       setQuestions(selectedQuestions);
       
-      // Start timer after questions are loaded
+      // Start or resume test session
       if (selectedQuestions.length > 0) {
-        setTimerActive(true);
+        const testSession = await startSession({
+          unitId,
+          gameId: CLOZE_CHALLENGE_GAME_ID,
+          totalQuestions: selectedQuestions.length,
+          secondsPerQuestion: configuredSecondsPerQuestion
+        });
+
+        if (testSession) {
+          if (testSession.isExpired) {
+            // Session already expired - auto-submit
+            toast({
+              title: "Session Expired",
+              description: "Your test time has expired. Submitting with current answers.",
+              variant: "destructive"
+            });
+            isSubmittingRef.current = true;
+            setSaving(true);
+            await submitTestInternal();
+            setShowResults(true);
+          } else {
+            // Set initial time from session
+            setInitialTimeRemaining(testSession.remainingSeconds);
+            startTimeRef.current = new Date(testSession.startedAt).getTime();
+            
+            if (testSession.resumed) {
+              toast({
+                title: "Session Resumed",
+                description: `You have ${Math.floor(testSession.remainingSeconds / 60)}:${(testSession.remainingSeconds % 60).toString().padStart(2, '0')} remaining.`,
+              });
+            }
+            
+            setTimerActive(true);
+          }
+        }
       }
 
     } catch (err) {
@@ -274,7 +299,7 @@ export const ClozeChallengeGame = ({ unitId, unitTitle, onComplete, onBack }: Cl
     );
   };
 
-  if (loading) {
+  if (loading || sessionLoading) {
     return (
       <div className="min-h-screen bg-gradient-hero p-6">
         <div className="max-w-4xl mx-auto space-y-6">
@@ -289,7 +314,7 @@ export const ClozeChallengeGame = ({ unitId, unitTitle, onComplete, onBack }: Cl
     );
   }
 
-  if (alreadyAttempted) {
+  if (alreadyCompleted) {
     return (
       <div className="min-h-screen bg-gradient-hero p-6">
         <div className="max-w-4xl mx-auto">

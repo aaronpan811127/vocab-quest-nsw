@@ -5,29 +5,49 @@ interface UseGameTimerProps {
   secondsPerQuestion: number;
   onTimeUp: () => void;
   isActive: boolean;
+  initialTimeRemaining?: number; // For resuming sessions
 }
 
 export const useGameTimer = ({
   totalQuestions,
   secondsPerQuestion,
   onTimeUp,
-  isActive
+  isActive,
+  initialTimeRemaining
 }: UseGameTimerProps) => {
   const totalTime = totalQuestions * secondsPerQuestion;
-  const [timeRemaining, setTimeRemaining] = useState(totalTime);
+  const [timeRemaining, setTimeRemaining] = useState(initialTimeRemaining ?? totalTime);
   const onTimeUpRef = useRef(onTimeUp);
   const hasTriggeredRef = useRef(false);
+  const initializedRef = useRef(false);
 
   // Keep callback ref updated
   useEffect(() => {
     onTimeUpRef.current = onTimeUp;
   }, [onTimeUp]);
 
-  // Reset timer when total time changes
+  // Handle initial time remaining from resumed session
   useEffect(() => {
-    setTimeRemaining(totalTime);
-    hasTriggeredRef.current = false;
-  }, [totalTime]);
+    if (initialTimeRemaining !== undefined && !initializedRef.current) {
+      initializedRef.current = true;
+      setTimeRemaining(initialTimeRemaining);
+      hasTriggeredRef.current = false;
+      
+      // Check if already expired on load
+      if (initialTimeRemaining <= 0) {
+        hasTriggeredRef.current = true;
+        setTimeout(() => onTimeUpRef.current(), 0);
+      }
+    }
+  }, [initialTimeRemaining]);
+
+  // Reset timer when total time changes (but not if we have initial time remaining)
+  useEffect(() => {
+    if (initialTimeRemaining === undefined) {
+      setTimeRemaining(totalTime);
+      hasTriggeredRef.current = false;
+    }
+  }, [totalTime, initialTimeRemaining]);
 
   useEffect(() => {
     if (!isActive || timeRemaining <= 0) return;
@@ -56,7 +76,7 @@ export const useGameTimer = ({
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   }, []);
 
-  const percentage = (timeRemaining / totalTime) * 100;
+  const percentage = totalTime > 0 ? (timeRemaining / totalTime) * 100 : 0;
 
   const getTimerColor = useCallback(() => {
     if (percentage > 50) return 'text-success';

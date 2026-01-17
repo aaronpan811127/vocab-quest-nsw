@@ -101,7 +101,9 @@ export type Database = {
           id: string
           passage_id: string | null
           score: number
+          started_at: string | null
           time_spent_seconds: number
+          total_duration_seconds: number | null
           total_questions: number
           unit_id: string
           user_id: string
@@ -114,7 +116,9 @@ export type Database = {
           id?: string
           passage_id?: string | null
           score?: number
+          started_at?: string | null
           time_spent_seconds?: number
+          total_duration_seconds?: number | null
           total_questions?: number
           unit_id: string
           user_id: string
@@ -127,7 +131,9 @@ export type Database = {
           id?: string
           passage_id?: string | null
           score?: number
+          started_at?: string | null
           time_spent_seconds?: number
+          total_duration_seconds?: number | null
           total_questions?: number
           unit_id?: string
           user_id?: string
