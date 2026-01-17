@@ -75,14 +75,15 @@ serve(async (req) => {
 
     const maxAttempts = gameData.rules?.max_attempts;
 
-    // Check if user has already attempted this test (single attempt games)
+    // Check if user has already COMPLETED this test (single attempt games)
     if (maxAttempts === 1) {
       const { data: existingAttempts, error: attemptError } = await supabase
         .from('game_attempts')
-        .select('id')
+        .select('id, completed')
         .eq('user_id', user.id)
         .eq('unit_id', unit_id)
-        .eq('game_id', game_id);
+        .eq('game_id', game_id)
+        .eq('completed', true); // Only check completed attempts
 
       if (attemptError) {
         console.error('Error checking existing attempts:', attemptError);
@@ -96,6 +97,17 @@ serve(async (req) => {
         );
       }
     }
+
+    // Check for an active (incomplete) session and update it instead of creating new
+    const { data: activeSession } = await supabase
+      .from('game_attempts')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('unit_id', unit_id)
+      .eq('game_id', game_id)
+      .eq('completed', false)
+      .not('started_at', 'is', null)
+      .single();
 
     // Get all question IDs from answers
     const questionIds = answers.map((a: { question_id: string }) => a.question_id);
@@ -159,31 +171,55 @@ serve(async (req) => {
     const score = Math.round((correctCount / totalQuestions) * 100);
     const isPerfect = correctCount === totalQuestions;
 
-    // Insert game attempt
-    const { data: attemptData, error: attemptInsertError } = await supabase
-      .from('game_attempts')
-      .insert({
-        user_id: user.id,
-        unit_id,
-        game_id,
-        score,
-        correct_answers: correctCount,
-        total_questions: totalQuestions,
-        time_spent_seconds,
-        completed: true
-      })
-      .select('id')
-      .single();
+    // Update existing session or insert new game attempt
+    let attemptId: string;
+    
+    if (activeSession) {
+      // Update the existing session record
+      const { error: updateError } = await supabase
+        .from('game_attempts')
+        .update({
+          score,
+          correct_answers: correctCount,
+          total_questions: totalQuestions,
+          time_spent_seconds,
+          completed: true
+        })
+        .eq('id', activeSession.id);
 
-    if (attemptInsertError) {
-      console.error('Error inserting attempt:', attemptInsertError);
-      throw attemptInsertError;
+      if (updateError) {
+        console.error('Error updating attempt:', updateError);
+        throw updateError;
+      }
+      attemptId = activeSession.id;
+    } else {
+      // Insert new game attempt
+      const { data: attemptData, error: attemptInsertError } = await supabase
+        .from('game_attempts')
+        .insert({
+          user_id: user.id,
+          unit_id,
+          game_id,
+          score,
+          correct_answers: correctCount,
+          total_questions: totalQuestions,
+          time_spent_seconds,
+          completed: true
+        })
+        .select('id')
+        .single();
+
+      if (attemptInsertError) {
+        console.error('Error inserting attempt:', attemptInsertError);
+        throw attemptInsertError;
+      }
+      attemptId = attemptData.id;
     }
 
     // Insert incorrect answers for review
     if (incorrectAnswers.length > 0) {
       const incorrectRecords = incorrectAnswers.map(ia => ({
-        attempt_id: attemptData.id,
+        attempt_id: attemptId,
         question_id: ia.question_id,
         user_answer: ia.user_answer
       }));
@@ -249,7 +285,7 @@ serve(async (req) => {
         correct_count: correctCount,
         total_questions: totalQuestions,
         is_perfect: isPerfect,
-        attempt_id: attemptData.id,
+        attempt_id: attemptId,
         game_xp: 0, // No XP for test games
         incorrect_count: incorrectAnswers.length
       }),
