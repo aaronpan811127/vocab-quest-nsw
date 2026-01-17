@@ -101,14 +101,14 @@ export const GameCard = ({
     setTimeRemaining(activeSessionTimeRemaining);
   }, [activeSessionTimeRemaining]);
 
-  // Live countdown effect
+  // Live countdown effect - use ref to track if interval is running
   useEffect(() => {
-    if (!hasActiveSession || timeRemaining === null || timeRemaining <= 0) return;
+    // Only start if we have a valid time remaining
+    if (timeRemaining === null || timeRemaining <= 0) return;
     
     const interval = setInterval(() => {
       setTimeRemaining(prev => {
         if (prev === null || prev <= 1) {
-          clearInterval(interval);
           return 0;
         }
         return prev - 1;
@@ -116,7 +116,7 @@ export const GameCard = ({
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [hasActiveSession]);
+  }, [timeRemaining !== null && timeRemaining > 0]);
 
   return (
     <>
