@@ -150,9 +150,25 @@ export const Dashboard = ({ onStartGame, onBack, selectedUnitId, onUnitChange }:
       testTypeUnits?.forEach((u) => currentTestTypeUnitIds.add(u.id));
     }
 
+    const requiredGames = getRequiredGames();
+    const requiredGameIds = new Set(requiredGames.map((g) => g.game_id));
+
+    // Map game_id -> max_attempts (used to treat single-attempt tests as completed once attempted)
+    const gameMaxAttemptsMap = new Map<string, number | null>();
+    gamesConfig.forEach((g) => {
+      const raw = (g.rules as any)?.max_attempts;
+      const parsed =
+        typeof raw === "number"
+          ? raw
+          : typeof raw === "string" && raw.trim() !== ""
+            ? Number(raw)
+            : null;
+      gameMaxAttemptsMap.set(g.game_id, Number.isFinite(parsed as number) ? (parsed as number) : null);
+    });
+
     const { data: progress, error: progressError } = await supabase
       .from("user_progress")
-      .select("unit_id, completed")
+      .select("unit_id, game_id, completed, attempts, best_score")
       .eq("user_id", user.id);
 
     if (progressError) {
@@ -160,20 +176,62 @@ export const Dashboard = ({ onStartGame, onBack, selectedUnitId, onUnitChange }:
       return;
     }
 
-    const unitCompletionMap = new Map<string, number>();
-    progress?.forEach((p) => {
-      // Only count progress for units in the current test type
-      if (p.completed && currentTestTypeUnitIds.has(p.unit_id)) {
-        unitCompletionMap.set(p.unit_id, (unitCompletionMap.get(p.unit_id) || 0) + 1);
-      }
-    });
+    type ProgressRow = {
+      unit_id: string;
+      game_id: string;
+      completed: boolean;
+      attempts: number;
+      best_score: number;
+    };
+
+    const progressRows = (progress ?? []) as ProgressRow[];
+
+    const isEffectivelyCompleted = (p: ProgressRow) => {
+      const maxAttempts = gameMaxAttemptsMap.get(p.game_id);
+      if (maxAttempts === 1 && ((p.attempts || 0) > 0 || (p.best_score || 0) > 0)) return true;
+      return !!p.completed;
+    };
 
     // A unit is complete when all required games are completed
-    const requiredGamesCount = getRequiredGames().length || 4;
     let unitsCompleted = 0;
-    unitCompletionMap.forEach((count) => {
-      if (count >= requiredGamesCount) unitsCompleted++;
-    });
+
+    if (requiredGames.length > 0) {
+      const progressByUnit = new Map<string, ProgressRow[]>();
+
+      progressRows.forEach((p) => {
+        if (!currentTestTypeUnitIds.has(p.unit_id)) return;
+        if (!requiredGameIds.has(p.game_id)) return;
+        const existing = progressByUnit.get(p.unit_id) ?? [];
+        existing.push(p);
+        progressByUnit.set(p.unit_id, existing);
+      });
+
+      currentTestTypeUnitIds.forEach((unitId) => {
+        const unitRows = progressByUnit.get(unitId) ?? [];
+        const unitGameMap = new Map<string, ProgressRow>(unitRows.map((r) => [r.game_id, r]));
+
+        const allRequiredDone = requiredGames.every((rg) => {
+          const row = unitGameMap.get(rg.game_id);
+          if (!row) return false;
+          return isEffectivelyCompleted(row);
+        });
+
+        if (allRequiredDone) unitsCompleted++;
+      });
+    } else {
+      // Fallback to legacy counting
+      const unitCompletionMap = new Map<string, number>();
+      progressRows.forEach((p) => {
+        if (currentTestTypeUnitIds.has(p.unit_id) && isEffectivelyCompleted(p)) {
+          unitCompletionMap.set(p.unit_id, (unitCompletionMap.get(p.unit_id) || 0) + 1);
+        }
+      });
+
+      const requiredGamesCount = 4;
+      unitCompletionMap.forEach((count) => {
+        if (count >= requiredGamesCount) unitsCompleted++;
+      });
+    }
 
     setUserStats({ avgScore, unitsCompleted });
   };
@@ -790,7 +848,7 @@ Game XP = (Avg Score over all attempts × 0.5) + Time Bonus
               <h2 className="text-lg sm:text-2xl font-bold">All Units</h2>
               <Badge variant="secondary" className="gap-1">
                 <Target className="h-3 w-3" />
-                {userStats.unitsCompleted}/{units.length}
+                {units.filter(u => u.sectionStats.every(s => s.totalGames > 0 && s.completedGames === s.totalGames)).length}/{units.length}
               </Badge>
             </div>
             <Button variant="ghost" size="sm" onClick={() => setShowAllUnits(!showAllUnits)}>
