@@ -19,6 +19,7 @@ const buttonVariants = cva(
         game: "bg-gradient-secondary text-accent-foreground hover:scale-105 transform shadow-card border border-accent/20",
         success: "bg-gradient-success text-success-foreground hover:bg-success/80 shadow-button",
         gaming: "bg-card/10 backdrop-blur-md border border-primary/20 text-foreground hover:border-primary/40 hover:bg-card/20",
+        warning: "bg-warning text-warning-foreground hover:bg-warning/90 shadow-button",
       },
       size: {
         default: "h-10 px-4 py-2",

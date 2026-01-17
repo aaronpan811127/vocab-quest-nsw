@@ -75,6 +75,7 @@ export const Dashboard = ({ onStartGame, onBack, selectedUnitId, onUnitChange }:
   const [gameHistory, setGameHistory] = useState<
     Record<string, Array<{ id: string; score: number; created_at: string }>>
   >({});
+  const [activeSessions, setActiveSessions] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (user && selectedTestType) {
@@ -387,6 +388,42 @@ export const Dashboard = ({ onStartGame, onBack, selectedUnitId, onUnitChange }:
     });
 
     setGameProgress(progress);
+    
+    // Fetch active (incomplete) test sessions for this unit
+    await fetchActiveSessions(unitId);
+  };
+
+  const fetchActiveSessions = async (unitId: string) => {
+    if (!user) return;
+
+    const { data, error } = await supabase
+      .from("game_attempts")
+      .select("game_id, started_at, total_duration_seconds")
+      .eq("user_id", user.id)
+      .eq("unit_id", unitId)
+      .eq("completed", false)
+      .not("started_at", "is", null);
+
+    if (error) {
+      console.error("Error fetching active sessions:", error);
+      return;
+    }
+
+    const activeGameIds = new Set<string>();
+    const now = Date.now();
+
+    data?.forEach((session) => {
+      if (session.started_at && session.total_duration_seconds) {
+        const startedAt = new Date(session.started_at).getTime();
+        const expiresAt = startedAt + (session.total_duration_seconds * 1000);
+        // Only mark as active if not yet expired
+        if (now < expiresAt) {
+          activeGameIds.add(session.game_id);
+        }
+      }
+    });
+
+    setActiveSessions(activeGameIds);
   };
 
   const displayName = profile?.username || user?.email?.split("@")[0] || "Player";
@@ -686,6 +723,7 @@ Game XP = (Avg Score over all attempts × 0.5) + Time Bonus
                         totalTimeSeconds={game.totalTimeSeconds}
                         attempts={game.attempts}
                         history={gameHistory[game.gameType] || []}
+                        hasActiveSession={activeSessions.has(game.gameId)}
                         onPlay={() => {
                           if (isUnlocked && onStartGame && currentUnit) {
                             const playAllWordsOnStart =
