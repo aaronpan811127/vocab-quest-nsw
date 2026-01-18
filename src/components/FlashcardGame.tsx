@@ -544,14 +544,9 @@ export const FlashcardGame = ({ unitId, unitTitle, gameId, onComplete, onBack }:
             <ArrowLeft className="h-4 w-4" />
           </Button>
 
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" onClick={handleShuffle}>
-              <Shuffle className="h-4 w-4" />
-            </Button>
-            <Button variant="ghost" size="sm" onClick={handleReset}>
-              <RotateCcw className="h-4 w-4" />
-            </Button>
-          </div>
+          <Button variant="ghost" size="sm" onClick={handleShuffle}>
+            <Shuffle className="h-4 w-4" />
+          </Button>
 
           <Button 
             variant="game" 
@@ -560,7 +555,7 @@ export const FlashcardGame = ({ unitId, unitTitle, gameId, onComplete, onBack }:
             size="sm"
           >
             <Check className="h-4 w-4 mr-1" />
-            Learned
+            Got It
           </Button>
 
           <Button 
