@@ -204,18 +204,23 @@ export const OddOneOutGame = ({ unitId, unitTitle, gameId, onComplete, onBack }:
       
       // Calculate how many more words we need to fill 4 options
       // Options: base word + synonyms + odd word = should total 4
-      const neededCount = 3 - availableSynonyms.length; // We need 3 besides oddWord, base word counts as 1
-      const fillerWords = neededCount > 0 
-        ? getRandomUnitWords([word.word, ...availableSynonyms, oddWord], neededCount)
+      // We need 3 "related" words (base + synonyms + fillers) plus 1 odd word
+      const relatedCount = 3;
+      const currentRelated = 1 + availableSynonyms.length; // base word + synonyms
+      const neededFillers = Math.max(0, relatedCount - currentRelated);
+      const fillerWords = neededFillers > 0 
+        ? getRandomUnitWords([word.word, ...availableSynonyms, oddWord], neededFillers)
         : [];
       
-      // Build options: base word + synonyms + filler words + odd word
-      const options = [word.word, ...availableSynonyms, ...fillerWords, oddWord];
+      // Build related words (not the odd one)
+      const relatedWords = [word.word, ...availableSynonyms, ...fillerWords].slice(0, 3);
       
-      if (options.length >= 4) {
-        const finalOptions = options.slice(0, 4).sort(() => Math.random() - 0.5);
+      // Build final options: exactly 3 related + 1 odd word, then shuffle
+      const allOptions = [...relatedWords, oddWord];
+      
+      if (allOptions.length === 4) {
+        const finalOptions = allOptions.sort(() => Math.random() - 0.5);
         
-        const relatedWords = [word.word, ...availableSynonyms, ...fillerWords].filter(w => w !== oddWord);
         generatedQuestions.push({
           options: finalOptions,
           oddOneOut: oddWord,
@@ -247,16 +252,22 @@ export const OddOneOutGame = ({ unitId, unitTitle, gameId, onComplete, onBack }:
       // Use word2 as the odd one (different meaning entirely)
       const oddWord = word2.word;
       
-      // Fill remaining slots with unit words if needed
-      const neededCount = 3 - availableSynonyms.length;
-      const fillerWords = neededCount > 0
-        ? getRandomUnitWords([word1.word, ...availableSynonyms, oddWord], neededCount)
+      // We need exactly 3 related words + 1 odd word
+      const relatedCount = 3;
+      const currentRelated = 1 + availableSynonyms.length; // base word + synonyms
+      const neededFillers = Math.max(0, relatedCount - currentRelated);
+      const fillerWords = neededFillers > 0
+        ? getRandomUnitWords([word1.word, ...availableSynonyms, oddWord], neededFillers)
         : [];
       
-      const options = [word1.word, ...availableSynonyms, ...fillerWords, oddWord];
+      // Build related words (not the odd one)
+      const relatedWords = [word1.word, ...availableSynonyms, ...fillerWords].slice(0, 3);
       
-      if (options.length >= 4) {
-        const finalOptions = options.slice(0, 4).sort(() => Math.random() - 0.5);
+      // Build final options: exactly 3 related + 1 odd word, then shuffle
+      const allOptions = [...relatedWords, oddWord];
+      
+      if (allOptions.length === 4) {
+        const finalOptions = allOptions.sort(() => Math.random() - 0.5);
         
         generatedQuestions.push({
           options: finalOptions,
