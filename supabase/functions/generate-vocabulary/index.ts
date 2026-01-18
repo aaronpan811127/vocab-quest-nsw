@@ -77,7 +77,7 @@ serve(async (req) => {
     const prompt = `Generate vocabulary data for these English words: ${words.join(", ")}
 
 For each word, provide:
-1. A clear, concise definition (1-2 sentences). Use child friendly meaning where possible
+1. A clear, concise definition (1-2 sentences). Use child friendly meaning where possible. IMPORTANT: The definition must NOT contain the word itself or any form of the word (e.g., for "happy" don't use "happy", "happiness", "happily" in the definition).
 2. 3-4 synonyms
 3. 1-2 antonyms (if applicable, otherwise empty array)
 4. 2 example sentences using the word
@@ -86,12 +86,16 @@ Return ONLY a valid JSON array with this exact structure, no other text:
 [
   {
     "word": "example",
-    "definition": "A thing characteristic of its kind",
+    "definition": "A thing characteristic of its kind that serves as a model",
     "synonyms": ["instance", "sample"],
     "antonyms": ["exception"],
     "examples": ["This is an example sentence.", "Here's another example."]
   }
-]`;
+]
+
+CRITICAL RULES:
+- Never include the vocabulary word or any of its variations in the definition
+- Definitions should describe the meaning without using the word itself`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",

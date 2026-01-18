@@ -130,7 +130,7 @@ export const MatchingGame = ({ unitId, unitTitle, gameId, onComplete, onBack }: 
 
         const unitWords = unitData.words as string[];
         
-        const basicWords: Word[] = unitWords.slice(0, 8).map((word, index) => ({
+        const basicWords: Word[] = unitWords.slice(0, 10).map((word, index) => ({
           id: `temp-${index}`,
           word,
           definition: "Loading definition..."
@@ -141,8 +141,8 @@ export const MatchingGame = ({ unitId, unitTitle, gameId, onComplete, onBack }: 
         
         await generateVocabulary(unitWords);
       } else {
-        // Limit to 8 words for the matching game
-        const limitedWords = data.slice(0, 8) as Word[];
+        // Limit to 10 words for the matching game
+        const limitedWords = data.slice(0, 10) as Word[];
         setWords(limitedWords);
         shuffleItems(limitedWords);
       }
