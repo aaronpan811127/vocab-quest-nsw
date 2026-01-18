@@ -174,99 +174,101 @@ export const OddOneOutGame = ({ unitId, unitTitle, gameId, onComplete, onBack }:
   const generateQuestions = (vocabWords: Word[]) => {
     const generatedQuestions: Question[] = [];
     
-    // Filter words that have synonyms and antonyms
-    const wordsWithAntonyms = vocabWords.filter(
-      w => w.synonyms?.length >= 2 && w.antonyms?.length >= 1
-    );
+    // Get all unit words for fallback options
+    const allUnitWords = vocabWords.map(w => w.word.toLowerCase());
     
-    const wordsWithSynonyms = vocabWords.filter(w => w.synonyms?.length >= 2);
+    // Helper to get random unit words excluding specific words
+    const getRandomUnitWords = (excludeWords: string[], count: number): string[] => {
+      const available = vocabWords
+        .map(w => w.word)
+        .filter(w => !excludeWords.map(e => e.toLowerCase()).includes(w.toLowerCase()));
+      const shuffled = [...available].sort(() => Math.random() - 0.5);
+      return shuffled.slice(0, count);
+    };
     
-    // Shuffle and create questions - use all available words
+    // Strategy 1: Use base word + synonyms + 1 antonym (antonym is odd)
+    // Now works with any number of synonyms >= 1
+    const wordsWithAntonyms = vocabWords.filter(w => w.antonyms?.length >= 1);
     const shuffled = [...wordsWithAntonyms].sort(() => Math.random() - 0.5);
-    const numQuestions = Math.max(shuffled.length, wordsWithSynonyms.length);
     
-    // Strategy 1: Use base word + 2 synonyms + 1 antonym (antonym is odd)
-    for (let i = 0; i < Math.min(shuffled.length, numQuestions); i++) {
-      const word = shuffled[i];
+    for (const word of shuffled) {
+      if (generatedQuestions.length >= 10) break;
       
-      // Get 2 synonyms
-      const synonyms = [...word.synonyms].sort(() => Math.random() - 0.5).slice(0, 2);
+      // Get available synonyms (up to 2)
+      const availableSynonyms = (word.synonyms || []).slice(0, 2);
       
       // Get 1 antonym as the odd one out
       const oddWord = word.antonyms[Math.floor(Math.random() * word.antonyms.length)];
       
-      if (synonyms.length === 2 && oddWord) {
-        // Include the base word + 2 synonyms + 1 antonym
-        const options = [word.word, ...synonyms, oddWord].sort(() => Math.random() - 0.5);
+      if (!oddWord) continue;
+      
+      // Calculate how many more words we need to fill 4 options
+      // Options: base word + synonyms + odd word = should total 4
+      const neededCount = 3 - availableSynonyms.length; // We need 3 besides oddWord, base word counts as 1
+      const fillerWords = neededCount > 0 
+        ? getRandomUnitWords([word.word, ...availableSynonyms, oddWord], neededCount)
+        : [];
+      
+      // Build options: base word + synonyms + filler words + odd word
+      const options = [word.word, ...availableSynonyms, ...fillerWords, oddWord];
+      
+      if (options.length >= 4) {
+        const finalOptions = options.slice(0, 4).sort(() => Math.random() - 0.5);
         
+        const relatedWords = [word.word, ...availableSynonyms, ...fillerWords].filter(w => w !== oddWord);
         generatedQuestions.push({
-          options,
+          options: finalOptions,
           oddOneOut: oddWord,
-          explanation: `"${oddWord}" is an antonym (opposite meaning) of "${word.word}", while "${synonyms.join('", "')}" are synonyms.`,
+          explanation: `"${oddWord}" is an antonym (opposite meaning) of "${word.word}", while the others are related words.`,
           baseWord: word.word,
         });
       }
     }
     
-    // Strategy 2: If we need more questions, use word + synonyms vs unrelated word
-    if (generatedQuestions.length < numQuestions && wordsWithSynonyms.length >= 2) {
-      const remainingNeeded = numQuestions - generatedQuestions.length;
-      const shuffledSynWords = [...wordsWithSynonyms].sort(() => Math.random() - 0.5);
+    // Strategy 2: Use word + synonyms vs unrelated word from unit
+    const wordsWithSynonyms = vocabWords.filter(w => w.synonyms?.length >= 1);
+    const shuffledSynWords = [...wordsWithSynonyms].sort(() => Math.random() - 0.5);
+    
+    for (let i = 0; i < shuffledSynWords.length - 1 && generatedQuestions.length < 10; i++) {
+      const word1 = shuffledSynWords[i];
       
-      for (let i = 0; i < Math.min(remainingNeeded, shuffledSynWords.length - 1); i++) {
-        const word1 = shuffledSynWords[i];
-        const word2 = shuffledSynWords.find(w => 
-          w.id !== word1.id && 
-          !word1.synonyms.some(s => w.synonyms?.includes(s))
-        );
+      // Find an unrelated word from the unit
+      const word2 = shuffledSynWords.find(w => 
+        w.id !== word1.id && 
+        !word1.synonyms.some(s => s.toLowerCase() === w.word.toLowerCase()) &&
+        !word1.antonyms?.some(a => a.toLowerCase() === w.word.toLowerCase())
+      );
+      
+      if (!word2) continue;
+      
+      // Get available synonyms from word1
+      const availableSynonyms = (word1.synonyms || []).slice(0, 2);
+      
+      // Use word2 as the odd one (different meaning entirely)
+      const oddWord = word2.word;
+      
+      // Fill remaining slots with unit words if needed
+      const neededCount = 3 - availableSynonyms.length;
+      const fillerWords = neededCount > 0
+        ? getRandomUnitWords([word1.word, ...availableSynonyms, oddWord], neededCount)
+        : [];
+      
+      const options = [word1.word, ...availableSynonyms, ...fillerWords, oddWord];
+      
+      if (options.length >= 4) {
+        const finalOptions = options.slice(0, 4).sort(() => Math.random() - 0.5);
         
-        if (!word2) continue;
-        
-        // Get 2 synonyms from word1
-        const synonyms = [...word1.synonyms].sort(() => Math.random() - 0.5).slice(0, 2);
-        
-        // Use word2 as the odd one (different meaning entirely)
-        const oddWord = word2.word;
-        
-        if (synonyms.length === 2) {
-          // word1 + 2 synonyms of word1 + word2 (odd)
-          const options = [word1.word, ...synonyms, oddWord].sort(() => Math.random() - 0.5);
-          
-          generatedQuestions.push({
-            options,
-            oddOneOut: oddWord,
-            explanation: `"${oddWord}" means "${word2.definition.slice(0, 50)}...", while the others relate to "${word1.word}".`,
-            baseWord: word1.word,
-          });
-        }
+        generatedQuestions.push({
+          options: finalOptions,
+          oddOneOut: oddWord,
+          explanation: `"${oddWord}" means "${word2.definition.slice(0, 50)}...", while the others relate to "${word1.word}".`,
+          baseWord: word1.word,
+        });
       }
     }
     
-    // Fallback: use any words with at least 1 antonym
-    if (generatedQuestions.length < 4) {
-      const anyWords = vocabWords.filter(w => w.antonyms?.length >= 1);
-      const shuffledAny = [...anyWords].sort(() => Math.random() - 0.5);
-      
-      for (let i = 0; i < shuffledAny.length && generatedQuestions.length < 4; i++) {
-        const word = shuffledAny[i];
-        const synonyms = (word.synonyms || []).slice(0, 2);
-        const oddWord = word.antonyms[0];
-        
-        if (oddWord) {
-          const options = [word.word, ...synonyms, oddWord].filter(Boolean).slice(0, 4);
-          if (options.length === 4) {
-            generatedQuestions.push({
-              options: options.sort(() => Math.random() - 0.5),
-              oddOneOut: oddWord,
-              explanation: `"${oddWord}" is the opposite of "${word.word}".`,
-              baseWord: word.word,
-            });
-          }
-        }
-      }
-    }
-    
-    setQuestions(generatedQuestions);
+    // Limit to 10 questions max
+    setQuestions(generatedQuestions.slice(0, 10));
   };
 
   const handleSelect = (word: string) => {
