@@ -350,11 +350,20 @@ export const ContextMasterGame = ({ unitId, unitTitle, onComplete, onBack }: Con
       <div className="min-h-screen bg-gradient-hero p-6">
         <div className="max-w-4xl mx-auto space-y-6">
           <div className="flex items-center justify-between">
-            <Skeleton className="h-8 w-64" />
-            <Skeleton className="h-10 w-32" />
+            <div className="flex items-center gap-3">
+              <Target className="h-6 w-6 text-primary" />
+              <h1 className="text-2xl font-bold">Context Master</h1>
+            </div>
+            <Button variant="outline" onClick={onBack} size="sm">
+              Back
+            </Button>
           </div>
-          <Skeleton className="h-4 w-full" />
-          <Skeleton className="h-64 w-full" />
+          <div className="flex items-center justify-center h-[60vh]">
+            <div className="text-center space-y-4">
+              <div className="animate-spin h-12 w-12 border-4 border-primary border-t-transparent rounded-full mx-auto" />
+              <p className="text-muted-foreground">Loading game...</p>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -454,14 +463,19 @@ export const ContextMasterGame = ({ unitId, unitTitle, onComplete, onBack }: Con
           <div className="flex items-center gap-3">
             <Target className="h-6 w-6 text-primary" />
             <h1 className="text-2xl font-bold">Context Master</h1>
-            <Badge className="bg-gradient-primary text-primary-foreground">
+            <Badge className="bg-gradient-primary text-primary-foreground hidden sm:inline-flex">
               {unitTitle}
             </Badge>
           </div>
-          <Badge variant="outline" className="text-sm">
-            <AlertTriangle className="h-3 w-3 mr-1" />
-            One Attempt Only
-          </Badge>
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className="text-xs sm:text-sm">
+              <AlertTriangle className="h-3 w-3 mr-1" />
+              One Attempt
+            </Badge>
+            <Button variant="outline" onClick={onBack} size="sm">
+              Back
+            </Button>
+          </div>
         </div>
 
         {/* Timer */}
@@ -480,6 +494,9 @@ export const ContextMasterGame = ({ unitId, unitTitle, onComplete, onBack }: Con
             <span>{Math.round(progress)}% Complete</span>
           </div>
           <Progress value={progress} className="h-3" />
+          <p className="text-xs text-muted-foreground text-center bg-primary/10 rounded-lg py-2 px-3">
+            🎯 <span className="font-semibold">Goal: Answer all {questions.length} questions correctly!</span> Choose the best word for the context.
+          </p>
         </div>
 
         {/* Question */}

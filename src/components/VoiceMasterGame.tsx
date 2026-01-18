@@ -505,9 +505,21 @@ export const VoiceMasterGame = ({
     return (
       <div className="min-h-screen bg-gradient-hero p-6">
         <div className="max-w-2xl mx-auto space-y-6">
-          <Skeleton className="h-8 w-64" />
-          <Skeleton className="h-4 w-full" />
-          <Skeleton className="h-64 w-full" />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Mic className="h-6 w-6 text-primary" />
+              <h1 className="text-2xl font-bold">Voice Master</h1>
+            </div>
+            <Button variant="outline" onClick={onBack} size="sm">
+              Back
+            </Button>
+          </div>
+          <div className="flex items-center justify-center h-[60vh]">
+            <div className="text-center space-y-4">
+              <div className="animate-spin h-12 w-12 border-4 border-primary border-t-transparent rounded-full mx-auto" />
+              <p className="text-muted-foreground">Loading game...</p>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -621,6 +633,9 @@ export const VoiceMasterGame = ({
             </span>
           </div>
           <Progress value={progressPercent} className="h-2" />
+          <p className="text-xs text-muted-foreground text-center bg-primary/10 rounded-lg py-2 px-3">
+            🎯 <span className="font-semibold">Goal: Pronounce all {words.length} words correctly!</span> Listen and repeat each word.
+          </p>
         </div>
 
         {/* Main Game Area */}
