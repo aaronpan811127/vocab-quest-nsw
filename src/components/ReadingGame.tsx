@@ -512,6 +512,9 @@ export const ReadingGame = ({ unitId, unitTitle, onComplete, onBack }: ReadingGa
             <span>{Math.round(progress)}% Complete</span>
           </div>
           <Progress value={progress} className="h-3" />
+          <p className="text-xs text-muted-foreground text-center bg-primary/10 rounded-lg py-2 px-3">
+            🎯 <span className="font-semibold">Goal: Answer all {questions.length} questions correctly!</span> Read the passage carefully before answering.
+          </p>
         </div>
 
         {/* Passage */}
