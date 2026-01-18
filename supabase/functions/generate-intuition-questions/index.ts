@@ -197,9 +197,7 @@ IMPORTANT: Write plain sentences without any special formatting or markdown.`;
       throw new Error("Failed to parse questions data");
     }
 
-    // supabase client already created above
-
-    const intuitionGameId = '05155f78-2977-44cd-8d77-b6ec5a7b78cc';
+    // Use the same intuitionGameId declared at line 66
     const questionRecords = questionsData.map((item: any) => ({
       unit_id,
       game_id: intuitionGameId,
