@@ -352,9 +352,21 @@ export const ListeningGame = ({
     return (
       <div className="min-h-screen bg-gradient-hero p-6">
         <div className="max-w-2xl mx-auto space-y-6">
-          <Skeleton className="h-8 w-64" />
-          <Skeleton className="h-4 w-full" />
-          <Skeleton className="h-64 w-full" />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Headphones className="h-6 w-6 text-primary" />
+              <h1 className="text-2xl font-bold">Audio Challenge</h1>
+            </div>
+            <Button variant="outline" onClick={onBack} size="sm">
+              Back
+            </Button>
+          </div>
+          <div className="flex items-center justify-center h-[60vh]">
+            <div className="text-center space-y-4">
+              <div className="animate-spin h-12 w-12 border-4 border-primary border-t-transparent rounded-full mx-auto" />
+              <p className="text-muted-foreground">Loading game...</p>
+            </div>
+          </div>
         </div>
       </div>
     );

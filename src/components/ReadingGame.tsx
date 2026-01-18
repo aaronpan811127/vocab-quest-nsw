@@ -384,12 +384,22 @@ export const ReadingGame = ({ unitId, unitTitle, onComplete, onBack }: ReadingGa
       <div className="min-h-screen bg-gradient-hero p-6">
         <div className="max-w-4xl mx-auto space-y-6">
           <div className="flex items-center justify-between">
-            <Skeleton className="h-8 w-64" />
-            <Skeleton className="h-10 w-32" />
+            <div className="flex items-center gap-3">
+              <BookOpen className="h-6 w-6 text-primary" />
+              <h1 className="text-2xl font-bold">Reading Quest</h1>
+            </div>
+            <Button variant="outline" onClick={onBack} size="sm">
+              Back
+            </Button>
           </div>
-          <Skeleton className="h-4 w-full" />
-          <Skeleton className="h-48 w-full" />
-          <Skeleton className="h-64 w-full" />
+          <div className="flex items-center justify-center h-[60vh]">
+            <div className="text-center space-y-4">
+              <div className="animate-spin h-12 w-12 border-4 border-primary border-t-transparent rounded-full mx-auto" />
+              <p className="text-muted-foreground">
+                {generatingQuestions ? "Generating questions..." : "Loading passage..."}
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     );

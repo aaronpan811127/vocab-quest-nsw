@@ -338,16 +338,27 @@ export const WordIntuitionGame = ({ unitId, unitTitle, onComplete, onBack }: Wor
 
   if (isLoading || isGenerating) {
     return (
-      <div className="min-h-screen bg-gradient-hero flex items-center justify-center">
-        <Card className="w-full max-w-md">
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
-            <p className="text-lg font-medium">
-              {isGenerating ? "Generating questions..." : "Loading game..."}
-            </p>
-            <p className="text-sm text-muted-foreground mt-2">This may take a moment</p>
-          </CardContent>
-        </Card>
+      <div className="min-h-screen bg-gradient-hero p-6">
+        <div className="max-w-2xl mx-auto space-y-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Lightbulb className="h-6 w-6 text-primary" />
+              <h1 className="text-2xl font-bold">Word Intuition</h1>
+            </div>
+            <Button variant="outline" onClick={onBack} size="sm">
+              Back
+            </Button>
+          </div>
+          <div className="flex items-center justify-center h-[60vh]">
+            <div className="text-center space-y-4">
+              <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
+              <p className="text-lg font-medium">
+                {isGenerating ? "Generating questions..." : "Loading game..."}
+              </p>
+              <p className="text-sm text-muted-foreground">This may take a moment</p>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
