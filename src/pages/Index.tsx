@@ -55,6 +55,13 @@ const Index = () => {
     setCurrentView("game");
   };
 
+  // Ensure the game header (title + back button) is visible immediately on open.
+  useEffect(() => {
+    if (currentView === "game") {
+      window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    }
+  }, [currentView, gameState?.unitId, gameState?.gameType]);
+
   const handleSelectTestType = (testType: TestType) => {
     setCurrentView("dashboard");
   };
