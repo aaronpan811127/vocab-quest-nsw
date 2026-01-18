@@ -406,8 +406,8 @@ export const FlashcardGame = ({ unitId, unitTitle, gameId, onComplete, onBack }:
             <span>{Math.round(progress)}%</span>
           </div>
           <Progress value={progress} className="h-2" />
-          <p className="text-xs text-muted-foreground text-center">
-            💡 Tap "Got It" below when you've learned a word to track your progress
+          <p className="text-xs text-muted-foreground text-center bg-primary/10 rounded-lg py-2 px-3">
+            🎯 <span className="font-semibold">Goal: Learn all {words.length} words!</span> Tap "Got It!" for each word you've mastered to complete this game.
           </p>
         </div>
 
