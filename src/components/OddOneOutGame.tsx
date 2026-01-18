@@ -27,10 +27,19 @@ interface Word {
 }
 
 interface Question {
+  id?: string; // question_bank id if stored
   options: string[];
   oddOneOut: string;
   explanation: string;
   baseWord: string;
+}
+
+interface StoredQuestion {
+  id: string;
+  word: string;
+  question_text: string;
+  correct_answer: string;
+  options: string[];
 }
 
 interface OddOneOutGameProps {
@@ -40,6 +49,9 @@ interface OddOneOutGameProps {
   onComplete: () => void;
   onBack: () => void;
 }
+
+const QUESTIONS_PER_WORD = 10;
+const ODD_ONE_OUT_GAME_ID = 'bb7a0b79-7b92-41df-96b3-c985b07dcd83';
 
 export const OddOneOutGame = ({ unitId, unitTitle, gameId, onComplete, onBack }: OddOneOutGameProps) => {
   const [words, setWords] = useState<Word[]>([]);
@@ -53,7 +65,7 @@ export const OddOneOutGame = ({ unitId, unitTitle, gameId, onComplete, onBack }:
   const [showCompletion, setShowCompletion] = useState(false);
   const [startTime] = useState(Date.now());
   const [saving, setSaving] = useState(false);
-  const [resolvedGameId, setResolvedGameId] = useState<string | null>(gameId || null);
+  const [resolvedGameId, setResolvedGameId] = useState<string | null>(gameId || ODD_ONE_OUT_GAME_ID);
   const { user } = useAuth();
   const { toast } = useToast();
   const { celebrate } = useCelebration();
@@ -70,7 +82,7 @@ export const OddOneOutGame = ({ unitId, unitTitle, gameId, onComplete, onBack }:
   }, [gameId]);
 
   useEffect(() => {
-    fetchVocabulary();
+    fetchVocabularyAndQuestions();
   }, [unitId]);
 
   // Trigger celebration when showing completion
@@ -85,11 +97,11 @@ export const OddOneOutGame = ({ unitId, unitTitle, gameId, onComplete, onBack }:
     }
   }, [showCompletion, correctAnswers, questions.length, celebrate]);
 
-  const fetchVocabulary = async () => {
+  const fetchVocabularyAndQuestions = async () => {
     setLoading(true);
     try {
       // First check if vocabulary exists
-      let { data, error } = await supabase
+      let { data: vocabData, error } = await supabase
         .from('vocabulary')
         .select('*')
         .eq('unit_id', unitId);
@@ -97,7 +109,7 @@ export const OddOneOutGame = ({ unitId, unitTitle, gameId, onComplete, onBack }:
       if (error) throw error;
 
       // If no vocabulary or not enough, generate it
-      if (!data || data.length < 4) {
+      if (!vocabData || vocabData.length < 4) {
         const { data: unitData, error: unitError } = await supabase
           .from('units')
           .select('words')
@@ -141,13 +153,13 @@ export const OddOneOutGame = ({ unitId, unitTitle, gameId, onComplete, onBack }:
           
           if (freshError) throw freshError;
           
-          data = freshData;
+          vocabData = freshData;
         } else {
           throw new Error(genData?.error || 'Failed to generate vocabulary');
         }
       }
 
-      if (!data || data.length < 4) {
+      if (!vocabData || vocabData.length < 4) {
         toast({
           title: "Vocabulary generation failed",
           description: "Please try playing Flashcards first to generate vocabulary.",
@@ -156,8 +168,10 @@ export const OddOneOutGame = ({ unitId, unitTitle, gameId, onComplete, onBack }:
         return;
       }
 
-      setWords(data as Word[]);
-      generateQuestions(data as Word[]);
+      setWords(vocabData as Word[]);
+      
+      // Now fetch existing questions from question_bank
+      await loadOrGenerateQuestions(vocabData as Word[]);
     } catch (err) {
       console.error('Error fetching vocabulary:', err);
       toast({
@@ -171,115 +185,208 @@ export const OddOneOutGame = ({ unitId, unitTitle, gameId, onComplete, onBack }:
     }
   };
 
-  const generateQuestions = (vocabWords: Word[]) => {
+  const loadOrGenerateQuestions = async (vocabWords: Word[]) => {
+    const gameIdToUse = resolvedGameId || ODD_ONE_OUT_GAME_ID;
+    
+    // Fetch existing questions for this unit and game
+    const { data: existingQuestions, error } = await supabase
+      .from('question_bank')
+      .select('*')
+      .eq('unit_id', unitId)
+      .eq('game_id', gameIdToUse);
+
+    if (error) {
+      console.error('Error fetching existing questions:', error);
+    }
+
+    // Group existing questions by word
+    const questionsByWord: Record<string, StoredQuestion[]> = {};
+    (existingQuestions || []).forEach(q => {
+      if (q.word) {
+        if (!questionsByWord[q.word]) {
+          questionsByWord[q.word] = [];
+        }
+        questionsByWord[q.word].push({
+          id: q.id,
+          word: q.word,
+          question_text: q.question_text,
+          correct_answer: q.correct_answer,
+          options: (q.options as string[]) || []
+        });
+      }
+    });
+
+    // Determine which words need more questions
+    const wordsNeedingQuestions: Word[] = [];
+    const wordsWithEnoughQuestions: Word[] = [];
+
+    vocabWords.forEach(word => {
+      const existingCount = questionsByWord[word.word]?.length || 0;
+      if (existingCount < QUESTIONS_PER_WORD) {
+        wordsNeedingQuestions.push(word);
+      } else {
+        wordsWithEnoughQuestions.push(word);
+      }
+    });
+
+    // Generate new questions for words that need them
+    let newlyGeneratedQuestions: Question[] = [];
+    if (wordsNeedingQuestions.length > 0) {
+      newlyGeneratedQuestions = generateQuestionsForWords(vocabWords, wordsNeedingQuestions, questionsByWord);
+      
+      // Store newly generated questions in question_bank
+      if (newlyGeneratedQuestions.length > 0) {
+        await storeQuestionsInBank(newlyGeneratedQuestions, gameIdToUse);
+      }
+    }
+
+    // Select questions for gameplay (10 total)
+    const gameQuestions = selectQuestionsForGame(vocabWords, questionsByWord, newlyGeneratedQuestions);
+    setQuestions(gameQuestions);
+  };
+
+  const generateQuestionsForWords = (
+    allVocabWords: Word[], 
+    wordsToGenerate: Word[],
+    existingQuestionsByWord: Record<string, StoredQuestion[]>
+  ): Question[] => {
     const generatedQuestions: Question[] = [];
     
     // Get all unit words for fallback options
-    const allUnitWords = vocabWords.map(w => w.word.toLowerCase());
-    
-    // Helper to get random unit words excluding specific words
     const getRandomUnitWords = (excludeWords: string[], count: number): string[] => {
-      const available = vocabWords
+      const available = allVocabWords
         .map(w => w.word)
         .filter(w => !excludeWords.map(e => e.toLowerCase()).includes(w.toLowerCase()));
       const shuffled = [...available].sort(() => Math.random() - 0.5);
       return shuffled.slice(0, count);
     };
     
-    // Strategy 1: Use base word + synonyms + 1 antonym (antonym is odd)
-    // Now works with any number of synonyms >= 1
-    const wordsWithAntonyms = vocabWords.filter(w => w.antonyms?.length >= 1);
-    const shuffled = [...wordsWithAntonyms].sort(() => Math.random() - 0.5);
+    for (const word of wordsToGenerate) {
+      const existingCount = existingQuestionsByWord[word.word]?.length || 0;
+      const neededCount = QUESTIONS_PER_WORD - existingCount;
+      
+      for (let i = 0; i < neededCount; i++) {
+        // Strategy 1: Use antonym as odd one out
+        if (word.antonyms?.length >= 1) {
+          const oddWord = word.antonyms[Math.floor(Math.random() * word.antonyms.length)];
+          const availableSynonyms = (word.synonyms || []).slice(0, 2);
+          
+          const relatedCount = 3;
+          const currentRelated = 1 + availableSynonyms.length;
+          const neededFillers = Math.max(0, relatedCount - currentRelated);
+          const fillerWords = neededFillers > 0 
+            ? getRandomUnitWords([word.word, ...availableSynonyms, oddWord], neededFillers)
+            : [];
+          
+          const relatedWords = [word.word, ...availableSynonyms, ...fillerWords].slice(0, 3);
+          const allOptions = [...relatedWords, oddWord];
+          
+          if (allOptions.length === 4) {
+            const finalOptions = allOptions.sort(() => Math.random() - 0.5);
+            generatedQuestions.push({
+              options: finalOptions,
+              oddOneOut: oddWord,
+              explanation: `"${oddWord}" is an antonym (opposite meaning) of "${word.word}", while the others are related words.`,
+              baseWord: word.word,
+            });
+          }
+        }
+        // Strategy 2: Use unrelated word as odd one out
+        else if (word.synonyms?.length >= 1) {
+          const unrelatedWord = allVocabWords.find(w => 
+            w.id !== word.id && 
+            !word.synonyms.some(s => s.toLowerCase() === w.word.toLowerCase()) &&
+            !word.antonyms?.some(a => a.toLowerCase() === w.word.toLowerCase())
+          );
+          
+          if (unrelatedWord) {
+            const oddWord = unrelatedWord.word;
+            const availableSynonyms = (word.synonyms || []).slice(0, 2);
+            
+            const relatedCount = 3;
+            const currentRelated = 1 + availableSynonyms.length;
+            const neededFillers = Math.max(0, relatedCount - currentRelated);
+            const fillerWords = neededFillers > 0
+              ? getRandomUnitWords([word.word, ...availableSynonyms, oddWord], neededFillers)
+              : [];
+            
+            const relatedWords = [word.word, ...availableSynonyms, ...fillerWords].slice(0, 3);
+            const allOptions = [...relatedWords, oddWord];
+            
+            if (allOptions.length === 4) {
+              const finalOptions = allOptions.sort(() => Math.random() - 0.5);
+              generatedQuestions.push({
+                options: finalOptions,
+                oddOneOut: oddWord,
+                explanation: `"${oddWord}" means "${unrelatedWord.definition.slice(0, 50)}...", while the others relate to "${word.word}".`,
+                baseWord: word.word,
+              });
+            }
+          }
+        }
+      }
+    }
     
-    for (const word of shuffled) {
-      if (generatedQuestions.length >= 10) break;
+    return generatedQuestions;
+  };
+
+  const storeQuestionsInBank = async (questions: Question[], gameId: string) => {
+    const questionsToInsert = questions.map(q => ({
+      unit_id: unitId,
+      game_id: gameId,
+      word: q.baseWord,
+      question_text: q.explanation,
+      correct_answer: q.oddOneOut,
+      options: q.options
+    }));
+
+    const { error } = await supabase
+      .from('question_bank')
+      .insert(questionsToInsert);
+
+    if (error) {
+      console.error('Error storing questions:', error);
+    }
+  };
+
+  const selectQuestionsForGame = (
+    vocabWords: Word[],
+    existingQuestionsByWord: Record<string, StoredQuestion[]>,
+    newlyGeneratedQuestions: Question[]
+  ): Question[] => {
+    const selectedQuestions: Question[] = [];
+    
+    // First, add newly generated questions (up to 10)
+    const shuffledNewQuestions = [...newlyGeneratedQuestions].sort(() => Math.random() - 0.5);
+    selectedQuestions.push(...shuffledNewQuestions.slice(0, 10));
+    
+    // If we need more, pick randomly from existing stored questions
+    if (selectedQuestions.length < 10) {
+      const allStoredQuestions: StoredQuestion[] = [];
+      Object.values(existingQuestionsByWord).forEach(questions => {
+        allStoredQuestions.push(...questions);
+      });
       
-      // Get available synonyms (up to 2)
-      const availableSynonyms = (word.synonyms || []).slice(0, 2);
+      const shuffledStored = [...allStoredQuestions].sort(() => Math.random() - 0.5);
+      const needed = 10 - selectedQuestions.length;
       
-      // Get 1 antonym as the odd one out
-      const oddWord = word.antonyms[Math.floor(Math.random() * word.antonyms.length)];
-      
-      if (!oddWord) continue;
-      
-      // Calculate how many more words we need to fill 4 options
-      // Options: base word + synonyms + odd word = should total 4
-      // We need 3 "related" words (base + synonyms + fillers) plus 1 odd word
-      const relatedCount = 3;
-      const currentRelated = 1 + availableSynonyms.length; // base word + synonyms
-      const neededFillers = Math.max(0, relatedCount - currentRelated);
-      const fillerWords = neededFillers > 0 
-        ? getRandomUnitWords([word.word, ...availableSynonyms, oddWord], neededFillers)
-        : [];
-      
-      // Build related words (not the odd one)
-      const relatedWords = [word.word, ...availableSynonyms, ...fillerWords].slice(0, 3);
-      
-      // Build final options: exactly 3 related + 1 odd word, then shuffle
-      const allOptions = [...relatedWords, oddWord];
-      
-      if (allOptions.length === 4) {
-        const finalOptions = allOptions.sort(() => Math.random() - 0.5);
+      for (let i = 0; i < needed && i < shuffledStored.length; i++) {
+        const sq = shuffledStored[i];
+        // Find the vocabulary word to get definition for explanation
+        const vocabWord = vocabWords.find(w => w.word === sq.word);
         
-        generatedQuestions.push({
-          options: finalOptions,
-          oddOneOut: oddWord,
-          explanation: `"${oddWord}" is an antonym (opposite meaning) of "${word.word}", while the others are related words.`,
-          baseWord: word.word,
+        selectedQuestions.push({
+          id: sq.id,
+          options: sq.options,
+          oddOneOut: sq.correct_answer,
+          explanation: sq.question_text,
+          baseWord: sq.word
         });
       }
     }
     
-    // Strategy 2: Use word + synonyms vs unrelated word from unit
-    const wordsWithSynonyms = vocabWords.filter(w => w.synonyms?.length >= 1);
-    const shuffledSynWords = [...wordsWithSynonyms].sort(() => Math.random() - 0.5);
-    
-    for (let i = 0; i < shuffledSynWords.length - 1 && generatedQuestions.length < 10; i++) {
-      const word1 = shuffledSynWords[i];
-      
-      // Find an unrelated word from the unit
-      const word2 = shuffledSynWords.find(w => 
-        w.id !== word1.id && 
-        !word1.synonyms.some(s => s.toLowerCase() === w.word.toLowerCase()) &&
-        !word1.antonyms?.some(a => a.toLowerCase() === w.word.toLowerCase())
-      );
-      
-      if (!word2) continue;
-      
-      // Get available synonyms from word1
-      const availableSynonyms = (word1.synonyms || []).slice(0, 2);
-      
-      // Use word2 as the odd one (different meaning entirely)
-      const oddWord = word2.word;
-      
-      // We need exactly 3 related words + 1 odd word
-      const relatedCount = 3;
-      const currentRelated = 1 + availableSynonyms.length; // base word + synonyms
-      const neededFillers = Math.max(0, relatedCount - currentRelated);
-      const fillerWords = neededFillers > 0
-        ? getRandomUnitWords([word1.word, ...availableSynonyms, oddWord], neededFillers)
-        : [];
-      
-      // Build related words (not the odd one)
-      const relatedWords = [word1.word, ...availableSynonyms, ...fillerWords].slice(0, 3);
-      
-      // Build final options: exactly 3 related + 1 odd word, then shuffle
-      const allOptions = [...relatedWords, oddWord];
-      
-      if (allOptions.length === 4) {
-        const finalOptions = allOptions.sort(() => Math.random() - 0.5);
-        
-        generatedQuestions.push({
-          options: finalOptions,
-          oddOneOut: oddWord,
-          explanation: `"${oddWord}" means "${word2.definition.slice(0, 50)}...", while the others relate to "${word1.word}".`,
-          baseWord: word1.word,
-        });
-      }
-    }
-    
-    // Limit to 10 questions max
-    setQuestions(generatedQuestions.slice(0, 10));
+    // Shuffle final selection and limit to 10
+    return selectedQuestions.sort(() => Math.random() - 0.5).slice(0, 10);
   };
 
   const handleSelect = (word: string) => {
@@ -438,7 +545,8 @@ export const OddOneOutGame = ({ unitId, unitTitle, gameId, onComplete, onBack }:
                 setShowResult(false);
                 setCorrectAnswers(0);
                 setShowCompletion(false);
-                generateQuestions(words);
+                hasCelebrated.current = false;
+                loadOrGenerateQuestions(words);
               }} 
               onBack={onComplete} 
               hasMistakes={correctAnswers < questions.length}
