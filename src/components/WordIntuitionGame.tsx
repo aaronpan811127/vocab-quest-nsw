@@ -441,7 +441,12 @@ export const WordIntuitionGame = ({ unitId, unitTitle, onComplete, onBack }: Wor
         </div>
 
         {/* Progress */}
-        <Progress value={progress} className="h-2" />
+        <div className="space-y-2">
+          <Progress value={progress} className="h-2" />
+          <p className="text-xs text-muted-foreground text-center bg-primary/10 rounded-lg py-2 px-3">
+            🎯 <span className="font-semibold">Goal: Answer all {questions.length} questions correctly!</span> Sense the tone of the highlighted word.
+          </p>
+        </div>
 
         {/* Score */}
         <div className="flex justify-between text-sm">

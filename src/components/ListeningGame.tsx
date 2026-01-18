@@ -467,6 +467,9 @@ export const ListeningGame = ({
             <span className="font-medium">{Math.round(progress)}%</span>
           </div>
           <Progress value={progress} className="h-2" />
+          <p className="text-xs text-muted-foreground text-center bg-primary/10 rounded-lg py-2 px-3">
+            🎯 <span className="font-semibold">Goal: Spell all {words.length} words correctly!</span> Listen carefully and type what you hear.
+          </p>
         </div>
 
         {/* Main Game Card */}

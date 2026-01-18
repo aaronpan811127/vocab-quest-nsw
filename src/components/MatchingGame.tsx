@@ -428,6 +428,9 @@ export const MatchingGame = ({ unitId, unitTitle, gameId, onComplete, onBack }: 
             <span>{Math.round(progress)}%</span>
           </div>
           <Progress value={progress} className="h-2" />
+          <p className="text-xs text-muted-foreground text-center bg-primary/10 rounded-lg py-2 px-3">
+            🎯 <span className="font-semibold">Goal: Match all {words.length} pairs!</span> Tap a word, then its definition to match them.
+          </p>
         </div>
 
         {/* Matching Grid */}

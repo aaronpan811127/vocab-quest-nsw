@@ -464,6 +464,9 @@ export const OddOneOutGame = ({ unitId, unitTitle, gameId, onComplete, onBack }:
             <span>{correctAnswers} correct</span>
           </div>
           <Progress value={((currentQuestion + 1) / questions.length) * 100} className="h-2" />
+          <p className="text-xs text-muted-foreground text-center bg-primary/10 rounded-lg py-2 px-3">
+            🎯 <span className="font-semibold">Goal: Answer all {questions.length} questions correctly!</span> Find the word with a different meaning.
+          </p>
         </div>
 
         {/* Question */}
