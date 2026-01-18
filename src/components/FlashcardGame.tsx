@@ -406,6 +406,9 @@ export const FlashcardGame = ({ unitId, unitTitle, gameId, onComplete, onBack }:
             <span>{Math.round(progress)}%</span>
           </div>
           <Progress value={progress} className="h-2" />
+          <p className="text-xs text-muted-foreground text-center">
+            💡 Tap "Got It" below when you've learned a word to track your progress
+          </p>
         </div>
 
         {/* Flashcard */}
@@ -553,9 +556,10 @@ export const FlashcardGame = ({ unitId, unitTitle, gameId, onComplete, onBack }:
             onClick={handleMarkLearned}
             disabled={learnedWords.has(currentWord.id)}
             size="sm"
+            className="animate-pulse-subtle"
           >
             <Check className="h-4 w-4 mr-1" />
-            Got It
+            {learnedWords.has(currentWord.id) ? "Learned!" : "Got It!"}
           </Button>
 
           <Button 
