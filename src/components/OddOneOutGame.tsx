@@ -355,38 +355,54 @@ export const OddOneOutGame = ({ unitId, unitTitle, gameId, onComplete, onBack }:
     newlyGeneratedQuestions: Question[]
   ): Question[] => {
     const selectedQuestions: Question[] = [];
+    const usedWords = new Set<string>();
     
-    // First, add newly generated questions (up to 10)
-    const shuffledNewQuestions = [...newlyGeneratedQuestions].sort(() => Math.random() - 0.5);
-    selectedQuestions.push(...shuffledNewQuestions.slice(0, 10));
+    // Combine all available questions (new + existing) grouped by word
+    const allQuestionsByWord: Record<string, Question[]> = {};
     
-    // If we need more, pick randomly from existing stored questions
-    if (selectedQuestions.length < 10) {
-      const allStoredQuestions: StoredQuestion[] = [];
-      Object.values(existingQuestionsByWord).forEach(questions => {
-        allStoredQuestions.push(...questions);
-      });
-      
-      const shuffledStored = [...allStoredQuestions].sort(() => Math.random() - 0.5);
-      const needed = 10 - selectedQuestions.length;
-      
-      for (let i = 0; i < needed && i < shuffledStored.length; i++) {
-        const sq = shuffledStored[i];
-        // Find the vocabulary word to get definition for explanation
-        const vocabWord = vocabWords.find(w => w.word === sq.word);
-        
-        selectedQuestions.push({
+    // Add newly generated questions
+    newlyGeneratedQuestions.forEach(q => {
+      if (!allQuestionsByWord[q.baseWord]) {
+        allQuestionsByWord[q.baseWord] = [];
+      }
+      allQuestionsByWord[q.baseWord].push(q);
+    });
+    
+    // Add existing stored questions
+    Object.entries(existingQuestionsByWord).forEach(([word, storedQuestions]) => {
+      if (!allQuestionsByWord[word]) {
+        allQuestionsByWord[word] = [];
+      }
+      storedQuestions.forEach(sq => {
+        allQuestionsByWord[word].push({
           id: sq.id,
           options: sq.options,
           oddOneOut: sq.correct_answer,
           explanation: sq.question_text,
           baseWord: sq.word
         });
+      });
+    });
+    
+    // Get all words that have questions, shuffle them
+    const wordsWithQuestions = Object.keys(allQuestionsByWord).sort(() => Math.random() - 0.5);
+    
+    // Pick one random question per word until we have 10 or run out of words
+    for (const word of wordsWithQuestions) {
+      if (selectedQuestions.length >= 10) break;
+      if (usedWords.has(word)) continue;
+      
+      const wordQuestions = allQuestionsByWord[word];
+      if (wordQuestions.length > 0) {
+        // Pick a random question for this word
+        const randomIndex = Math.floor(Math.random() * wordQuestions.length);
+        selectedQuestions.push(wordQuestions[randomIndex]);
+        usedWords.add(word);
       }
     }
     
-    // Shuffle final selection and limit to 10
-    return selectedQuestions.sort(() => Math.random() - 0.5).slice(0, 10);
+    // Shuffle final selection
+    return selectedQuestions.sort(() => Math.random() - 0.5);
   };
 
   const handleSelect = (word: string) => {
