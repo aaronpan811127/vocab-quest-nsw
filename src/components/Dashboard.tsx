@@ -4,6 +4,7 @@ import { StreakChart } from "./StreakChart";
 import { UnitCard } from "./UnitCard";
 import { GameCard } from "./GameCard";
 import { LeaderboardDialog } from "./LeaderboardDialog";
+import { WordStruggleAnalytics } from "./WordStruggleAnalytics";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -752,9 +753,12 @@ Game XP = (Avg Score over all attempts × 0.5) + Time Bonus
         </div>
 
         {/* Stats Overview */}
-        <div className="grid grid-cols-2 gap-3 sm:gap-4">
-          <StatsCard {...stats[0]} action={<LeaderboardDialog />} />
-          <StreakChart />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4">
+            <StatsCard {...stats[0]} action={<LeaderboardDialog />} />
+            <StreakChart />
+          </div>
+          <WordStruggleAnalytics />
         </div>
 
         {/* Current Unit Progress */}
