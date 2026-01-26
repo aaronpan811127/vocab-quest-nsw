@@ -38,7 +38,7 @@ serve(async (req) => {
       );
     }
 
-    const { unit_id, score, correct_answers, total_questions, time_spent_seconds } = await req.json();
+    const { unit_id, score, correct_answers, total_questions, time_spent_seconds, incorrect_answers } = await req.json();
 
     // Validate required fields
     if (!unit_id || typeof score !== 'number' || typeof correct_answers !== 'number' || 
@@ -49,6 +49,9 @@ serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    // Validate incorrect_answers array if provided
+    const validIncorrectAnswers = Array.isArray(incorrect_answers) ? incorrect_answers : [];
 
     // Validate time is reasonable (1 second to 30 minutes)
     if (time_spent_seconds < 1 || time_spent_seconds > 1800) {
@@ -79,7 +82,7 @@ serve(async (req) => {
     const gameId = gameData.id;
 
     // Insert game attempt only - NO XP accumulation for intuition game
-    const { error: attemptError } = await supabaseAdmin
+    const { data: attemptData, error: attemptError } = await supabaseAdmin
       .from('game_attempts')
       .insert({
         user_id: user.id,
@@ -90,14 +93,40 @@ serve(async (req) => {
         total_questions,
         time_spent_seconds,
         completed: true
-      });
+      })
+      .select('id')
+      .single();
 
-    if (attemptError) {
+    if (attemptError || !attemptData) {
       console.error('Insert attempt error:', attemptError);
       return new Response(
         JSON.stringify({ success: false, error: 'Failed to save game attempt' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
+    }
+
+    // Insert incorrect answers for review
+    if (validIncorrectAnswers.length > 0) {
+      const incorrectRecords = validIncorrectAnswers
+        .filter((ia: { questionId: string; userAnswer: string }) => ia.questionId && ia.userAnswer)
+        .map((ia: { questionId: string; userAnswer: string }) => ({
+          attempt_id: attemptData.id,
+          question_id: ia.questionId,
+          user_answer: ia.userAnswer
+        }));
+
+      if (incorrectRecords.length > 0) {
+        const { error: incorrectError } = await supabaseAdmin
+          .from('attempt_incorrect_answers')
+          .insert(incorrectRecords);
+
+        if (incorrectError) {
+          console.error('Error inserting incorrect answers:', incorrectError);
+          // Don't throw - this is not critical
+        } else {
+          console.log(`Saved ${incorrectRecords.length} incorrect answers for intuition game`);
+        }
+      }
     }
 
     // Upsert user progress so the dashboard can mark the game as completed

@@ -60,6 +60,7 @@ export const OddOneOutGame = ({ unitId, unitTitle, gameId, onComplete, onBack }:
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [showResult, setShowResult] = useState(false);
   const [correctAnswers, setCorrectAnswers] = useState(0);
+  const [incorrectAnswers, setIncorrectAnswers] = useState<Array<{ questionId: string; userAnswer: string }>>([]);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [showCompletion, setShowCompletion] = useState(false);
@@ -413,9 +414,16 @@ export const OddOneOutGame = ({ unitId, unitTitle, gameId, onComplete, onBack }:
   const handleConfirm = () => {
     if (!selectedAnswer) return;
     
-    const isCorrect = selectedAnswer === questions[currentQuestion].oddOneOut;
+    const currentQ = questions[currentQuestion];
+    const isCorrect = selectedAnswer === currentQ.oddOneOut;
     if (isCorrect) {
       setCorrectAnswers(prev => prev + 1);
+    } else if (currentQ.id) {
+      // Track incorrect answer with question_bank id
+      setIncorrectAnswers(prev => [
+        ...prev,
+        { questionId: currentQ.id!, userAnswer: selectedAnswer }
+      ]);
     }
     setShowResult(true);
   };
@@ -443,7 +451,7 @@ export const OddOneOutGame = ({ unitId, unitTitle, gameId, onComplete, onBack }:
 
     try {
       // Save game attempt
-      const { error } = await supabase
+      const { data: attemptData, error } = await supabase
         .from('game_attempts')
         .insert({
           user_id: user.id,
@@ -454,9 +462,28 @@ export const OddOneOutGame = ({ unitId, unitTitle, gameId, onComplete, onBack }:
           total_questions: questions.length,
           time_spent_seconds: timeSpent,
           completed: true,
-        });
+        })
+        .select('id')
+        .single();
 
       if (error) throw error;
+
+      // Save incorrect answers
+      if (attemptData && incorrectAnswers.length > 0) {
+        const incorrectRecords = incorrectAnswers.map(ia => ({
+          attempt_id: attemptData.id,
+          question_id: ia.questionId,
+          user_answer: ia.userAnswer
+        }));
+
+        const { error: incorrectError } = await supabase
+          .from('attempt_incorrect_answers')
+          .insert(incorrectRecords);
+
+        if (incorrectError) {
+          console.error('Error saving incorrect answers:', incorrectError);
+        }
+      }
 
       // Save/update user_progress for completion tracking
       const { data: existingProgress } = await supabase
@@ -560,10 +587,11 @@ export const OddOneOutGame = ({ unitId, unitTitle, gameId, onComplete, onBack }:
                 setSelectedAnswer(null);
                 setShowResult(false);
                 setCorrectAnswers(0);
+                setIncorrectAnswers([]);
                 setShowCompletion(false);
                 hasCelebrated.current = false;
                 loadOrGenerateQuestions(words);
-              }} 
+              }}
               onBack={onComplete} 
               hasMistakes={correctAnswers < questions.length}
             />
