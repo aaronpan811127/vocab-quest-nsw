@@ -156,8 +156,10 @@ export const AdminQuestionReview = () => {
   const [editCorrectAnswer, setEditCorrectAnswer] = useState("");
   const { toast } = useToast();
 
-  const fetchQuestions = async () => {
-    setLoading(true);
+  const fetchQuestions = async (showLoading = true) => {
+    if (showLoading) {
+      setLoading(true);
+    }
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
@@ -217,7 +219,9 @@ export const AdminQuestionReview = () => {
         variant: "destructive",
       });
     } finally {
-      setLoading(false);
+      if (showLoading) {
+        setLoading(false);
+      }
     }
   };
 
@@ -295,7 +299,7 @@ export const AdminQuestionReview = () => {
       setScore(5);
       setEditOptions([]);
       setEditCorrectAnswer("");
-      fetchQuestions();
+      fetchQuestions(false);
     } catch (error) {
       console.error('Error reviewing:', error);
       toast({
