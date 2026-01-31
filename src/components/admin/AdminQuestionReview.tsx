@@ -52,25 +52,35 @@ interface Question {
 
 const parseOptions = (options: unknown): string[] => {
   if (!options) return [];
-  if (Array.isArray(options)) {
-    // Handle array of strings or objects
-    return options.map(opt => typeof opt === 'string' ? opt : String(opt));
-  }
+  
+  // Handle string that needs to be parsed
+  let parsed = options;
   if (typeof options === 'string') {
     try {
-      const parsed = JSON.parse(options);
-      if (Array.isArray(parsed)) {
-        return parsed.map(opt => typeof opt === 'string' ? opt : String(opt));
-      }
-      return [];
+      parsed = JSON.parse(options);
     } catch {
       return [];
     }
   }
-  // Handle object case (e.g., {0: "a", 1: "b"})
-  if (typeof options === 'object') {
-    return Object.values(options as Record<string, string>);
+  
+  // Handle array of strings
+  if (Array.isArray(parsed)) {
+    return parsed.map(opt => typeof opt === 'string' ? opt : String(opt));
   }
+  
+  // Handle object case
+  if (typeof parsed === 'object' && parsed !== null) {
+    const obj = parsed as Record<string, unknown>;
+    
+    // Handle Word Intuition format: { word, choices, explanation }
+    if ('choices' in obj && Array.isArray(obj.choices)) {
+      return obj.choices.map((c: unknown) => typeof c === 'string' ? c : String(c));
+    }
+    
+    // Handle indexed object format: { 0: "a", 1: "b" }
+    return Object.values(obj).filter((v): v is string => typeof v === 'string');
+  }
+  
   return [];
 };
 
