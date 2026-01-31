@@ -604,7 +604,7 @@ export const AdminQuestionReview = () => {
                                   <Badge
                                     key={idx}
                                     variant="outline"
-                                    className={`text-xs font-normal ${option === question.correct_answer ? "bg-success/10 border-success text-success-foreground" : ""}`}
+                                    className={`text-xs font-normal ${option === question.correct_answer ? "bg-success text-success-foreground border-success" : ""}`}
                                   >
                                     {option}
                                     {option === question.correct_answer && " ✓"}
@@ -684,7 +684,7 @@ export const AdminQuestionReview = () => {
                               <Badge
                                 key={idx}
                                 variant="outline"
-                                className={`font-normal ${option === question.correct_answer ? "bg-success/10 border-success text-success-foreground" : ""}`}
+                                className={`font-normal ${option === question.correct_answer ? "bg-success text-success-foreground border-success" : ""}`}
                               >
                                 {option}
                                 {option === question.correct_answer && " ✓"}
