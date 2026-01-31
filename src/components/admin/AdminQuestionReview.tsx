@@ -8,8 +8,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useToast } from "@/hooks/use-toast";
-import { Check, X, Star, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
+import { Check, X, Star, Loader2, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, BookOpen } from "lucide-react";
 
 interface Question {
   id: string;
@@ -26,6 +27,9 @@ interface Question {
   unit_number: number;
   game_name: string;
   game_type: string;
+  passage_id: string | null;
+  passage_title: string | null;
+  passage_content: string | null;
 }
 
 const parseOptions = (options: string[] | string | null): string[] => {
@@ -43,6 +47,8 @@ export const AdminQuestionReview = () => {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState("pending");
+  const [gameTypeFilter, setGameTypeFilter] = useState("all");
+  const [gameTypes, setGameTypes] = useState<string[]>([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(null);
@@ -51,6 +57,7 @@ export const AdminQuestionReview = () => {
   const [score, setScore] = useState(5);
   const [rejectionReason, setRejectionReason] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
+  const [expandedPassages, setExpandedPassages] = useState<Set<string>>(new Set());
   const { toast } = useToast();
 
   const fetchQuestions = async () => {
@@ -59,17 +66,15 @@ export const AdminQuestionReview = () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
 
-      const response = await supabase.functions.invoke('admin-get-questions', {
-        body: null,
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
+      const params = new URLSearchParams({
+        status: statusFilter,
+        game_type: gameTypeFilter,
+        page: page.toString(),
+        limit: '20'
       });
 
-      // Handle the response based on the URL params
-      const url = new URL(`https://placeholder.com?status=${statusFilter}&page=${page}&limit=20`);
       const fullResponse = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-get-questions?status=${statusFilter}&page=${page}&limit=20`,
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-get-questions?${params}`,
         {
           headers: {
             Authorization: `Bearer ${session.access_token}`,
@@ -86,6 +91,9 @@ export const AdminQuestionReview = () => {
 
       setQuestions(data.questions || []);
       setTotalPages(data.total_pages || 1);
+      if (data.game_types && data.game_types.length > 0) {
+        setGameTypes(data.game_types);
+      }
     } catch (error) {
       console.error('Error fetching questions:', error);
       toast({
@@ -100,7 +108,7 @@ export const AdminQuestionReview = () => {
 
   useEffect(() => {
     fetchQuestions();
-  }, [statusFilter, page]);
+  }, [statusFilter, gameTypeFilter, page]);
 
   const handleAction = async () => {
     if (!selectedQuestion) return;
@@ -167,6 +175,18 @@ export const AdminQuestionReview = () => {
     setActionDialogOpen(true);
   };
 
+  const togglePassage = (questionId: string) => {
+    setExpandedPassages(prev => {
+      const next = new Set(prev);
+      if (next.has(questionId)) {
+        next.delete(questionId);
+      } else {
+        next.add(questionId);
+      }
+      return next;
+    });
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "approved":
@@ -178,21 +198,41 @@ export const AdminQuestionReview = () => {
     }
   };
 
+  const formatGameType = (gameType: string) => {
+    return gameType
+      .split('_')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  };
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <h2 className="text-2xl font-bold">Question Review</h2>
-        <Select value={statusFilter} onValueChange={(value) => { setStatusFilter(value); setPage(1); }}>
-          <SelectTrigger className="w-40">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="pending">Pending</SelectItem>
-            <SelectItem value="approved">Approved</SelectItem>
-            <SelectItem value="rejected">Rejected</SelectItem>
-            <SelectItem value="all">All</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex flex-wrap items-center gap-2">
+          <Select value={gameTypeFilter} onValueChange={(value) => { setGameTypeFilter(value); setPage(1); }}>
+            <SelectTrigger className="w-40">
+              <SelectValue placeholder="Game Type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Types</SelectItem>
+              {gameTypes.map(type => (
+                <SelectItem key={type} value={type}>{formatGameType(type)}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={statusFilter} onValueChange={(value) => { setStatusFilter(value); setPage(1); }}>
+            <SelectTrigger className="w-40">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="pending">Pending</SelectItem>
+              <SelectItem value="approved">Approved</SelectItem>
+              <SelectItem value="rejected">Rejected</SelectItem>
+              <SelectItem value="all">All</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {loading ? (
@@ -202,7 +242,7 @@ export const AdminQuestionReview = () => {
       ) : questions.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center text-muted-foreground">
-            No questions found with status: {statusFilter}
+            No questions found with the selected filters
           </CardContent>
         </Card>
       ) : (
@@ -213,9 +253,10 @@ export const AdminQuestionReview = () => {
                 <div className="flex items-start justify-between">
                   <div>
                     <CardTitle className="text-lg">{question.question_text}</CardTitle>
-                    <div className="flex items-center gap-2 mt-1">
+                    <div className="flex flex-wrap items-center gap-2 mt-1">
                       <Badge variant="outline">Unit {question.unit_number}: {question.unit_title}</Badge>
                       <Badge variant="outline">{question.game_name}</Badge>
+                      <Badge variant="secondary">{formatGameType(question.game_type)}</Badge>
                       {question.word && <Badge variant="outline">Word: {question.word}</Badge>}
                     </div>
                   </div>
@@ -231,6 +272,33 @@ export const AdminQuestionReview = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
+                  {/* Reading Passage for reading questions */}
+                  {question.passage_content && (
+                    <Collapsible 
+                      open={expandedPassages.has(question.id)}
+                      onOpenChange={() => togglePassage(question.id)}
+                    >
+                      <CollapsibleTrigger asChild>
+                        <Button variant="outline" size="sm" className="w-full justify-between gap-2">
+                          <span className="flex items-center gap-2">
+                            <BookOpen className="h-4 w-4" />
+                            {question.passage_title || "Reading Passage"}
+                          </span>
+                          {expandedPassages.has(question.id) ? (
+                            <ChevronUp className="h-4 w-4" />
+                          ) : (
+                            <ChevronDown className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent>
+                        <div className="mt-2 p-4 bg-muted rounded-lg text-sm max-h-64 overflow-y-auto">
+                          <p className="whitespace-pre-wrap">{question.passage_content}</p>
+                        </div>
+                      </CollapsibleContent>
+                    </Collapsible>
+                  )}
+
                   <div>
                     <p className="text-sm text-muted-foreground mb-1">Options:</p>
                     <div className="flex flex-wrap gap-2">
