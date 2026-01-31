@@ -13,11 +13,17 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
 import { Check, X, Star, Loader2, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, BookOpen, Sparkles } from "lucide-react";
 
-interface Vocabulary {
+interface VocabularyItem {
+  id: string;
+  word: string;
   definition: string;
   synonyms: string[];
   antonyms: string[];
   examples: string[];
+  unit_id: string;
+  unit_title: string;
+  unit_number: number;
+  created_at: string;
 }
 
 interface Question {
@@ -38,7 +44,6 @@ interface Question {
   passage_id: string | null;
   passage_title: string | null;
   passage_content: string | null;
-  vocabulary: Vocabulary | null;
 }
 
 const parseOptions = (options: string[] | string | null): string[] => {
@@ -67,6 +72,7 @@ interface Unit {
 
 export const AdminQuestionReview = () => {
   const [questions, setQuestions] = useState<Question[]>([]);
+  const [vocabulary, setVocabulary] = useState<VocabularyItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState("pending");
   const [gameTypeFilter, setGameTypeFilter] = useState("all");
@@ -118,8 +124,8 @@ export const AdminQuestionReview = () => {
       }
 
       setQuestions(data.questions || []);
+      setVocabulary(data.vocabulary || []);
       setTotalPages(data.total_pages || 1);
-      
       // Always update filter options from the response
       if (data.game_types) {
         setGameTypes(data.game_types);
@@ -325,6 +331,77 @@ export const AdminQuestionReview = () => {
         <div className="flex justify-center py-12">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
+      ) : gameTypeFilter === 'flashcards' ? (
+        // Show vocabulary items for flashcards
+        vocabulary.length === 0 ? (
+          <Card>
+            <CardContent className="py-12 text-center text-muted-foreground">
+              No vocabulary found with the selected filters
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="space-y-4">
+            {vocabulary.map((vocab) => (
+              <Card key={vocab.id}>
+                <CardHeader className="pb-2">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <CardTitle className="text-xl">{vocab.word}</CardTitle>
+                      <div className="flex flex-wrap items-center gap-2 mt-1">
+                        <Badge variant="outline">Unit {vocab.unit_number}: {vocab.unit_title}</Badge>
+                        <Badge className="bg-primary/20 text-primary border-primary/30">
+                          <Sparkles className="h-3 w-3 mr-1" />
+                          AI Generated
+                        </Badge>
+                      </div>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground mb-1">Definition:</p>
+                      <p className="text-base">{vocab.definition}</p>
+                    </div>
+                    
+                    {vocab.synonyms && vocab.synonyms.length > 0 && (
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground mb-1">Synonyms:</p>
+                        <div className="flex flex-wrap gap-2">
+                          {vocab.synonyms.map((syn, idx) => (
+                            <Badge key={idx} variant="secondary">{syn}</Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {vocab.antonyms && vocab.antonyms.length > 0 && (
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground mb-1">Antonyms:</p>
+                        <div className="flex flex-wrap gap-2">
+                          {vocab.antonyms.map((ant, idx) => (
+                            <Badge key={idx} variant="outline">{ant}</Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {vocab.examples && vocab.examples.length > 0 && (
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground mb-1">Examples:</p>
+                        <ul className="list-disc list-inside space-y-1">
+                          {vocab.examples.map((ex, idx) => (
+                            <li key={idx} className="text-sm text-muted-foreground italic">{ex}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )
       ) : questions.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center text-muted-foreground">
@@ -400,44 +477,6 @@ export const AdminQuestionReview = () => {
                       ))}
                     </div>
                   </div>
-
-                  {/* AI Generated Vocabulary Content */}
-                  {question.vocabulary && (
-                    <div className="p-3 bg-primary/5 border border-primary/20 rounded-lg space-y-2">
-                      <div className="flex items-center gap-2 text-sm font-semibold text-primary">
-                        <Sparkles className="h-4 w-4" />
-                        AI Generated Content
-                      </div>
-                      <div className="grid gap-2 text-sm">
-                        <div>
-                          <span className="font-medium text-muted-foreground">Definition:</span>{" "}
-                          <span>{question.vocabulary.definition}</span>
-                        </div>
-                        {question.vocabulary.synonyms.length > 0 && (
-                          <div>
-                            <span className="font-medium text-muted-foreground">Synonyms:</span>{" "}
-                            <span>{question.vocabulary.synonyms.join(", ")}</span>
-                          </div>
-                        )}
-                        {question.vocabulary.antonyms.length > 0 && (
-                          <div>
-                            <span className="font-medium text-muted-foreground">Antonyms:</span>{" "}
-                            <span>{question.vocabulary.antonyms.join(", ")}</span>
-                          </div>
-                        )}
-                        {question.vocabulary.examples.length > 0 && (
-                          <div>
-                            <span className="font-medium text-muted-foreground">Examples:</span>
-                            <ul className="list-disc list-inside ml-2 mt-1">
-                              {question.vocabulary.examples.map((ex, i) => (
-                                <li key={i} className="text-muted-foreground">{ex}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
 
                   {question.rejection_reason && (
                     <div className="p-2 bg-destructive/10 rounded text-sm text-destructive">
