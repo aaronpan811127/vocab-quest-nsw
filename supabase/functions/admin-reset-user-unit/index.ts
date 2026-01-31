@@ -99,6 +99,13 @@ Deno.serve(async (req) => {
       .eq('user_id', target_user_id)
       .eq('unit_id', unit_id);
 
+    // Clear current_unit_id if it matches the reset unit
+    await supabase
+      .from('profiles')
+      .update({ current_unit_id: null })
+      .eq('user_id', target_user_id)
+      .eq('current_unit_id', unit_id);
+
     // Recalculate total XP for leaderboard
     // First, get the user's test type
     const { data: profile } = await supabase
