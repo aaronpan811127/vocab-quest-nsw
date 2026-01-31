@@ -366,6 +366,23 @@ export const Dashboard = ({ onStartGame, onBack, selectedUnitId, onUnitChange }:
       console.error("Error fetching progress:", progressError);
     }
 
+    // Fetch user's snapshots for all units to determine locked-in required games
+    const { data: snapshotsData, error: snapshotsError } = await supabase
+      .from("user_unit_game_snapshots")
+      .select("unit_id, games_config")
+      .eq("user_id", user.id)
+      .eq("test_type_id", selectedTestType.id);
+
+    if (snapshotsError) {
+      console.error("Error fetching snapshots:", snapshotsError);
+    }
+
+    // Build a map of unit_id -> snapshot games_config
+    const unitSnapshotMap = new Map<string, GameConfig[]>();
+    snapshotsData?.forEach((s) => {
+      unitSnapshotMap.set(s.unit_id, s.games_config as unknown as GameConfig[]);
+    });
+
     // Build a map of unit_id -> progress array
     const unitProgressMap = new Map<string, typeof progressData>();
     progressData?.forEach((p) => {
@@ -374,9 +391,8 @@ export const Dashboard = ({ onStartGame, onBack, selectedUnitId, onUnitChange }:
       unitProgressMap.set(p.unit_id, existing);
     });
 
-    // For unit unlock, use required_for_unlock field from database (use all-games config)
-    const requiredGames = getRequiredGamesAll();
-    const requiredGameIds = new Set(requiredGames.map(g => g.game_id));
+    // For unit unlock, use required_for_unlock field from database (use all-games config as fallback)
+    const requiredGamesAll = getRequiredGamesAll();
 
     // Get sorted sections (use all-games config for units list)
     const sortedSections = getSortedSectionsAll();
@@ -400,8 +416,18 @@ export const Dashboard = ({ onStartGame, onBack, selectedUnitId, onUnitChange }:
     });
 
     // Helper to check if a game should be considered "completed" for stats
-    const isGameEffectivelyCompleted = (p: { game_id: string; completed: boolean; attempts: number; best_score: number }) => {
-      const maxAttempts = gameMaxAttemptsMap.get(p.game_id);
+    const isGameEffectivelyCompleted = (p: { game_id: string; completed: boolean; attempts: number; best_score: number }, gamesConfig?: GameConfig[]) => {
+      // Check max_attempts from snapshot config first, then fallback to global
+      let maxAttempts = gameMaxAttemptsMap.get(p.game_id);
+      if (gamesConfig) {
+        const snapshotGame = gamesConfig.find(g => g.game_id === p.game_id);
+        if (snapshotGame) {
+          const snapshotMaxAttempts = (snapshotGame.rules as any)?.max_attempts;
+          if (typeof snapshotMaxAttempts === 'number') {
+            maxAttempts = snapshotMaxAttempts;
+          }
+        }
+      }
       // For single-attempt games, treat as completed if attempted
       if (maxAttempts === 1 && (p.attempts > 0 || p.best_score > 0)) {
         return true;
@@ -413,12 +439,24 @@ export const Dashboard = ({ onStartGame, onBack, selectedUnitId, onUnitChange }:
       const unitProgress = unitProgressMap.get(unit.id) || [];
       const totalXp = unitProgress.reduce((sum, p) => sum + (p.total_xp || 0), 0);
 
-      // Calculate section stats
+      // Get this unit's snapshot config if it exists
+      const unitSnapshotGames = unitSnapshotMap.get(unit.id);
+
+      // Calculate section stats using snapshot if available, otherwise use global config
+      const gamesForStats = unitSnapshotGames || gamesConfigAll;
+      const groupedForStats: Record<string, GameConfig[]> = {};
+      gamesForStats.forEach(game => {
+        if (!groupedForStats[game.section_code]) {
+          groupedForStats[game.section_code] = [];
+        }
+        groupedForStats[game.section_code].push(game);
+      });
+
       const sectionStats: SectionStats[] = sortedSections.map(section => {
-        const sectionGames = groupedGamesAll[section.code]?.games || [];
+        const sectionGames = groupedForStats[section.code] || [];
         const sectionGameIds = new Set(sectionGames.map(g => g.game_id));
         const completedInSection = unitProgress.filter(
-          p => isGameEffectivelyCompleted(p) && sectionGameIds.has(p.game_id)
+          p => isGameEffectivelyCompleted(p, unitSnapshotGames) && sectionGameIds.has(p.game_id)
         ).length;
         
         return {
@@ -435,12 +473,24 @@ export const Dashboard = ({ onStartGame, onBack, selectedUnitId, onUnitChange }:
       if (index > 0 && isWithinSubscriptionLimit) {
         const prevUnitId = unitsData[index - 1].id;
         const prevProgress = unitProgressMap.get(prevUnitId) || [];
+        const prevSnapshotGames = unitSnapshotMap.get(prevUnitId);
+        
+        // Use the previous unit's snapshot to determine required games if available
+        // This ensures new games don't affect existing unit completion status
+        let requiredGamesForPrevUnit: GameConfig[];
+        if (prevSnapshotGames) {
+          requiredGamesForPrevUnit = prevSnapshotGames.filter(g => g.required_for_unlock);
+        } else {
+          requiredGamesForPrevUnit = requiredGamesAll;
+        }
+        
+        const requiredGameIds = new Set(requiredGamesForPrevUnit.map(g => g.game_id));
         
         // Check if all required_for_unlock games are completed in the previous unit
         const completedRequiredGames = prevProgress.filter(
-          (p) => isGameEffectivelyCompleted(p) && requiredGameIds.has(p.game_id)
+          (p) => isGameEffectivelyCompleted(p, prevSnapshotGames) && requiredGameIds.has(p.game_id)
         ).length;
-        isUnlocked = requiredGames.length > 0 && completedRequiredGames >= requiredGames.length;
+        isUnlocked = requiredGamesForPrevUnit.length > 0 && completedRequiredGames >= requiredGamesForPrevUnit.length;
       }
 
       return {
