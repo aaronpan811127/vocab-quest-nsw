@@ -93,6 +93,9 @@ Deno.serve(async (req) => {
     // Get units for reference
     const { data: units } = await supabase.from('units').select('id, title, unit_number');
 
+    // Get test types for reference
+    const { data: testTypes } = await supabase.from('test_types').select('id, name, code');
+
     // Get user progress (in-progress units)
     const { data: progressData } = await supabase
       .from('user_progress')
@@ -103,6 +106,7 @@ Deno.serve(async (req) => {
     const enrichedProfiles = profiles?.map(p => {
       const leaderboard = leaderboardData?.find(l => l.user_id === p.user_id);
       const currentUnit = units?.find(u => u.id === p.current_unit_id);
+      const testType = testTypes?.find(t => t.id === p.default_test_type_id);
       
       // Find units with in-progress games for this user
       const userProgress = progressData?.filter(pr => pr.user_id === p.user_id) || [];
@@ -136,6 +140,8 @@ Deno.serve(async (req) => {
         total_xp: leaderboard?.total_xp || 0,
         level: leaderboard?.level || 1,
         study_streak: leaderboard?.study_streak || 0,
+        test_type_name: testType?.name || null,
+        test_type_code: testType?.code || null,
         current_unit_title: currentUnit?.title || null,
         current_unit_number: currentUnit?.unit_number || null,
         in_progress_units: inProgressUnits
