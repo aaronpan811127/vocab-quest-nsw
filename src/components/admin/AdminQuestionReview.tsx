@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
 import { Check, X, Star, Loader2, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, BookOpen } from "lucide-react";
 
@@ -117,6 +118,15 @@ export const AdminQuestionReview = () => {
       }
       if (data.test_types) {
         setTestTypes(data.test_types);
+        // Default to Selective test type if not already set
+        if (!testTypeFilter && data.test_types.length > 0) {
+          const selectiveType = data.test_types.find((t: TestType) => t.code === 'SELECTIVE');
+          if (selectiveType) {
+            setTestTypeFilter(selectiveType.id);
+          } else {
+            setTestTypeFilter(data.test_types[0].id);
+          }
+        }
       }
       if (data.units) {
         setUnits(data.units);
@@ -244,19 +254,29 @@ export const AdminQuestionReview = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <h2 className="text-2xl font-bold">Question Review</h2>
+      <div className="flex flex-col gap-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-bold">Question Review</h2>
+        </div>
+        
+        {/* Test Type Radio Buttons */}
+        <RadioGroup 
+          value={testTypeFilter} 
+          onValueChange={(value) => { setTestTypeFilter(value); setPage(1); }}
+          className="flex flex-wrap gap-3"
+        >
+          {testTypes.map(type => (
+            <div key={type.id} className="flex items-center space-x-2">
+              <RadioGroupItem value={type.id} id={`test-type-${type.id}`} />
+              <Label htmlFor={`test-type-${type.id}`} className="cursor-pointer text-sm font-medium">
+                {type.name}
+              </Label>
+            </div>
+          ))}
+        </RadioGroup>
+
+        {/* Other Filters */}
         <div className="flex flex-wrap items-center gap-2">
-          <Select value={testTypeFilter} onValueChange={(value) => { setTestTypeFilter(value); setPage(1); }}>
-            <SelectTrigger className="w-36">
-              <SelectValue placeholder="Select Test" />
-            </SelectTrigger>
-            <SelectContent>
-              {testTypes.map(type => (
-                <SelectItem key={type.id} value={type.id}>{type.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
           <Select value={unitFilter} onValueChange={(value) => { setUnitFilter(value); setPage(1); }}>
             <SelectTrigger className="w-40">
               <SelectValue placeholder="Unit" />
