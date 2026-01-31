@@ -24,6 +24,10 @@ interface VocabularyItem {
   unit_title: string;
   unit_number: number;
   created_at: string;
+  review_status: string;
+  review_score: number | null;
+  reviewed_at: string | null;
+  rejection_reason: string | null;
 }
 
 interface Question {
@@ -84,6 +88,7 @@ export const AdminQuestionReview = () => {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(null);
+  const [selectedVocabulary, setSelectedVocabulary] = useState<VocabularyItem | null>(null);
   const [actionDialogOpen, setActionDialogOpen] = useState(false);
   const [actionType, setActionType] = useState<"approve" | "reject" | "score">("approve");
   const [score, setScore] = useState(5);
@@ -172,7 +177,7 @@ export const AdminQuestionReview = () => {
     : units.filter(u => u.test_type_id === testTypeFilter);
 
   const handleAction = async () => {
-    if (!selectedQuestion) return;
+    if (!selectedQuestion && !selectedVocabulary) return;
     
     setActionLoading(true);
     try {
@@ -180,9 +185,15 @@ export const AdminQuestionReview = () => {
       if (!session) return;
 
       const body: Record<string, unknown> = {
-        question_id: selectedQuestion.id,
         action: actionType,
       };
+
+      // Set the ID based on what's selected
+      if (selectedVocabulary) {
+        body.vocabulary_id = selectedVocabulary.id;
+      } else if (selectedQuestion) {
+        body.question_id = selectedQuestion.id;
+      }
 
       if (actionType === "score") {
         body.score = score;
@@ -208,21 +219,23 @@ export const AdminQuestionReview = () => {
         throw new Error(data.error);
       }
 
+      const itemType = selectedVocabulary ? "Vocabulary" : "Question";
       toast({
         title: "Success",
-        description: `Question ${actionType === "approve" ? "approved" : actionType === "reject" ? "rejected" : "scored"} successfully`,
+        description: `${itemType} ${actionType === "approve" ? "approved" : actionType === "reject" ? "rejected" : "scored"} successfully`,
       });
 
       setActionDialogOpen(false);
       setSelectedQuestion(null);
+      setSelectedVocabulary(null);
       setRejectionReason("");
       setScore(5);
       fetchQuestions();
     } catch (error) {
-      console.error('Error reviewing question:', error);
+      console.error('Error reviewing:', error);
       toast({
         title: "Error",
-        description: "Failed to review question",
+        description: "Failed to review item",
         variant: "destructive",
       });
     } finally {
@@ -232,6 +245,14 @@ export const AdminQuestionReview = () => {
 
   const openActionDialog = (question: Question, action: "approve" | "reject" | "score") => {
     setSelectedQuestion(question);
+    setSelectedVocabulary(null);
+    setActionType(action);
+    setActionDialogOpen(true);
+  };
+
+  const openVocabActionDialog = (vocab: VocabularyItem, action: "approve" | "reject" | "score") => {
+    setSelectedVocabulary(vocab);
+    setSelectedQuestion(null);
     setActionType(action);
     setActionDialogOpen(true);
   };
@@ -355,6 +376,14 @@ export const AdminQuestionReview = () => {
                         </Badge>
                       </div>
                     </div>
+                    <div className="flex items-center gap-2">
+                      {getStatusBadge(vocab.review_status || 'pending')}
+                      {vocab.review_score !== null && (
+                        <Badge variant="secondary" className="gap-1">
+                          <Star className="h-3 w-3" /> {vocab.review_score}/10
+                        </Badge>
+                      )}
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent>
@@ -396,6 +425,39 @@ export const AdminQuestionReview = () => {
                         </ul>
                       </div>
                     )}
+
+                    {vocab.rejection_reason && (
+                      <div className="p-2 bg-destructive/10 rounded text-sm text-destructive">
+                        Rejection reason: {vocab.rejection_reason}
+                      </div>
+                    )}
+
+                    <div className="flex gap-2 pt-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="gap-1"
+                        onClick={() => openVocabActionDialog(vocab, "approve")}
+                      >
+                        <Check className="h-4 w-4" /> Approve
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="gap-1"
+                        onClick={() => openVocabActionDialog(vocab, "reject")}
+                      >
+                        <X className="h-4 w-4" /> Reject
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="gap-1"
+                        onClick={() => openVocabActionDialog(vocab, "score")}
+                      >
+                        <Star className="h-4 w-4" /> Score
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>

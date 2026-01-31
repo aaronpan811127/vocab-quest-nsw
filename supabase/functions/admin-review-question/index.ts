@@ -45,11 +45,19 @@ Deno.serve(async (req) => {
       );
     }
 
-    const { question_id, action, score, rejection_reason } = await req.json();
+    const { question_id, vocabulary_id, action, score, rejection_reason } = await req.json();
 
-    if (!question_id || !action) {
+    // Either question_id or vocabulary_id must be provided
+    if (!question_id && !vocabulary_id) {
       return new Response(
-        JSON.stringify({ error: 'Missing question_id or action' }),
+        JSON.stringify({ error: 'Missing question_id or vocabulary_id' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (!action) {
+      return new Response(
+        JSON.stringify({ error: 'Missing action' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -60,8 +68,6 @@ Deno.serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
-
-    console.log(`Admin ${adminUser.id} reviewing question ${question_id} with action: ${action}`);
 
     const updateData: Record<string, unknown> = {
       reviewed_by: adminUser.id,
@@ -82,6 +88,36 @@ Deno.serve(async (req) => {
       }
       updateData.review_score = score;
     }
+
+    // Handle vocabulary review
+    if (vocabulary_id) {
+      console.log(`Admin ${adminUser.id} reviewing vocabulary ${vocabulary_id} with action: ${action}`);
+
+      const { data, error } = await supabase
+        .from('vocabulary')
+        .update(updateData)
+        .eq('id', vocabulary_id)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error updating vocabulary:', error);
+        return new Response(
+          JSON.stringify({ error: 'Failed to update vocabulary' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      console.log(`Successfully reviewed vocabulary ${vocabulary_id}`);
+
+      return new Response(
+        JSON.stringify({ success: true, vocabulary: data }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Handle question review
+    console.log(`Admin ${adminUser.id} reviewing question ${question_id} with action: ${action}`);
 
     const { data, error } = await supabase
       .from('question_bank')
