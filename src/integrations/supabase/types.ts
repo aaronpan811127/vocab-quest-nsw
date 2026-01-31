@@ -687,6 +687,48 @@ export type Database = {
         }
         Relationships: []
       }
+      user_unit_game_snapshots: {
+        Row: {
+          created_at: string
+          games_config: Json
+          id: string
+          test_type_id: string
+          unit_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          games_config?: Json
+          id?: string
+          test_type_id: string
+          unit_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          games_config?: Json
+          id?: string
+          test_type_id?: string
+          unit_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_unit_game_snapshots_test_type_id_fkey"
+            columns: ["test_type_id"]
+            isOneToOne: false
+            referencedRelation: "test_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_unit_game_snapshots_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "units"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vocabulary: {
         Row: {
           antonyms: string[] | null
