@@ -70,9 +70,14 @@ Deno.serve(async (req) => {
     const { data: allUnits } = await supabase.from('units').select('id, title, unit_number, test_type_id').order('unit_number');
     
     // Get distinct game types for filter options (excluding non-reviewable types)
-    const gameTypes = [...new Set(games?.map(g => g.game_type) || [])]
-      .filter(type => !excludedGameTypes.includes(type))
-      .sort();
+    // Return as array of { type, name } objects for proper display names
+    const gameTypesWithNames = (games || [])
+      .filter(g => !excludedGameTypes.includes(g.game_type))
+      .map(g => ({ type: g.game_type, name: g.name }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+    
+    // Also keep the simple list for backward compatibility
+    const gameTypes = gameTypesWithNames.map(g => g.type);
 
     // If filtering on flashcards, return vocabulary items instead of questions
     if (gameType === 'flashcards') {
@@ -133,6 +138,7 @@ Deno.serve(async (req) => {
           limit,
           total_pages: Math.ceil((count || 0) / limit),
           game_types: gameTypes,
+          game_types_with_names: gameTypesWithNames,
           test_types: testTypes || [],
           units: allUnits?.map(u => ({ id: u.id, title: u.title, unit_number: u.unit_number, test_type_id: u.test_type_id })) || []
         }),
@@ -253,6 +259,7 @@ Deno.serve(async (req) => {
         limit,
         total_pages: Math.ceil((count || 0) / limit),
         game_types: gameTypes,
+        game_types_with_names: gameTypesWithNames,
         test_types: testTypes || [],
         units: allUnits?.map(u => ({ id: u.id, title: u.title, unit_number: u.unit_number, test_type_id: u.test_type_id })) || []
       }),
