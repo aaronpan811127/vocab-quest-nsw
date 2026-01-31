@@ -54,7 +54,7 @@ Deno.serve(async (req) => {
     const limit = parseInt(url.searchParams.get('limit') || '20');
     const offset = (page - 1) * limit;
 
-    console.log(`[v2] Admin ${adminUser.id} fetching questions: status=${status}, game_type=${gameType}, test_type=${testTypeId}, unit=${unitId}, page=${page}`);
+    console.log(`[v3] Admin ${adminUser.id} fetching: game_type=${gameType}, test_type=${testTypeId}, unit=${unitId}, page=${page}`);
 
     // Get all games first to filter by game_type
     const { data: games } = await supabase.from('games').select('id, name, game_type');
@@ -65,7 +65,71 @@ Deno.serve(async (req) => {
     // Get all units with test type info
     const { data: allUnits } = await supabase.from('units').select('id, title, unit_number, test_type_id').order('unit_number');
     
-    // Build query
+    // Get distinct game types for filter options
+    const gameTypes = [...new Set(games?.map(g => g.game_type) || [])].sort();
+
+    // If filtering on flashcards, return vocabulary items instead of questions
+    if (gameType === 'flashcards') {
+      let vocabQuery = supabase
+        .from('vocabulary')
+        .select('id, word, definition, synonyms, antonyms, examples, unit_id, created_at', { count: 'exact' })
+        .order('created_at', { ascending: false });
+
+      // Filter by test_type_id (via unit's test_type_id)
+      if (testTypeId !== 'all' && allUnits) {
+        const unitIdsForTestType = allUnits.filter(u => u.test_type_id === testTypeId).map(u => u.id);
+        if (unitIdsForTestType.length > 0) {
+          vocabQuery = vocabQuery.in('unit_id', unitIdsForTestType);
+        }
+      }
+
+      // Filter by unit_id
+      if (unitId !== 'all') {
+        vocabQuery = vocabQuery.eq('unit_id', unitId);
+      }
+
+      vocabQuery = vocabQuery.range(offset, offset + limit - 1);
+
+      const { data: vocabulary, count, error: vocabError } = await vocabQuery;
+
+      if (vocabError) {
+        console.error('Error fetching vocabulary:', vocabError);
+        return new Response(
+          JSON.stringify({ error: 'Failed to fetch vocabulary' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Get units for reference
+      const { data: units } = await supabase.from('units').select('id, title, unit_number');
+
+      // Enrich vocabulary with unit info
+      const enrichedVocabulary = vocabulary?.map(v => {
+        const unit = units?.find(u => u.id === v.unit_id);
+        return {
+          ...v,
+          unit_title: unit?.title || 'Unknown',
+          unit_number: unit?.unit_number || 0,
+        };
+      });
+
+      return new Response(
+        JSON.stringify({ 
+          vocabulary: enrichedVocabulary,
+          questions: [], // Empty questions array for flashcards
+          total: count,
+          page,
+          limit,
+          total_pages: Math.ceil((count || 0) / limit),
+          game_types: gameTypes,
+          test_types: testTypes || [],
+          units: allUnits?.map(u => ({ id: u.id, title: u.title, unit_number: u.unit_number, test_type_id: u.test_type_id })) || []
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Build query for regular questions (not flashcards)
     let query = supabase
       .from('question_bank')
       .select(`
@@ -143,44 +207,11 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Get vocabulary data for questions with words
-    const wordsWithUnits = questions?.filter(q => q.word && q.unit_id).map(q => ({ word: q.word, unit_id: q.unit_id })) || [];
-    let vocabularyMap: Record<string, { definition: string; synonyms: string[]; antonyms: string[]; examples: string[] }> = {};
-    
-    if (wordsWithUnits.length > 0) {
-      const uniqueUnitIds = [...new Set(wordsWithUnits.map(w => w.unit_id))];
-      const uniqueWords = [...new Set(wordsWithUnits.map(w => w.word))];
-      
-      const { data: vocabData } = await supabase
-        .from('vocabulary')
-        .select('word, unit_id, definition, synonyms, antonyms, examples')
-        .in('unit_id', uniqueUnitIds)
-        .in('word', uniqueWords);
-      
-      if (vocabData) {
-        vocabularyMap = vocabData.reduce((acc, v) => {
-          const key = `${v.unit_id}:${v.word}`;
-          acc[key] = {
-            definition: v.definition,
-            synonyms: v.synonyms || [],
-            antonyms: v.antonyms || [],
-            examples: v.examples || []
-          };
-          return acc;
-        }, {} as Record<string, { definition: string; synonyms: string[]; antonyms: string[]; examples: string[] }>);
-      }
-    }
-
-    // Get distinct game types for filter options
-    const gameTypes = [...new Set(games?.map(g => g.game_type) || [])].sort();
-
-    // Enrich questions with unit, game info, passage content, and vocabulary
+    // Enrich questions with unit, game info, and passage content
     const enrichedQuestions = questions?.map(q => {
       const unit = units?.find(u => u.id === q.unit_id);
       const game = games?.find(g => g.id === q.game_id);
       const passage = q.passage_id ? passages[q.passage_id] : null;
-      const vocabKey = q.word && q.unit_id ? `${q.unit_id}:${q.word}` : null;
-      const vocabulary = vocabKey ? vocabularyMap[vocabKey] : null;
       
       return {
         ...q,
@@ -190,13 +221,13 @@ Deno.serve(async (req) => {
         game_type: game?.game_type || 'Unknown',
         passage_title: passage?.title || null,
         passage_content: passage?.content || null,
-        vocabulary: vocabulary || null
       };
     });
 
     return new Response(
       JSON.stringify({ 
         questions: enrichedQuestions,
+        vocabulary: [], // Empty vocabulary for non-flashcard queries
         total: count,
         page,
         limit,
