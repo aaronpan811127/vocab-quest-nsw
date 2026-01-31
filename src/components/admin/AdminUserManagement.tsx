@@ -203,11 +203,6 @@ export const AdminUserManagement = () => {
                       </div>
                     </div>
                   </div>
-                  {user.current_unit_title && (
-                    <Badge variant="outline">
-                      Current: Unit {user.current_unit_number}
-                    </Badge>
-                  )}
                 </div>
               </CardHeader>
               <CardContent>
