@@ -15,7 +15,7 @@ interface Question {
   id: string;
   question_text: string;
   correct_answer: string;
-  options: string[];
+  options: string[] | string | null;
   word: string | null;
   review_status: string;
   review_score: number | null;
@@ -27,6 +27,17 @@ interface Question {
   game_name: string;
   game_type: string;
 }
+
+const parseOptions = (options: string[] | string | null): string[] => {
+  if (!options) return [];
+  if (Array.isArray(options)) return options;
+  try {
+    const parsed = JSON.parse(options);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+};
 
 export const AdminQuestionReview = () => {
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -223,7 +234,7 @@ export const AdminQuestionReview = () => {
                   <div>
                     <p className="text-sm text-muted-foreground mb-1">Options:</p>
                     <div className="flex flex-wrap gap-2">
-                      {(question.options || []).map((option: string, idx: number) => (
+                      {parseOptions(question.options).map((option: string, idx: number) => (
                         <Badge
                           key={idx}
                           variant={option === question.correct_answer ? "default" : "secondary"}
