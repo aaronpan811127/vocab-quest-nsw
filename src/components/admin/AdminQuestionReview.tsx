@@ -110,13 +110,15 @@ export const AdminQuestionReview = () => {
 
       setQuestions(data.questions || []);
       setTotalPages(data.total_pages || 1);
-      if (data.game_types && data.game_types.length > 0) {
+      
+      // Always update filter options from the response
+      if (data.game_types) {
         setGameTypes(data.game_types);
       }
-      if (data.test_types && data.test_types.length > 0) {
+      if (data.test_types) {
         setTestTypes(data.test_types);
       }
-      if (data.units && data.units.length > 0) {
+      if (data.units) {
         setUnits(data.units);
       }
     } catch (error) {
