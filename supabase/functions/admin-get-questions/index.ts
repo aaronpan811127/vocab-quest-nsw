@@ -143,14 +143,44 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Get vocabulary data for questions with words
+    const wordsWithUnits = questions?.filter(q => q.word && q.unit_id).map(q => ({ word: q.word, unit_id: q.unit_id })) || [];
+    let vocabularyMap: Record<string, { definition: string; synonyms: string[]; antonyms: string[]; examples: string[] }> = {};
+    
+    if (wordsWithUnits.length > 0) {
+      const uniqueUnitIds = [...new Set(wordsWithUnits.map(w => w.unit_id))];
+      const uniqueWords = [...new Set(wordsWithUnits.map(w => w.word))];
+      
+      const { data: vocabData } = await supabase
+        .from('vocabulary')
+        .select('word, unit_id, definition, synonyms, antonyms, examples')
+        .in('unit_id', uniqueUnitIds)
+        .in('word', uniqueWords);
+      
+      if (vocabData) {
+        vocabularyMap = vocabData.reduce((acc, v) => {
+          const key = `${v.unit_id}:${v.word}`;
+          acc[key] = {
+            definition: v.definition,
+            synonyms: v.synonyms || [],
+            antonyms: v.antonyms || [],
+            examples: v.examples || []
+          };
+          return acc;
+        }, {} as Record<string, { definition: string; synonyms: string[]; antonyms: string[]; examples: string[] }>);
+      }
+    }
+
     // Get distinct game types for filter options
     const gameTypes = [...new Set(games?.map(g => g.game_type) || [])].sort();
 
-    // Enrich questions with unit, game info, and passage content
+    // Enrich questions with unit, game info, passage content, and vocabulary
     const enrichedQuestions = questions?.map(q => {
       const unit = units?.find(u => u.id === q.unit_id);
       const game = games?.find(g => g.id === q.game_id);
       const passage = q.passage_id ? passages[q.passage_id] : null;
+      const vocabKey = q.word && q.unit_id ? `${q.unit_id}:${q.word}` : null;
+      const vocabulary = vocabKey ? vocabularyMap[vocabKey] : null;
       
       return {
         ...q,
@@ -159,7 +189,8 @@ Deno.serve(async (req) => {
         game_name: game?.name || 'Unknown',
         game_type: game?.game_type || 'Unknown',
         passage_title: passage?.title || null,
-        passage_content: passage?.content || null
+        passage_content: passage?.content || null,
+        vocabulary: vocabulary || null
       };
     });
 

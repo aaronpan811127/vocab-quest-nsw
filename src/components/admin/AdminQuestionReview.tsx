@@ -11,7 +11,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
-import { Check, X, Star, Loader2, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, BookOpen } from "lucide-react";
+import { Check, X, Star, Loader2, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, BookOpen, Sparkles } from "lucide-react";
+
+interface Vocabulary {
+  definition: string;
+  synonyms: string[];
+  antonyms: string[];
+  examples: string[];
+}
 
 interface Question {
   id: string;
@@ -31,6 +38,7 @@ interface Question {
   passage_id: string | null;
   passage_title: string | null;
   passage_content: string | null;
+  vocabulary: Vocabulary | null;
 }
 
 const parseOptions = (options: string[] | string | null): string[] => {
@@ -392,6 +400,44 @@ export const AdminQuestionReview = () => {
                       ))}
                     </div>
                   </div>
+
+                  {/* AI Generated Vocabulary Content */}
+                  {question.vocabulary && (
+                    <div className="p-3 bg-primary/5 border border-primary/20 rounded-lg space-y-2">
+                      <div className="flex items-center gap-2 text-sm font-semibold text-primary">
+                        <Sparkles className="h-4 w-4" />
+                        AI Generated Content
+                      </div>
+                      <div className="grid gap-2 text-sm">
+                        <div>
+                          <span className="font-medium text-muted-foreground">Definition:</span>{" "}
+                          <span>{question.vocabulary.definition}</span>
+                        </div>
+                        {question.vocabulary.synonyms.length > 0 && (
+                          <div>
+                            <span className="font-medium text-muted-foreground">Synonyms:</span>{" "}
+                            <span>{question.vocabulary.synonyms.join(", ")}</span>
+                          </div>
+                        )}
+                        {question.vocabulary.antonyms.length > 0 && (
+                          <div>
+                            <span className="font-medium text-muted-foreground">Antonyms:</span>{" "}
+                            <span>{question.vocabulary.antonyms.join(", ")}</span>
+                          </div>
+                        )}
+                        {question.vocabulary.examples.length > 0 && (
+                          <div>
+                            <span className="font-medium text-muted-foreground">Examples:</span>
+                            <ul className="list-disc list-inside ml-2 mt-1">
+                              {question.vocabulary.examples.map((ex, i) => (
+                                <li key={i} className="text-muted-foreground">{ex}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
 
                   {question.rejection_reason && (
                     <div className="p-2 bg-destructive/10 rounded text-sm text-destructive">
