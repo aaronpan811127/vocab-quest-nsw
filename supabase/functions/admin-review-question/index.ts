@@ -45,7 +45,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    const { question_id, vocabulary_id, action, score, rejection_reason, options, correct_answer } = await req.json();
+    const { question_id, vocabulary_id, action, score, rejection_reason, options, correct_answer, vocabulary_data } = await req.json();
 
     // Either question_id or vocabulary_id must be provided
     if (!question_id && !vocabulary_id) {
@@ -112,6 +112,52 @@ Deno.serve(async (req) => {
     // Handle vocabulary review
     if (vocabulary_id) {
       console.log(`Admin ${adminUser.id} reviewing vocabulary ${vocabulary_id} with action: ${action}`);
+
+      // Handle vocabulary edit with vocabulary_data
+      if (action === 'edit' && vocabulary_data) {
+        const vocabUpdateData: Record<string, unknown> = {
+          reviewed_by: adminUser.id,
+          reviewed_at: new Date().toISOString()
+        };
+
+        if (vocabulary_data.word !== undefined) {
+          vocabUpdateData.word = vocabulary_data.word.trim();
+        }
+        if (vocabulary_data.definition !== undefined) {
+          vocabUpdateData.definition = vocabulary_data.definition.trim();
+        }
+        if (vocabulary_data.synonyms !== undefined) {
+          vocabUpdateData.synonyms = vocabulary_data.synonyms;
+        }
+        if (vocabulary_data.antonyms !== undefined) {
+          vocabUpdateData.antonyms = vocabulary_data.antonyms;
+        }
+        if (vocabulary_data.examples !== undefined) {
+          vocabUpdateData.examples = vocabulary_data.examples;
+        }
+
+        const { data, error } = await supabase
+          .from('vocabulary')
+          .update(vocabUpdateData)
+          .eq('id', vocabulary_id)
+          .select()
+          .single();
+
+        if (error) {
+          console.error('Error updating vocabulary:', error);
+          return new Response(
+            JSON.stringify({ error: 'Failed to update vocabulary' }),
+            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        console.log(`Successfully edited vocabulary ${vocabulary_id}`);
+
+        return new Response(
+          JSON.stringify({ success: true, vocabulary: data }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
 
       const { data, error } = await supabase
         .from('vocabulary')

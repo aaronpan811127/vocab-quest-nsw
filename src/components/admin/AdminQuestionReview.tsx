@@ -154,6 +154,12 @@ export const AdminQuestionReview = () => {
   const [expandedPassages, setExpandedPassages] = useState<Set<string>>(new Set());
   const [editOptions, setEditOptions] = useState<string[]>([]);
   const [editCorrectAnswer, setEditCorrectAnswer] = useState("");
+  // Vocabulary edit state
+  const [editVocabWord, setEditVocabWord] = useState("");
+  const [editVocabDefinition, setEditVocabDefinition] = useState("");
+  const [editVocabSynonyms, setEditVocabSynonyms] = useState("");
+  const [editVocabAntonyms, setEditVocabAntonyms] = useState("");
+  const [editVocabExamples, setEditVocabExamples] = useState("");
   const { toast } = useToast();
 
   const fetchQuestions = async (showLoading = true) => {
@@ -263,8 +269,20 @@ export const AdminQuestionReview = () => {
       } else if (actionType === "reject") {
         body.rejection_reason = rejectionReason;
       } else if (actionType === "edit") {
-        body.options = editOptions;
-        body.correct_answer = editCorrectAnswer;
+        if (selectedVocabulary) {
+          // Vocabulary edit
+          body.vocabulary_data = {
+            word: editVocabWord,
+            definition: editVocabDefinition,
+            synonyms: editVocabSynonyms.split(',').map(s => s.trim()).filter(s => s),
+            antonyms: editVocabAntonyms.split(',').map(s => s.trim()).filter(s => s),
+            examples: editVocabExamples.split('\n').map(s => s.trim()).filter(s => s),
+          };
+        } else {
+          // Question edit
+          body.options = editOptions;
+          body.correct_answer = editCorrectAnswer;
+        }
       }
 
       const response = await fetch(
@@ -299,6 +317,11 @@ export const AdminQuestionReview = () => {
       setScore(5);
       setEditOptions([]);
       setEditCorrectAnswer("");
+      setEditVocabWord("");
+      setEditVocabDefinition("");
+      setEditVocabSynonyms("");
+      setEditVocabAntonyms("");
+      setEditVocabExamples("");
       fetchQuestions(false);
     } catch (error) {
       console.error('Error reviewing:', error);
@@ -323,10 +346,17 @@ export const AdminQuestionReview = () => {
     setActionDialogOpen(true);
   };
 
-  const openVocabActionDialog = (vocab: VocabularyItem, action: "approve" | "reject" | "score") => {
+  const openVocabActionDialog = (vocab: VocabularyItem, action: "approve" | "reject" | "score" | "edit") => {
     setSelectedVocabulary(vocab);
     setSelectedQuestion(null);
     setActionType(action);
+    if (action === "edit") {
+      setEditVocabWord(vocab.word);
+      setEditVocabDefinition(vocab.definition);
+      setEditVocabSynonyms(vocab.synonyms?.join(', ') || '');
+      setEditVocabAntonyms(vocab.antonyms?.join(', ') || '');
+      setEditVocabExamples(vocab.examples?.join('\n') || '');
+    }
     setActionDialogOpen(true);
   };
 
@@ -523,7 +553,15 @@ export const AdminQuestionReview = () => {
                       </div>
                     )}
 
-                    <div className="flex gap-2 pt-2">
+                    <div className="flex flex-wrap gap-2 pt-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="gap-1"
+                        onClick={() => openVocabActionDialog(vocab, "edit")}
+                      >
+                        <Pencil className="h-4 w-4" /> Edit
+                      </Button>
                       <Button
                         size="sm"
                         variant="outline"
@@ -824,16 +862,19 @@ export const AdminQuestionReview = () => {
         <DialogContent className={actionType === "edit" ? "max-w-lg" : ""}>
           <DialogHeader>
             <DialogTitle>
-              {actionType === "approve" ? "Approve Question" : 
-               actionType === "reject" ? "Reject Question" : 
-               actionType === "edit" ? "Edit Question" : "Score Question"}
+              {actionType === "approve" ? (selectedVocabulary ? "Approve Vocabulary" : "Approve Question") : 
+               actionType === "reject" ? (selectedVocabulary ? "Reject Vocabulary" : "Reject Question") : 
+               actionType === "edit" ? (selectedVocabulary ? "Edit Vocabulary" : "Edit Question") : 
+               (selectedVocabulary ? "Score Vocabulary" : "Score Question")}
             </DialogTitle>
           </DialogHeader>
           
           <div className="py-4">
-            <p className="text-sm text-muted-foreground mb-4">
-              {selectedQuestion?.question_text || selectedVocabulary?.word}
-            </p>
+            {actionType !== "edit" && (
+              <p className="text-sm text-muted-foreground mb-4">
+                {selectedQuestion?.question_text || selectedVocabulary?.word}
+              </p>
+            )}
 
             {actionType === "reject" && (
               <div className="space-y-2">
@@ -861,7 +902,57 @@ export const AdminQuestionReview = () => {
               </div>
             )}
 
-            {actionType === "edit" && (
+            {actionType === "edit" && selectedVocabulary && (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-word">Word</Label>
+                  <Input
+                    id="edit-word"
+                    value={editVocabWord}
+                    onChange={(e) => setEditVocabWord(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-definition">Definition</Label>
+                  <Textarea
+                    id="edit-definition"
+                    value={editVocabDefinition}
+                    onChange={(e) => setEditVocabDefinition(e.target.value)}
+                    rows={3}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-synonyms">Synonyms (comma-separated)</Label>
+                  <Input
+                    id="edit-synonyms"
+                    value={editVocabSynonyms}
+                    onChange={(e) => setEditVocabSynonyms(e.target.value)}
+                    placeholder="e.g. happy, joyful, pleased"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-antonyms">Antonyms (comma-separated)</Label>
+                  <Input
+                    id="edit-antonyms"
+                    value={editVocabAntonyms}
+                    onChange={(e) => setEditVocabAntonyms(e.target.value)}
+                    placeholder="e.g. sad, unhappy, gloomy"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-examples">Examples (one per line)</Label>
+                  <Textarea
+                    id="edit-examples"
+                    value={editVocabExamples}
+                    onChange={(e) => setEditVocabExamples(e.target.value)}
+                    rows={3}
+                    placeholder="Enter example sentences, one per line"
+                  />
+                </div>
+              </div>
+            )}
+
+            {actionType === "edit" && selectedQuestion && (
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label>Options</Label>
