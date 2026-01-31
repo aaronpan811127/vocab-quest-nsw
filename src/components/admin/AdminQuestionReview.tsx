@@ -635,7 +635,7 @@ export const AdminQuestionReview = () => {
                           <Button variant="outline" size="sm" className="w-full justify-between gap-2">
                             <span className="flex items-center gap-2">
                               <BookOpen className="h-4 w-4" />
-                              View Passage
+                              {expandedPassages.has(passageGroup.passage_id) ? "Hide Extract" : "Show Extract"}
                             </span>
                             {expandedPassages.has(passageGroup.passage_id) ? (
                               <ChevronUp className="h-4 w-4" />
@@ -660,11 +660,6 @@ export const AdminQuestionReview = () => {
                                 <p className="font-medium text-sm">
                                   Q{qIdx + 1}: {question.question_text}
                                 </p>
-                                {question.word && (
-                                  <div className="flex flex-wrap items-center gap-2 mt-1">
-                                    <Badge variant="outline" className="text-xs font-normal">Word: {question.word}</Badge>
-                                  </div>
-                                )}
                               </div>
                               <div className="flex items-center gap-2">
                                 {getStatusBadge(question.review_status)}
