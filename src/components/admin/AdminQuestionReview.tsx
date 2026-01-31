@@ -333,7 +333,7 @@ export const AdminQuestionReview = () => {
                     <Button
                       size="sm"
                       variant="outline"
-                      className="gap-1 text-destructive border-destructive"
+                      className="gap-1"
                       onClick={() => openActionDialog(question, "reject")}
                     >
                       <X className="h-4 w-4" /> Reject
