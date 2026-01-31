@@ -41,6 +41,7 @@ export const AdminUserManagement = () => {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
+  const [resetAllDialogOpen, setResetAllDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [selectedUnit, setSelectedUnit] = useState<InProgressUnit | null>(null);
   const [resetLoading, setResetLoading] = useState(false);
@@ -146,6 +147,62 @@ export const AdminUserManagement = () => {
     setResetDialogOpen(true);
   };
 
+  const openResetAllDialog = (user: User) => {
+    setSelectedUser(user);
+    setResetAllDialogOpen(true);
+  };
+
+  const handleResetAllUnits = async () => {
+    if (!selectedUser || selectedUser.in_progress_units.length === 0) return;
+    
+    setResetLoading(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      // Reset all in-progress units sequentially
+      for (const unit of selectedUser.in_progress_units) {
+        const response = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-reset-user-unit`,
+          {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${session.access_token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              target_user_id: selectedUser.user_id,
+              unit_id: unit.unit_id,
+            }),
+          }
+        );
+
+        const data = await response.json();
+        if (data.error) {
+          throw new Error(data.error);
+        }
+      }
+
+      toast({
+        title: "Success",
+        description: `All ${selectedUser.in_progress_units.length} units have been reset for ${selectedUser.username || 'user'}. XP recalculated.`,
+      });
+
+      setResetAllDialogOpen(false);
+      setSelectedUser(null);
+      fetchUsers();
+    } catch (error) {
+      console.error('Error resetting all units:', error);
+      toast({
+        title: "Error",
+        description: "Failed to reset all units",
+        variant: "destructive",
+      });
+    } finally {
+      setResetLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -208,7 +265,18 @@ export const AdminUserManagement = () => {
               <CardContent>
                 {user.in_progress_units.length > 0 ? (
                   <div className="space-y-2">
-                    <p className="text-sm font-medium">In-Progress Units:</p>
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-medium">In-Progress Units:</p>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="gap-1 text-destructive border-destructive hover:bg-destructive/10"
+                        onClick={() => openResetAllDialog(user)}
+                      >
+                        <RotateCcw className="h-4 w-4" />
+                        Reset All
+                      </Button>
+                    </div>
                     <div className="space-y-2">
                       {user.in_progress_units.map((unit) => (
                         <div
@@ -309,6 +377,50 @@ export const AdminUserManagement = () => {
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 "Reset Unit"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reset All Confirmation Dialog */}
+      <Dialog open={resetAllDialogOpen} onOpenChange={setResetAllDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="h-5 w-5" />
+              Reset All Unit Progress
+            </DialogTitle>
+            <DialogDescription>
+              This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-4">
+            <p className="text-sm">
+              You are about to reset <strong>all {selectedUser?.in_progress_units.length} in-progress units</strong> for user <strong>{selectedUser?.username || "Unknown"}</strong>.
+            </p>
+            <div className="mt-4 p-3 bg-destructive/10 rounded-lg text-sm">
+              <p className="font-medium text-destructive mb-2">This will delete for each unit:</p>
+              <ul className="list-disc list-inside space-y-1 text-muted-foreground">
+                <li>All game attempts</li>
+                <li>All incorrect answers records</li>
+                <li>User progress</li>
+                <li>Game snapshots</li>
+              </ul>
+              <p className="mt-2 text-destructive">The user's total XP will be recalculated after all resets.</p>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setResetAllDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleResetAllUnits} disabled={resetLoading}>
+              {resetLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                "Reset All Units"
               )}
             </Button>
           </DialogFooter>
