@@ -296,6 +296,7 @@ export const AdminQuestionReview = () => {
       setEditOptions([]);
       setEditCorrectAnswer("");
       fetchQuestions();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (error) {
       console.error('Error reviewing:', error);
       toast({
