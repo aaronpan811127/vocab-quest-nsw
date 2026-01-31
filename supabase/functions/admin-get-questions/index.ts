@@ -46,7 +46,8 @@ Deno.serve(async (req) => {
     }
 
     const url = new URL(req.url);
-    const status = url.searchParams.get('status') || 'pending';
+    const statusParam = url.searchParams.get('status') || 'pending';
+    const statusFilters = statusParam.split(',').filter(s => s.trim());
     const gameType = url.searchParams.get('game_type') || 'all';
     const testTypeId = url.searchParams.get('test_type_id') || 'all';
     const unitId = url.searchParams.get('unit_id') || 'all';
@@ -75,9 +76,9 @@ Deno.serve(async (req) => {
         .select('id, word, definition, synonyms, antonyms, examples, unit_id, created_at, review_status, review_score, reviewed_at, rejection_reason', { count: 'exact' })
         .order('created_at', { ascending: false });
 
-      // Filter by review status
-      if (status !== 'all') {
-        vocabQuery = vocabQuery.eq('review_status', status);
+      // Filter by review status (supports multiple statuses)
+      if (statusFilters.length > 0 && !statusFilters.includes('all')) {
+        vocabQuery = vocabQuery.in('review_status', statusFilters);
       }
 
       // Filter by test_type_id (via unit's test_type_id)
@@ -154,8 +155,9 @@ Deno.serve(async (req) => {
       `, { count: 'exact' })
       .order('created_at', { ascending: false });
 
-    if (status !== 'all') {
-      query = query.eq('review_status', status);
+    // Filter by review status (supports multiple statuses)
+    if (statusFilters.length > 0 && !statusFilters.includes('all')) {
+      query = query.in('review_status', statusFilters);
     }
 
     // Filter by game_type if specified

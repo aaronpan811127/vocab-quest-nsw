@@ -135,7 +135,7 @@ export const AdminQuestionReview = () => {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [vocabulary, setVocabulary] = useState<VocabularyItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState("pending");
+  const [statusFilter, setStatusFilter] = useState<string[]>(["pending"]);
   const [gameTypeFilter, setGameTypeFilter] = useState("all");
   const [testTypeFilter, setTestTypeFilter] = useState("");
   const [unitFilter, setUnitFilter] = useState("all");
@@ -165,7 +165,7 @@ export const AdminQuestionReview = () => {
       if (!session) return;
 
       const params = new URLSearchParams({
-        status: statusFilter,
+        status: statusFilter.join(','),
         game_type: gameTypeFilter,
         test_type_id: testTypeFilter,
         unit_id: unitFilter,
@@ -413,17 +413,29 @@ export const AdminQuestionReview = () => {
               ))}
             </SelectContent>
           </Select>
-          <Select value={statusFilter} onValueChange={(value) => { setStatusFilter(value); setPage(1); }}>
-            <SelectTrigger className="w-32">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="pending">Pending</SelectItem>
-              <SelectItem value="approved">Approved</SelectItem>
-              <SelectItem value="rejected">Rejected</SelectItem>
-              <SelectItem value="all">All</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="flex items-center gap-1">
+            {["pending", "approved", "rejected"].map((status) => (
+              <Button
+                key={status}
+                variant={statusFilter.includes(status) ? "default" : "outline"}
+                size="sm"
+                onClick={() => {
+                  setStatusFilter(prev => {
+                    if (prev.includes(status)) {
+                      // Don't allow deselecting all
+                      if (prev.length === 1) return prev;
+                      return prev.filter(s => s !== status);
+                    }
+                    return [...prev, status];
+                  });
+                  setPage(1);
+                }}
+                className="capitalize"
+              >
+                {status}
+              </Button>
+            ))}
+          </div>
         </div>
       </div>
 
