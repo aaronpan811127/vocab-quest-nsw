@@ -43,12 +43,29 @@ const parseOptions = (options: string[] | string | null): string[] => {
   }
 };
 
+interface TestType {
+  id: string;
+  name: string;
+  code: string;
+}
+
+interface Unit {
+  id: string;
+  title: string;
+  unit_number: number;
+  test_type_id: string | null;
+}
+
 export const AdminQuestionReview = () => {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState("pending");
   const [gameTypeFilter, setGameTypeFilter] = useState("all");
+  const [testTypeFilter, setTestTypeFilter] = useState("all");
+  const [unitFilter, setUnitFilter] = useState("all");
   const [gameTypes, setGameTypes] = useState<string[]>([]);
+  const [testTypes, setTestTypes] = useState<TestType[]>([]);
+  const [units, setUnits] = useState<Unit[]>([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(null);
@@ -69,6 +86,8 @@ export const AdminQuestionReview = () => {
       const params = new URLSearchParams({
         status: statusFilter,
         game_type: gameTypeFilter,
+        test_type_id: testTypeFilter,
+        unit_id: unitFilter,
         page: page.toString(),
         limit: '20'
       });
@@ -94,6 +113,12 @@ export const AdminQuestionReview = () => {
       if (data.game_types && data.game_types.length > 0) {
         setGameTypes(data.game_types);
       }
+      if (data.test_types && data.test_types.length > 0) {
+        setTestTypes(data.test_types);
+      }
+      if (data.units && data.units.length > 0) {
+        setUnits(data.units);
+      }
     } catch (error) {
       console.error('Error fetching questions:', error);
       toast({
@@ -108,7 +133,17 @@ export const AdminQuestionReview = () => {
 
   useEffect(() => {
     fetchQuestions();
-  }, [statusFilter, gameTypeFilter, page]);
+  }, [statusFilter, gameTypeFilter, testTypeFilter, unitFilter, page]);
+
+  // Reset unit filter when test type changes
+  useEffect(() => {
+    setUnitFilter("all");
+  }, [testTypeFilter]);
+
+  // Get filtered units based on selected test type
+  const filteredUnits = testTypeFilter === "all" 
+    ? units 
+    : units.filter(u => u.test_type_id === testTypeFilter);
 
   const handleAction = async () => {
     if (!selectedQuestion) return;
@@ -210,8 +245,30 @@ export const AdminQuestionReview = () => {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <h2 className="text-2xl font-bold">Question Review</h2>
         <div className="flex flex-wrap items-center gap-2">
-          <Select value={gameTypeFilter} onValueChange={(value) => { setGameTypeFilter(value); setPage(1); }}>
+          <Select value={testTypeFilter} onValueChange={(value) => { setTestTypeFilter(value); setPage(1); }}>
+            <SelectTrigger className="w-36">
+              <SelectValue placeholder="Test Type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Tests</SelectItem>
+              {testTypes.map(type => (
+                <SelectItem key={type.id} value={type.id}>{type.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={unitFilter} onValueChange={(value) => { setUnitFilter(value); setPage(1); }}>
             <SelectTrigger className="w-40">
+              <SelectValue placeholder="Unit" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Units</SelectItem>
+              {filteredUnits.map(unit => (
+                <SelectItem key={unit.id} value={unit.id}>Unit {unit.unit_number}: {unit.title}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={gameTypeFilter} onValueChange={(value) => { setGameTypeFilter(value); setPage(1); }}>
+            <SelectTrigger className="w-36">
               <SelectValue placeholder="Game Type" />
             </SelectTrigger>
             <SelectContent>
@@ -222,7 +279,7 @@ export const AdminQuestionReview = () => {
             </SelectContent>
           </Select>
           <Select value={statusFilter} onValueChange={(value) => { setStatusFilter(value); setPage(1); }}>
-            <SelectTrigger className="w-40">
+            <SelectTrigger className="w-32">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
