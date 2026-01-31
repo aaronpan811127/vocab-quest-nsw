@@ -50,15 +50,28 @@ interface Question {
   passage_content: string | null;
 }
 
-const parseOptions = (options: string[] | string | null): string[] => {
+const parseOptions = (options: unknown): string[] => {
   if (!options) return [];
-  if (Array.isArray(options)) return options;
-  try {
-    const parsed = JSON.parse(options);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
+  if (Array.isArray(options)) {
+    // Handle array of strings or objects
+    return options.map(opt => typeof opt === 'string' ? opt : String(opt));
   }
+  if (typeof options === 'string') {
+    try {
+      const parsed = JSON.parse(options);
+      if (Array.isArray(parsed)) {
+        return parsed.map(opt => typeof opt === 'string' ? opt : String(opt));
+      }
+      return [];
+    } catch {
+      return [];
+    }
+  }
+  // Handle object case (e.g., {0: "a", 1: "b"})
+  if (typeof options === 'object') {
+    return Object.values(options as Record<string, string>);
+  }
+  return [];
 };
 
 interface PassageGroup {
@@ -522,9 +535,16 @@ export const AdminQuestionReview = () => {
                             <BookOpen className="h-5 w-5 text-primary" />
                             {passageGroup.passage_title}
                           </CardTitle>
-                          <Badge variant="secondary" className="mt-1">
-                            {passageGroup.questions.length} question{passageGroup.questions.length !== 1 ? 's' : ''}
-                          </Badge>
+                          <div className="flex flex-wrap items-center gap-2 mt-1">
+                            <Badge variant="outline">
+                              Unit {passageGroup.questions[0]?.unit_number}: {passageGroup.questions[0]?.unit_title}
+                            </Badge>
+                            <Badge variant="outline">{passageGroup.questions[0]?.game_name}</Badge>
+                            <Badge variant="secondary">{formatGameType(passageGroup.questions[0]?.game_type || 'reading')}</Badge>
+                            <Badge variant="secondary">
+                              {passageGroup.questions.length} question{passageGroup.questions.length !== 1 ? 's' : ''}
+                            </Badge>
+                          </div>
                         </div>
                       </div>
                     </CardHeader>
