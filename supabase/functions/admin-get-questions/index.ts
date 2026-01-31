@@ -57,8 +57,8 @@ Deno.serve(async (req) => {
 
     console.log(`[v3] Admin ${adminUser.id} fetching: game_type=${gameType}, test_type=${testTypeId}, unit=${unitId}, page=${page}`);
 
-    // Game types to exclude from review (no reviewable questions)
-    const excludedGameTypes = ['listening', 'matching', 'speaking', 'writing'];
+    // Game types to exclude from review (no reviewable questions - either no questions or programmatically generated)
+    const excludedGameTypes = ['listening', 'matching', 'speaking', 'writing', 'oddoneout'];
 
     // Get all games first to filter by game_type
     const { data: games } = await supabase.from('games').select('id, name, game_type');
