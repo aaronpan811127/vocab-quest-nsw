@@ -139,7 +139,7 @@ export const AdminQuestionReview = () => {
   const [gameTypeFilter, setGameTypeFilter] = useState("all");
   const [testTypeFilter, setTestTypeFilter] = useState("");
   const [unitFilter, setUnitFilter] = useState("all");
-  const [gameTypes, setGameTypes] = useState<string[]>([]);
+  const [gameTypes, setGameTypes] = useState<{ type: string; name: string }[]>([]);
   const [testTypes, setTestTypes] = useState<TestType[]>([]);
   const [units, setUnits] = useState<Unit[]>([]);
   const [page, setPage] = useState(1);
@@ -199,8 +199,8 @@ export const AdminQuestionReview = () => {
       setVocabulary(data.vocabulary || []);
       setTotalPages(data.total_pages || 1);
       // Always update filter options from the response
-      if (data.game_types) {
-        setGameTypes(data.game_types);
+      if (data.game_types_with_names) {
+        setGameTypes(data.game_types_with_names);
       }
       if (data.test_types) {
         setTestTypes(data.test_types);
@@ -433,13 +433,13 @@ export const AdminQuestionReview = () => {
             </SelectContent>
           </Select>
           <Select value={gameTypeFilter} onValueChange={(value) => { setGameTypeFilter(value); setPage(1); }}>
-            <SelectTrigger className="w-36">
+            <SelectTrigger className="w-40">
               <SelectValue placeholder="Game Type" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Types</SelectItem>
-              {gameTypes.map(type => (
-                <SelectItem key={type} value={type}>{formatGameType(type)}</SelectItem>
+              {gameTypes.map(g => (
+                <SelectItem key={g.type} value={g.type}>{g.name}</SelectItem>
               ))}
             </SelectContent>
           </Select>
