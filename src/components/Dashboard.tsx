@@ -32,7 +32,8 @@ import { useProfile } from "@/hooks/useProfile";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTestType } from "@/contexts/TestTypeContext";
 import { useSubscription } from "@/contexts/SubscriptionContext";
-import { useGamesConfig, GameConfig } from "@/hooks/useGamesConfig";
+import { useUnitGameSnapshot, GameConfig } from "@/hooks/useUnitGameSnapshot";
+import { useGamesConfig } from "@/hooks/useGamesConfig";
 import { getGameIcon } from "@/utils/gameIcons";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -76,7 +77,10 @@ export const Dashboard = ({ onStartGame, onBack, selectedUnitId, onUnitChange }:
   const { profile, loading } = useProfile();
   const { selectedTestType } = useTestType();
   const { maxUnitsPerTestType, tier } = useSubscription();
-  const { games: gamesConfig, groupedGames, loading: gamesLoading, getSortedSections, getRequiredGames } = useGamesConfig(selectedTestType?.id || null);
+  
+  // Use legacy hook for computing unit unlock status across all units
+  const { games: gamesConfigAll, groupedGames: groupedGamesAll, loading: gamesLoadingAll, getSortedSections: getSortedSectionsAll, getRequiredGames: getRequiredGamesAll } = useGamesConfig(selectedTestType?.id || null);
+  
   const { toast } = useToast();
   const [units, setUnits] = useState<Unit[]>([]);
   const [selectedUnit, setSelectedUnit] = useState<Unit | null>(null);
@@ -94,6 +98,15 @@ export const Dashboard = ({ onStartGame, onBack, selectedUnitId, onUnitChange }:
     gameId: string;
     gameName: string;
   } | null>(null);
+  
+  // Use snapshot hook for the currently selected unit (locked-in game config)
+  const { 
+    games: gamesConfig, 
+    groupedGames, 
+    loading: gamesLoading, 
+    getSortedSections, 
+    getRequiredGames 
+  } = useUnitGameSnapshot(selectedUnit?.id || null, selectedTestType?.id || null);
 
   useEffect(() => {
     if (user && selectedTestType) {
@@ -103,7 +116,7 @@ export const Dashboard = ({ onStartGame, onBack, selectedUnitId, onUnitChange }:
     } else if (selectedTestType) {
       fetchUnits();
     }
-  }, [user, selectedTestType, gamesConfig]);
+  }, [user, selectedTestType, gamesConfigAll]);
 
   const fetchTestTypeStats = async () => {
     if (!user || !selectedTestType) return;
@@ -168,12 +181,12 @@ export const Dashboard = ({ onStartGame, onBack, selectedUnitId, onUnitChange }:
       testTypeUnits?.forEach((u) => currentTestTypeUnitIds.add(u.id));
     }
 
-    const requiredGames = getRequiredGames();
+    const requiredGames = getRequiredGamesAll();
     const requiredGameIds = new Set(requiredGames.map((g) => g.game_id));
 
     // Map game_id -> max_attempts (used to treat single-attempt tests as completed once attempted)
     const gameMaxAttemptsMap = new Map<string, number | null>();
-    gamesConfig.forEach((g) => {
+    gamesConfigAll.forEach((g) => {
       const raw = (g.rules as any)?.max_attempts;
       const parsed =
         typeof raw === "number"
@@ -302,12 +315,12 @@ export const Dashboard = ({ onStartGame, onBack, selectedUnitId, onUnitChange }:
       return;
     }
 
-    // Build section stats
-    const sortedSections = getSortedSections();
+    // Build section stats using all-games config (for units list display)
+    const sortedSections = getSortedSectionsAll();
     const sectionStats: SectionStats[] = sortedSections.map(section => ({
       sectionName: section.name,
       completedGames: 0,
-      totalGames: groupedGames[section.code]?.games.length || 0,
+      totalGames: groupedGamesAll[section.code]?.games.length || 0,
     }));
 
     const formattedUnits: Unit[] = data.map((unit, index) => ({
@@ -331,7 +344,7 @@ export const Dashboard = ({ onStartGame, onBack, selectedUnitId, onUnitChange }:
   };
 
   const fetchUnitsWithProgress = async () => {
-    if (!user || !selectedTestType || gamesConfig.length === 0) return;
+    if (!user || !selectedTestType || gamesConfigAll.length === 0) return;
 
     const { data: unitsData, error: unitsError } = await supabase
       .from("units")
@@ -361,16 +374,16 @@ export const Dashboard = ({ onStartGame, onBack, selectedUnitId, onUnitChange }:
       unitProgressMap.set(p.unit_id, existing);
     });
 
-    // For unit unlock, use required_for_unlock field from database
-    const requiredGames = getRequiredGames();
+    // For unit unlock, use required_for_unlock field from database (use all-games config)
+    const requiredGames = getRequiredGamesAll();
     const requiredGameIds = new Set(requiredGames.map(g => g.game_id));
 
-    // Get sorted sections
-    const sortedSections = getSortedSections();
+    // Get sorted sections (use all-games config for units list)
+    const sortedSections = getSortedSectionsAll();
 
     // Create a map of game_id to section_code
     const gameToSectionMap = new Map<string, string>();
-    Object.entries(groupedGames).forEach(([sectionCode, sectionData]) => {
+    Object.entries(groupedGamesAll).forEach(([sectionCode, sectionData]) => {
       sectionData.games.forEach(game => {
         gameToSectionMap.set(game.game_id, sectionCode);
       });
@@ -378,7 +391,7 @@ export const Dashboard = ({ onStartGame, onBack, selectedUnitId, onUnitChange }:
 
     // Build a map of game_id to max_attempts for quick lookup
     const gameMaxAttemptsMap = new Map<string, number | null>();
-    gamesConfig.forEach(game => {
+    gamesConfigAll.forEach(game => {
       const maxAttempts = (game.rules as any)?.max_attempts;
       gameMaxAttemptsMap.set(
         game.game_id,
@@ -402,7 +415,7 @@ export const Dashboard = ({ onStartGame, onBack, selectedUnitId, onUnitChange }:
 
       // Calculate section stats
       const sectionStats: SectionStats[] = sortedSections.map(section => {
-        const sectionGames = groupedGames[section.code]?.games || [];
+        const sectionGames = groupedGamesAll[section.code]?.games || [];
         const sectionGameIds = new Set(sectionGames.map(g => g.game_id));
         const completedInSection = unitProgress.filter(
           p => isGameEffectivelyCompleted(p) && sectionGameIds.has(p.game_id)
@@ -720,7 +733,7 @@ Game XP = (Avg Score over all attempts × 0.5) + Time Bonus
     );
   }
 
-  if (gamesLoading) {
+  if (gamesLoadingAll || (selectedUnit && gamesLoading)) {
     return (
       <div className="min-h-screen bg-gradient-hero flex items-center justify-center">
         <div className="text-center space-y-4">
