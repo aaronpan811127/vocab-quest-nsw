@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
-import { Check, X, Star, Loader2, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, BookOpen, Sparkles } from "lucide-react";
+import { Check, X, Star, Loader2, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, BookOpen, Sparkles, Pencil } from "lucide-react";
 
 interface VocabularyItem {
   id: string;
@@ -137,11 +137,13 @@ export const AdminQuestionReview = () => {
   const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(null);
   const [selectedVocabulary, setSelectedVocabulary] = useState<VocabularyItem | null>(null);
   const [actionDialogOpen, setActionDialogOpen] = useState(false);
-  const [actionType, setActionType] = useState<"approve" | "reject" | "score">("approve");
+  const [actionType, setActionType] = useState<"approve" | "reject" | "score" | "edit">("approve");
   const [score, setScore] = useState(5);
   const [rejectionReason, setRejectionReason] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
   const [expandedPassages, setExpandedPassages] = useState<Set<string>>(new Set());
+  const [editOptions, setEditOptions] = useState<string[]>([]);
+  const [editCorrectAnswer, setEditCorrectAnswer] = useState("");
   const { toast } = useToast();
 
   const fetchQuestions = async () => {
@@ -246,6 +248,9 @@ export const AdminQuestionReview = () => {
         body.score = score;
       } else if (actionType === "reject") {
         body.rejection_reason = rejectionReason;
+      } else if (actionType === "edit") {
+        body.options = editOptions;
+        body.correct_answer = editCorrectAnswer;
       }
 
       const response = await fetch(
@@ -267,9 +272,10 @@ export const AdminQuestionReview = () => {
       }
 
       const itemType = selectedVocabulary ? "Vocabulary" : "Question";
+      const actionLabel = actionType === "approve" ? "approved" : actionType === "reject" ? "rejected" : actionType === "edit" ? "updated" : "scored";
       toast({
         title: "Success",
-        description: `${itemType} ${actionType === "approve" ? "approved" : actionType === "reject" ? "rejected" : "scored"} successfully`,
+        description: `${itemType} ${actionLabel} successfully`,
       });
 
       setActionDialogOpen(false);
@@ -277,6 +283,8 @@ export const AdminQuestionReview = () => {
       setSelectedVocabulary(null);
       setRejectionReason("");
       setScore(5);
+      setEditOptions([]);
+      setEditCorrectAnswer("");
       fetchQuestions();
     } catch (error) {
       console.error('Error reviewing:', error);
@@ -290,10 +298,14 @@ export const AdminQuestionReview = () => {
     }
   };
 
-  const openActionDialog = (question: Question, action: "approve" | "reject" | "score") => {
+  const openActionDialog = (question: Question, action: "approve" | "reject" | "score" | "edit") => {
     setSelectedQuestion(question);
     setSelectedVocabulary(null);
     setActionType(action);
+    if (action === "edit") {
+      setEditOptions(parseOptions(question.options));
+      setEditCorrectAnswer(question.correct_answer);
+    }
     setActionDialogOpen(true);
   };
 
@@ -302,6 +314,12 @@ export const AdminQuestionReview = () => {
     setSelectedQuestion(null);
     setActionType(action);
     setActionDialogOpen(true);
+  };
+
+  const handleOptionChange = (index: number, value: string) => {
+    const newOptions = [...editOptions];
+    newOptions[index] = value;
+    setEditOptions(newOptions);
   };
 
   const togglePassage = (questionId: string) => {
@@ -645,6 +663,14 @@ export const AdminQuestionReview = () => {
                               >
                                 <Star className="h-3 w-3" /> Score
                               </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="gap-1 h-7 text-xs"
+                                onClick={() => openActionDialog(question, "edit")}
+                              >
+                                <Pencil className="h-3 w-3" /> Edit
+                              </Button>
                             </div>
                           </div>
                         ))}
@@ -725,6 +751,14 @@ export const AdminQuestionReview = () => {
                           >
                             <Star className="h-4 w-4" /> Score
                           </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="gap-1"
+                            onClick={() => openActionDialog(question, "edit")}
+                          >
+                            <Pencil className="h-4 w-4" /> Edit
+                          </Button>
                         </div>
                       </div>
                     </CardContent>
@@ -761,16 +795,18 @@ export const AdminQuestionReview = () => {
 
       {/* Action Dialog */}
       <Dialog open={actionDialogOpen} onOpenChange={setActionDialogOpen}>
-        <DialogContent>
+        <DialogContent className={actionType === "edit" ? "max-w-lg" : ""}>
           <DialogHeader>
             <DialogTitle>
-              {actionType === "approve" ? "Approve Question" : actionType === "reject" ? "Reject Question" : "Score Question"}
+              {actionType === "approve" ? "Approve Question" : 
+               actionType === "reject" ? "Reject Question" : 
+               actionType === "edit" ? "Edit Question" : "Score Question"}
             </DialogTitle>
           </DialogHeader>
           
           <div className="py-4">
             <p className="text-sm text-muted-foreground mb-4">
-              {selectedQuestion?.question_text}
+              {selectedQuestion?.question_text || selectedVocabulary?.word}
             </p>
 
             {actionType === "reject" && (
@@ -798,6 +834,37 @@ export const AdminQuestionReview = () => {
                 />
               </div>
             )}
+
+            {actionType === "edit" && (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Options</Label>
+                  <div className="space-y-2">
+                    {editOptions.map((option, idx) => (
+                      <div key={idx} className="flex items-center gap-2">
+                        <Input
+                          value={option}
+                          onChange={(e) => handleOptionChange(idx, e.target.value)}
+                          placeholder={`Option ${idx + 1}`}
+                        />
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant={editCorrectAnswer === option ? "default" : "outline"}
+                          className={editCorrectAnswer === option ? "bg-success hover:bg-success/90" : ""}
+                          onClick={() => setEditCorrectAnswer(option)}
+                        >
+                          {editCorrectAnswer === option ? <Check className="h-4 w-4" /> : "Set Correct"}
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Click "Set Correct" to mark an option as the correct answer.
+                </p>
+              </div>
+            )}
           </div>
 
           <DialogFooter>
@@ -808,7 +875,9 @@ export const AdminQuestionReview = () => {
               {actionLoading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
-                actionType === "approve" ? "Approve" : actionType === "reject" ? "Reject" : "Save Score"
+                actionType === "approve" ? "Approve" : 
+                actionType === "reject" ? "Reject" : 
+                actionType === "edit" ? "Save Changes" : "Save Score"
               )}
             </Button>
           </DialogFooter>

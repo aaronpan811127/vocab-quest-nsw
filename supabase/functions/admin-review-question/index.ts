@@ -45,7 +45,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    const { question_id, vocabulary_id, action, score, rejection_reason } = await req.json();
+    const { question_id, vocabulary_id, action, score, rejection_reason, options, correct_answer } = await req.json();
 
     // Either question_id or vocabulary_id must be provided
     if (!question_id && !vocabulary_id) {
@@ -62,9 +62,9 @@ Deno.serve(async (req) => {
       );
     }
 
-    if (!['approve', 'reject', 'score'].includes(action)) {
+    if (!['approve', 'reject', 'score', 'edit'].includes(action)) {
       return new Response(
-        JSON.stringify({ error: 'Invalid action. Must be approve, reject, or score' }),
+        JSON.stringify({ error: 'Invalid action. Must be approve, reject, score, or edit' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -87,6 +87,26 @@ Deno.serve(async (req) => {
         );
       }
       updateData.review_score = score;
+    } else if (action === 'edit') {
+      // Validate edit data
+      if (options !== undefined) {
+        if (!Array.isArray(options) || options.length === 0) {
+          return new Response(
+            JSON.stringify({ error: 'Options must be a non-empty array' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        updateData.options = options;
+      }
+      if (correct_answer !== undefined) {
+        if (typeof correct_answer !== 'string' || correct_answer.trim() === '') {
+          return new Response(
+            JSON.stringify({ error: 'Correct answer must be a non-empty string' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        updateData.correct_answer = correct_answer.trim();
+      }
     }
 
     // Handle vocabulary review
