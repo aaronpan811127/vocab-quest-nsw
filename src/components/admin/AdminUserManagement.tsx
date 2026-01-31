@@ -42,6 +42,7 @@ export const AdminUserManagement = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
   const [resetAllDialogOpen, setResetAllDialogOpen] = useState(false);
+  const [resetAllUsersDialogOpen, setResetAllUsersDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [selectedUnit, setSelectedUnit] = useState<InProgressUnit | null>(null);
   const [resetLoading, setResetLoading] = useState(false);
@@ -203,10 +204,79 @@ export const AdminUserManagement = () => {
     }
   };
 
+  const handleResetAllUsers = async () => {
+    const usersWithProgress = users.filter(u => u.in_progress_units.length > 0);
+    if (usersWithProgress.length === 0) return;
+    
+    setResetLoading(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      let totalUnitsReset = 0;
+
+      // Reset all in-progress units for all users
+      for (const user of usersWithProgress) {
+        for (const unit of user.in_progress_units) {
+          const response = await fetch(
+            `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-reset-user-unit`,
+            {
+              method: 'POST',
+              headers: {
+                Authorization: `Bearer ${session.access_token}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                target_user_id: user.user_id,
+                unit_id: unit.unit_id,
+              }),
+            }
+          );
+
+          const data = await response.json();
+          if (data.error) {
+            console.error(`Error resetting unit for user ${user.username}:`, data.error);
+          } else {
+            totalUnitsReset++;
+          }
+        }
+      }
+
+      toast({
+        title: "Success",
+        description: `Reset ${totalUnitsReset} units across ${usersWithProgress.length} users. XP recalculated.`,
+      });
+
+      setResetAllUsersDialogOpen(false);
+      fetchUsers();
+    } catch (error) {
+      console.error('Error resetting all users:', error);
+      toast({
+        title: "Error",
+        description: "Failed to reset all users",
+        variant: "destructive",
+      });
+    } finally {
+      setResetLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">User Management</h2>
+        <div className="flex items-center gap-4">
+          <h2 className="text-2xl font-bold">User Management</h2>
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1 text-destructive border-destructive hover:bg-destructive/10"
+            onClick={() => setResetAllUsersDialogOpen(true)}
+            disabled={users.filter(u => u.in_progress_units.length > 0).length === 0}
+          >
+            <RotateCcw className="h-4 w-4" />
+            Reset All Users
+          </Button>
+        </div>
         <div className="relative w-64">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
@@ -421,6 +491,50 @@ export const AdminUserManagement = () => {
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 "Reset All Units"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reset All Users Confirmation Dialog */}
+      <Dialog open={resetAllUsersDialogOpen} onOpenChange={setResetAllUsersDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="h-5 w-5" />
+              Reset All Users Progress
+            </DialogTitle>
+            <DialogDescription>
+              This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-4">
+            <p className="text-sm">
+              You are about to reset <strong>all in-progress units</strong> for <strong>all {users.filter(u => u.in_progress_units.length > 0).length} users</strong> with active progress.
+            </p>
+            <div className="mt-4 p-3 bg-destructive/10 rounded-lg text-sm">
+              <p className="font-medium text-destructive mb-2">This will delete for every user:</p>
+              <ul className="list-disc list-inside space-y-1 text-muted-foreground">
+                <li>All game attempts for all in-progress units</li>
+                <li>All incorrect answers records</li>
+                <li>All user progress data</li>
+                <li>All game snapshots</li>
+              </ul>
+              <p className="mt-2 text-destructive font-medium">All users' XP will be recalculated.</p>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setResetAllUsersDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleResetAllUsers} disabled={resetLoading}>
+              {resetLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                "Reset All Users"
               )}
             </Button>
           </DialogFooter>
