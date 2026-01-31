@@ -200,7 +200,10 @@ Deno.serve(async (req) => {
         return completed;
       };
 
-      // Build in-progress units list using snapshot required games
+      // Build in-progress units list using snapshot required games.
+      // IMPORTANT: A unit can be "in progress" even before any game has been started.
+      // For example, after an admin reset, the student may re-open the unit (creating a snapshot)
+      // but not start a game yet. We still want the unit to appear as in-progress.
       const inProgressUnits: Array<{
         unit_id: string;
         unit_title: string;
@@ -211,7 +214,14 @@ Deno.serve(async (req) => {
         games_total: number;
       }> = [];
 
-      Object.entries(unitProgressMap).forEach(([unitId, progressList]) => {
+      const candidateUnitIds = new Set<string>([
+        ...Object.keys(unitProgressMap),
+        ...Object.keys(userSnapshots),
+        ...(p.current_unit_id ? [p.current_unit_id] : []),
+      ]);
+
+      candidateUnitIds.forEach((unitId) => {
+        const progressList = unitProgressMap[unitId] || [];
         const unit = units?.find(u => u.id === unitId);
         if (!unit || !unit.test_type_id) return;
 
@@ -245,8 +255,14 @@ Deno.serve(async (req) => {
           }
         });
 
-        // Only show as in-progress if started but not completed
-        if (progressList.length > 0 && completedRequiredGames < totalRequiredGames) {
+        const hasSnapshot = !!(snapshotGames && Array.isArray(snapshotGames));
+        const isCurrentUnit = p.current_unit_id === unitId;
+
+        // Show as in-progress if not completed AND it is either:
+        // - started (has progress rows), or
+        // - snapshotted (unit was accessed), or
+        // - currently selected by the student.
+        if (completedRequiredGames < totalRequiredGames && (progressList.length > 0 || hasSnapshot || isCurrentUnit)) {
           inProgressUnits.push({
             unit_id: unitId,
             unit_title: unit.title || 'Unknown',
