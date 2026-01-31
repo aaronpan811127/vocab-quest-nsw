@@ -298,34 +298,34 @@ export const WordStruggleAnalytics = () => {
         className="border-border/50 bg-card/80 backdrop-blur-sm cursor-pointer hover:bg-card/90 transition-colors"
         onClick={() => setIsOpen(true)}
       >
-        <CardContent className="p-4">
+        <CardContent className="p-2.5 sm:p-3">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="rounded-full bg-primary/10 p-2">
-                <TrendingDown className="h-4 w-4 text-primary" />
+            <div className="flex items-center gap-2">
+              <div className="rounded-full bg-primary/10 p-1.5">
+                <TrendingDown className="h-3.5 w-3.5 text-primary" />
               </div>
               <div>
-                <h3 className="font-medium text-sm">Words to Practice</h3>
+                <h3 className="font-medium text-xs">Words to Practice</h3>
                 {allWordsUnfiltered.length === 0 ? (
-                  <p className="text-xs text-muted-foreground">No mistakes yet - keep it up!</p>
+                  <p className="text-[10px] text-muted-foreground">No mistakes yet</p>
                 ) : (
-                  <p className="text-xs text-muted-foreground">
-                    <span className="text-destructive font-semibold">{uniqueStruggleWordsTotal}</span> words need review
+                  <p className="text-[10px] text-muted-foreground">
+                    <span className="text-destructive font-semibold">{uniqueStruggleWordsTotal}</span> to review
                   </p>
                 )}
               </div>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               {topWords.length > 0 && (
-                <div className="hidden sm:flex items-center gap-1.5">
-                  {topWords.map((w, i) => (
-                    <Badge key={i} variant="outline" className="text-xs capitalize">
+                <div className="hidden sm:flex items-center gap-1">
+                  {topWords.slice(0, 2).map((w, i) => (
+                    <Badge key={i} variant="outline" className="text-[10px] px-1.5 py-0 h-4 capitalize">
                       {w.word}
                     </Badge>
                   ))}
                 </div>
               )}
-              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
             </div>
           </div>
         </CardContent>
