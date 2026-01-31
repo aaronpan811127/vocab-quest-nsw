@@ -536,12 +536,11 @@ export const AdminQuestionReview = () => {
                             {passageGroup.passage_title}
                           </CardTitle>
                           <div className="flex flex-wrap items-center gap-2 mt-1">
-                            <Badge variant="outline">
+                            <Badge variant="outline" className="font-normal">
                               Unit {passageGroup.questions[0]?.unit_number}: {passageGroup.questions[0]?.unit_title}
                             </Badge>
-                            <Badge variant="outline">{passageGroup.questions[0]?.game_name}</Badge>
-                            <Badge variant="secondary">{formatGameType(passageGroup.questions[0]?.game_type || 'reading')}</Badge>
-                            <Badge variant="secondary">
+                            <Badge variant="outline" className="font-normal">{passageGroup.questions[0]?.game_name}</Badge>
+                            <Badge variant="outline" className="font-normal">
                               {passageGroup.questions.length} question{passageGroup.questions.length !== 1 ? 's' : ''}
                             </Badge>
                           </div>
@@ -584,8 +583,8 @@ export const AdminQuestionReview = () => {
                                   Q{qIdx + 1}: {question.question_text}
                                 </p>
                                 <div className="flex flex-wrap items-center gap-2 mt-1">
-                                  <Badge variant="outline" className="text-xs">Unit {question.unit_number}</Badge>
-                                  {question.word && <Badge variant="outline" className="text-xs">Word: {question.word}</Badge>}
+                                  <Badge variant="outline" className="text-xs font-normal">Unit {question.unit_number}</Badge>
+                                  {question.word && <Badge variant="outline" className="text-xs font-normal">Word: {question.word}</Badge>}
                                 </div>
                               </div>
                               <div className="flex items-center gap-2">
@@ -604,8 +603,8 @@ export const AdminQuestionReview = () => {
                                 {parseOptions(question.options).map((option: string, idx: number) => (
                                   <Badge
                                     key={idx}
-                                    variant={option === question.correct_answer ? "default" : "secondary"}
-                                    className={`text-xs ${option === question.correct_answer ? "bg-success text-success-foreground" : ""}`}
+                                    variant="outline"
+                                    className={`text-xs font-normal ${option === question.correct_answer ? "bg-success/10 border-success text-success-foreground" : ""}`}
                                   >
                                     {option}
                                     {option === question.correct_answer && " ✓"}
@@ -661,10 +660,9 @@ export const AdminQuestionReview = () => {
                         <div>
                           <CardTitle className="text-lg">{question.question_text}</CardTitle>
                           <div className="flex flex-wrap items-center gap-2 mt-1">
-                            <Badge variant="outline">Unit {question.unit_number}: {question.unit_title}</Badge>
-                            <Badge variant="outline">{question.game_name}</Badge>
-                            <Badge variant="secondary">{formatGameType(question.game_type)}</Badge>
-                            {question.word && <Badge variant="outline">Word: {question.word}</Badge>}
+                            <Badge variant="outline" className="font-normal">Unit {question.unit_number}: {question.unit_title}</Badge>
+                            <Badge variant="outline" className="font-normal">{question.game_name}</Badge>
+                            {question.word && <Badge variant="outline" className="font-normal">Word: {question.word}</Badge>}
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
@@ -685,8 +683,8 @@ export const AdminQuestionReview = () => {
                             {parseOptions(question.options).map((option: string, idx: number) => (
                               <Badge
                                 key={idx}
-                                variant={option === question.correct_answer ? "default" : "secondary"}
-                                className={option === question.correct_answer ? "bg-success text-success-foreground" : ""}
+                                variant="outline"
+                                className={`font-normal ${option === question.correct_answer ? "bg-success/10 border-success text-success-foreground" : ""}`}
                               >
                                 {option}
                                 {option === question.correct_answer && " ✓"}
