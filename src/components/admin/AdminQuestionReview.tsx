@@ -61,7 +61,7 @@ export const AdminQuestionReview = () => {
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState("pending");
   const [gameTypeFilter, setGameTypeFilter] = useState("all");
-  const [testTypeFilter, setTestTypeFilter] = useState("all");
+  const [testTypeFilter, setTestTypeFilter] = useState("");
   const [unitFilter, setUnitFilter] = useState("all");
   const [gameTypes, setGameTypes] = useState<string[]>([]);
   const [testTypes, setTestTypes] = useState<TestType[]>([]);
@@ -143,7 +143,7 @@ export const AdminQuestionReview = () => {
   }, [testTypeFilter]);
 
   // Get filtered units based on selected test type
-  const filteredUnits = testTypeFilter === "all" 
+  const filteredUnits = !testTypeFilter 
     ? units 
     : units.filter(u => u.test_type_id === testTypeFilter);
 
@@ -249,10 +249,9 @@ export const AdminQuestionReview = () => {
         <div className="flex flex-wrap items-center gap-2">
           <Select value={testTypeFilter} onValueChange={(value) => { setTestTypeFilter(value); setPage(1); }}>
             <SelectTrigger className="w-36">
-              <SelectValue placeholder="Test Type" />
+              <SelectValue placeholder="Select Test" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Tests</SelectItem>
               {testTypes.map(type => (
                 <SelectItem key={type.id} value={type.id}>{type.name}</SelectItem>
               ))}
