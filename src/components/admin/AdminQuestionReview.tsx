@@ -61,6 +61,40 @@ const parseOptions = (options: string[] | string | null): string[] => {
   }
 };
 
+interface PassageGroup {
+  passage_id: string;
+  passage_title: string;
+  passage_content: string;
+  questions: Question[];
+}
+
+// Group questions by passage for reading game types
+const groupQuestionsByPassage = (questions: Question[]): { grouped: PassageGroup[]; ungrouped: Question[] } => {
+  const passageMap = new Map<string, PassageGroup>();
+  const ungrouped: Question[] = [];
+
+  questions.forEach(q => {
+    if (q.passage_id && q.passage_content) {
+      if (!passageMap.has(q.passage_id)) {
+        passageMap.set(q.passage_id, {
+          passage_id: q.passage_id,
+          passage_title: q.passage_title || 'Reading Passage',
+          passage_content: q.passage_content,
+          questions: [],
+        });
+      }
+      passageMap.get(q.passage_id)!.questions.push(q);
+    } else {
+      ungrouped.push(q);
+    }
+  });
+
+  return {
+    grouped: Array.from(passageMap.values()),
+    ungrouped,
+  };
+};
+
 interface TestType {
   id: string;
   name: string;
@@ -472,110 +506,214 @@ export const AdminQuestionReview = () => {
         </Card>
       ) : (
         <div className="space-y-4">
-          {questions.map((question) => (
-            <Card key={question.id}>
-              <CardHeader className="pb-2">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <CardTitle className="text-lg">{question.question_text}</CardTitle>
-                    <div className="flex flex-wrap items-center gap-2 mt-1">
-                      <Badge variant="outline">Unit {question.unit_number}: {question.unit_title}</Badge>
-                      <Badge variant="outline">{question.game_name}</Badge>
-                      <Badge variant="secondary">{formatGameType(question.game_type)}</Badge>
-                      {question.word && <Badge variant="outline">Word: {question.word}</Badge>}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {getStatusBadge(question.review_status)}
-                    {question.review_score !== null && (
-                      <Badge variant="secondary" className="gap-1">
-                        <Star className="h-3 w-3" /> {question.review_score}/10
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {/* Reading Passage for reading questions */}
-                  {question.passage_content && (
-                    <Collapsible 
-                      open={expandedPassages.has(question.id)}
-                      onOpenChange={() => togglePassage(question.id)}
-                    >
-                      <CollapsibleTrigger asChild>
-                        <Button variant="outline" size="sm" className="w-full justify-between gap-2">
-                          <span className="flex items-center gap-2">
-                            <BookOpen className="h-4 w-4" />
-                            {question.passage_title || "Reading Passage"}
-                          </span>
-                          {expandedPassages.has(question.id) ? (
-                            <ChevronUp className="h-4 w-4" />
-                          ) : (
-                            <ChevronDown className="h-4 w-4" />
-                          )}
-                        </Button>
-                      </CollapsibleTrigger>
-                      <CollapsibleContent>
-                        <div className="mt-2 p-4 bg-muted rounded-lg text-sm max-h-64 overflow-y-auto">
-                          <p className="whitespace-pre-wrap">{question.passage_content}</p>
+          {/* Group reading questions by passage */}
+          {(() => {
+            const { grouped, ungrouped } = groupQuestionsByPassage(questions);
+            
+            return (
+              <>
+                {/* Render grouped passage questions */}
+                {grouped.map((passageGroup) => (
+                  <Card key={passageGroup.passage_id} className="border-2 border-primary/20">
+                    <CardHeader className="pb-2">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <CardTitle className="text-lg flex items-center gap-2">
+                            <BookOpen className="h-5 w-5 text-primary" />
+                            {passageGroup.passage_title}
+                          </CardTitle>
+                          <Badge variant="secondary" className="mt-1">
+                            {passageGroup.questions.length} question{passageGroup.questions.length !== 1 ? 's' : ''}
+                          </Badge>
                         </div>
-                      </CollapsibleContent>
-                    </Collapsible>
-                  )}
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {/* Passage Content */}
+                      <Collapsible 
+                        open={expandedPassages.has(passageGroup.passage_id)}
+                        onOpenChange={() => togglePassage(passageGroup.passage_id)}
+                      >
+                        <CollapsibleTrigger asChild>
+                          <Button variant="outline" size="sm" className="w-full justify-between gap-2">
+                            <span className="flex items-center gap-2">
+                              <BookOpen className="h-4 w-4" />
+                              View Passage
+                            </span>
+                            {expandedPassages.has(passageGroup.passage_id) ? (
+                              <ChevronUp className="h-4 w-4" />
+                            ) : (
+                              <ChevronDown className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                          <div className="mt-2 p-4 bg-muted rounded-lg text-sm max-h-64 overflow-y-auto">
+                            <p className="whitespace-pre-wrap">{passageGroup.passage_content}</p>
+                          </div>
+                        </CollapsibleContent>
+                      </Collapsible>
 
-                  <div>
-                    <p className="text-sm text-muted-foreground mb-1">Options:</p>
-                    <div className="flex flex-wrap gap-2">
-                      {parseOptions(question.options).map((option: string, idx: number) => (
-                        <Badge
-                          key={idx}
-                          variant={option === question.correct_answer ? "default" : "secondary"}
-                          className={option === question.correct_answer ? "bg-success text-success-foreground" : ""}
-                        >
-                          {option}
-                          {option === question.correct_answer && " ✓"}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
+                      {/* Questions for this passage */}
+                      <div className="space-y-3 pl-4 border-l-2 border-muted">
+                        {passageGroup.questions.map((question, qIdx) => (
+                          <div key={question.id} className="p-3 bg-muted/50 rounded-lg">
+                            <div className="flex items-start justify-between mb-2">
+                              <div>
+                                <p className="font-medium text-sm">
+                                  Q{qIdx + 1}: {question.question_text}
+                                </p>
+                                <div className="flex flex-wrap items-center gap-2 mt-1">
+                                  <Badge variant="outline" className="text-xs">Unit {question.unit_number}</Badge>
+                                  {question.word && <Badge variant="outline" className="text-xs">Word: {question.word}</Badge>}
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                {getStatusBadge(question.review_status)}
+                                {question.review_score !== null && (
+                                  <Badge variant="secondary" className="gap-1 text-xs">
+                                    <Star className="h-3 w-3" /> {question.review_score}/10
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
 
-                  {question.rejection_reason && (
-                    <div className="p-2 bg-destructive/10 rounded text-sm text-destructive">
-                      Rejection reason: {question.rejection_reason}
-                    </div>
-                  )}
+                            <div className="mb-2">
+                              <p className="text-xs text-muted-foreground mb-1">Options:</p>
+                              <div className="flex flex-wrap gap-1">
+                                {parseOptions(question.options).map((option: string, idx: number) => (
+                                  <Badge
+                                    key={idx}
+                                    variant={option === question.correct_answer ? "default" : "secondary"}
+                                    className={`text-xs ${option === question.correct_answer ? "bg-success text-success-foreground" : ""}`}
+                                  >
+                                    {option}
+                                    {option === question.correct_answer && " ✓"}
+                                  </Badge>
+                                ))}
+                              </div>
+                            </div>
 
-                  <div className="flex gap-2 pt-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="gap-1"
-                      onClick={() => openActionDialog(question, "approve")}
-                    >
-                      <Check className="h-4 w-4" /> Approve
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="gap-1"
-                      onClick={() => openActionDialog(question, "reject")}
-                    >
-                      <X className="h-4 w-4" /> Reject
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="gap-1"
-                      onClick={() => openActionDialog(question, "score")}
-                    >
-                      <Star className="h-4 w-4" /> Score
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                            {question.rejection_reason && (
+                              <div className="p-2 bg-destructive/10 rounded text-xs text-destructive mb-2">
+                                Rejection reason: {question.rejection_reason}
+                              </div>
+                            )}
+
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="gap-1 h-7 text-xs"
+                                onClick={() => openActionDialog(question, "approve")}
+                              >
+                                <Check className="h-3 w-3" /> Approve
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="gap-1 h-7 text-xs"
+                                onClick={() => openActionDialog(question, "reject")}
+                              >
+                                <X className="h-3 w-3" /> Reject
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="gap-1 h-7 text-xs"
+                                onClick={() => openActionDialog(question, "score")}
+                              >
+                                <Star className="h-3 w-3" /> Score
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+
+                {/* Render ungrouped questions (non-reading) */}
+                {ungrouped.map((question) => (
+                  <Card key={question.id}>
+                    <CardHeader className="pb-2">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <CardTitle className="text-lg">{question.question_text}</CardTitle>
+                          <div className="flex flex-wrap items-center gap-2 mt-1">
+                            <Badge variant="outline">Unit {question.unit_number}: {question.unit_title}</Badge>
+                            <Badge variant="outline">{question.game_name}</Badge>
+                            <Badge variant="secondary">{formatGameType(question.game_type)}</Badge>
+                            {question.word && <Badge variant="outline">Word: {question.word}</Badge>}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {getStatusBadge(question.review_status)}
+                          {question.review_score !== null && (
+                            <Badge variant="secondary" className="gap-1">
+                              <Star className="h-3 w-3" /> {question.review_score}/10
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        <div>
+                          <p className="text-sm text-muted-foreground mb-1">Options:</p>
+                          <div className="flex flex-wrap gap-2">
+                            {parseOptions(question.options).map((option: string, idx: number) => (
+                              <Badge
+                                key={idx}
+                                variant={option === question.correct_answer ? "default" : "secondary"}
+                                className={option === question.correct_answer ? "bg-success text-success-foreground" : ""}
+                              >
+                                {option}
+                                {option === question.correct_answer && " ✓"}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+
+                        {question.rejection_reason && (
+                          <div className="p-2 bg-destructive/10 rounded text-sm text-destructive">
+                            Rejection reason: {question.rejection_reason}
+                          </div>
+                        )}
+
+                        <div className="flex gap-2 pt-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="gap-1"
+                            onClick={() => openActionDialog(question, "approve")}
+                          >
+                            <Check className="h-4 w-4" /> Approve
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="gap-1"
+                            onClick={() => openActionDialog(question, "reject")}
+                          >
+                            <X className="h-4 w-4" /> Reject
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="gap-1"
+                            onClick={() => openActionDialog(question, "score")}
+                          >
+                            <Star className="h-4 w-4" /> Score
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </>
+            );
+          })()}
 
           {/* Pagination */}
           <div className="flex items-center justify-center gap-2 pt-4">
