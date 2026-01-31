@@ -72,8 +72,13 @@ Deno.serve(async (req) => {
     if (gameType === 'flashcards') {
       let vocabQuery = supabase
         .from('vocabulary')
-        .select('id, word, definition, synonyms, antonyms, examples, unit_id, created_at', { count: 'exact' })
+        .select('id, word, definition, synonyms, antonyms, examples, unit_id, created_at, review_status, review_score, reviewed_at, rejection_reason', { count: 'exact' })
         .order('created_at', { ascending: false });
+
+      // Filter by review status
+      if (status !== 'all') {
+        vocabQuery = vocabQuery.eq('review_status', status);
+      }
 
       // Filter by test_type_id (via unit's test_type_id)
       if (testTypeId !== 'all' && allUnits) {

@@ -751,6 +751,11 @@ export type Database = {
           definition: string
           examples: string[] | null
           id: string
+          rejection_reason: string | null
+          review_score: number | null
+          review_status: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
           synonyms: string[] | null
           unit_id: string
           word: string
@@ -761,6 +766,11 @@ export type Database = {
           definition: string
           examples?: string[] | null
           id?: string
+          rejection_reason?: string | null
+          review_score?: number | null
+          review_status?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           synonyms?: string[] | null
           unit_id: string
           word: string
@@ -771,6 +781,11 @@ export type Database = {
           definition?: string
           examples?: string[] | null
           id?: string
+          rejection_reason?: string | null
+          review_score?: number | null
+          review_status?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           synonyms?: string[] | null
           unit_id?: string
           word?: string
