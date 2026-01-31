@@ -515,7 +515,7 @@ export const AdminQuestionReview = () => {
                         <p className="text-sm font-medium text-muted-foreground mb-1">Synonyms:</p>
                         <div className="flex flex-wrap gap-2">
                           {vocab.synonyms.map((syn, idx) => (
-                            <Badge key={idx} variant="secondary">{syn}</Badge>
+                            <Badge key={idx} variant="outline">{syn}</Badge>
                           ))}
                         </div>
                       </div>
