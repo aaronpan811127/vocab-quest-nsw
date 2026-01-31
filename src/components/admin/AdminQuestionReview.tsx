@@ -582,10 +582,11 @@ export const AdminQuestionReview = () => {
                                 <p className="font-medium text-sm">
                                   Q{qIdx + 1}: {question.question_text}
                                 </p>
-                                <div className="flex flex-wrap items-center gap-2 mt-1">
-                                  <Badge variant="outline" className="text-xs font-normal">Unit {question.unit_number}</Badge>
-                                  {question.word && <Badge variant="outline" className="text-xs font-normal">Word: {question.word}</Badge>}
-                                </div>
+                                {question.word && (
+                                  <div className="flex flex-wrap items-center gap-2 mt-1">
+                                    <Badge variant="outline" className="text-xs font-normal">Word: {question.word}</Badge>
+                                  </div>
+                                )}
                               </div>
                               <div className="flex items-center gap-2">
                                 {getStatusBadge(question.review_status)}
