@@ -57,6 +57,9 @@ Deno.serve(async (req) => {
 
     console.log(`[v3] Admin ${adminUser.id} fetching: game_type=${gameType}, test_type=${testTypeId}, unit=${unitId}, page=${page}`);
 
+    // Game types to exclude from review (no reviewable questions)
+    const excludedGameTypes = ['listening', 'matching', 'speaking', 'writing'];
+
     // Get all games first to filter by game_type
     const { data: games } = await supabase.from('games').select('id, name, game_type');
     
@@ -66,8 +69,10 @@ Deno.serve(async (req) => {
     // Get all units with test type info
     const { data: allUnits } = await supabase.from('units').select('id, title, unit_number, test_type_id').order('unit_number');
     
-    // Get distinct game types for filter options
-    const gameTypes = [...new Set(games?.map(g => g.game_type) || [])].sort();
+    // Get distinct game types for filter options (excluding non-reviewable types)
+    const gameTypes = [...new Set(games?.map(g => g.game_type) || [])]
+      .filter(type => !excludedGameTypes.includes(type))
+      .sort();
 
     // If filtering on flashcards, return vocabulary items instead of questions
     if (gameType === 'flashcards') {
@@ -160,11 +165,19 @@ Deno.serve(async (req) => {
       query = query.in('review_status', statusFilters);
     }
 
-    // Filter by game_type if specified
+    // Filter by game_type if specified, always exclude non-reviewable game types
+    const excludedGameIds = games?.filter(g => excludedGameTypes.includes(g.game_type)).map(g => g.id) || [];
+    
     if (gameType !== 'all' && games) {
-      const gameIds = games.filter(g => g.game_type === gameType).map(g => g.id);
+      const gameIds = games.filter(g => g.game_type === gameType && !excludedGameTypes.includes(g.game_type)).map(g => g.id);
       if (gameIds.length > 0) {
         query = query.in('game_id', gameIds);
+      }
+    } else if (excludedGameIds.length > 0) {
+      // When showing all, exclude the non-reviewable game types
+      const allowedGameIds = games?.filter(g => !excludedGameTypes.includes(g.game_type)).map(g => g.id) || [];
+      if (allowedGameIds.length > 0) {
+        query = query.in('game_id', allowedGameIds);
       }
     }
 
