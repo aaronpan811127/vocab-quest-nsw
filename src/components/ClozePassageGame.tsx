@@ -530,104 +530,108 @@ export const ClozePassageGame = ({ unitId, unitTitle, onComplete, onBack }: Cloz
           <Progress value={progress} className="h-3" />
         </div>
 
-        {/* Main content - Extracts and Question side by side on desktop */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {/* Extracts Panel */}
-          <Card className="bg-card/50 backdrop-blur-sm border-2 border-border/50 p-4">
-            <div className="flex items-center gap-2 mb-4">
-              <BookOpen className="h-5 w-5 text-primary" />
-              <h2 className="font-semibold">Reading Extracts</h2>
-            </div>
-            <ScrollArea className="h-[400px] lg:h-[500px] pr-4">
-              <div className="space-y-4">
-                {extracts.map((extract, index) => (
-                  <div key={index} className="border rounded-lg p-4 bg-background/50">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Badge variant="outline" className="font-bold">
-                        Extract {extract.label}
-                      </Badge>
-                      <span className="text-xs text-muted-foreground italic">
-                        ({extract.text_type})
-                      </span>
-                    </div>
-                    {extract.title && (
-                      <h3 className="font-medium text-sm mb-2">{extract.title}</h3>
-                    )}
-                    <p className="text-sm leading-relaxed whitespace-pre-wrap">
-                      {extract.content}
-                    </p>
-                  </div>
-                ))}
+        {/* Main content - Side-by-side sticky layout */}
+        <div className="flex flex-col lg:flex-row gap-4">
+          {/* Extracts Panel - Sticky on desktop */}
+          <div className="lg:w-1/2 lg:sticky lg:top-24 lg:self-start">
+            <Card className="bg-card/50 backdrop-blur-sm border-2 border-border/50 p-4">
+              <div className="flex items-center gap-2 mb-4">
+                <BookOpen className="h-5 w-5 text-primary" />
+                <h2 className="font-semibold">Reading Extracts</h2>
               </div>
-            </ScrollArea>
-          </Card>
+              <ScrollArea className="h-[300px] sm:h-[350px] lg:h-[calc(100vh-280px)] pr-4">
+                <div className="space-y-4">
+                  {extracts.map((extract, index) => (
+                    <div key={index} className="border rounded-lg p-4 bg-background/50">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Badge variant="outline" className="font-bold">
+                          Extract {extract.label}
+                        </Badge>
+                        <span className="text-xs text-muted-foreground italic">
+                          ({extract.text_type})
+                        </span>
+                      </div>
+                      {extract.title && (
+                        <h3 className="font-medium text-sm mb-2">{extract.title}</h3>
+                      )}
+                      <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                        {extract.content}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            </Card>
+          </div>
 
           {/* Question Panel */}
-          <Card className="bg-card/50 backdrop-blur-sm border-2 border-border/50 p-6">
-            <div className="space-y-6">
-              <div>
-                <Badge variant="secondary" className="mb-3">
-                  Question {currentQuestion + 1}
-                </Badge>
-                <h3 className="text-lg font-medium leading-relaxed">
-                  {currentQ?.question_text}
-                </h3>
-              </div>
+          <div className="lg:w-1/2">
+            <Card className="bg-card/50 backdrop-blur-sm border-2 border-border/50 p-6">
+              <div className="space-y-6">
+                <div>
+                  <Badge variant="secondary" className="mb-3">
+                    Question {currentQuestion + 1}
+                  </Badge>
+                  <h3 className="text-lg font-medium leading-relaxed">
+                    {currentQ?.question_text}
+                  </h3>
+                </div>
 
-              {/* Answer Options */}
-              <div className="space-y-3">
-                {currentQ?.options.map((option, index) => {
-                  const isSelected = selectedAnswers[currentQuestion] === index;
-                  return (
-                    <button
-                      key={index}
-                      onClick={() => handleAnswerSelect(index)}
-                      className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
-                        isSelected
-                          ? "border-primary bg-primary/10 ring-2 ring-primary/20"
-                          : "border-border hover:border-primary/50 hover:bg-muted/50"
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                {/* Answer Options */}
+                <div className="space-y-3">
+                  {currentQ?.options.map((option, index) => {
+                    const isSelected = selectedAnswers[currentQuestion] === index;
+                    return (
+                      <button
+                        key={index}
+                        onClick={() => handleAnswerSelect(index)}
+                        className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
                           isSelected
-                            ? "bg-primary text-primary-foreground"
-                            : "bg-muted text-muted-foreground"
-                        }`}>
-                          {option}
+                            ? "border-primary bg-primary/10 ring-2 ring-primary/20"
+                            : "border-border hover:border-primary/50 hover:bg-muted/50"
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                            isSelected
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-muted text-muted-foreground"
+                          }`}>
+                            {option}
+                          </div>
+                          <span className="font-medium">Extract {option}</span>
                         </div>
-                        <span className="font-medium">Extract {option}</span>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
+                      </button>
+                    );
+                  })}
+                </div>
 
-              {/* Navigation */}
-              <div className="flex justify-end pt-4">
-                <Button
-                  variant="game"
-                  onClick={handleNext}
-                  disabled={selectedAnswers[currentQuestion] === undefined || saving}
-                  size="lg"
-                >
-                  {saving ? (
-                    "Saving..."
-                  ) : currentQuestion < questions.length - 1 ? (
-                    <>
-                      Next Question
-                      <ArrowRight className="h-5 w-5 ml-2" />
-                    </>
-                  ) : (
-                    <>
-                      Submit Test
-                      <CheckCircle2 className="h-5 w-5 ml-2" />
-                    </>
-                  )}
-                </Button>
+                {/* Navigation */}
+                <div className="flex justify-end pt-4">
+                  <Button
+                    variant="game"
+                    onClick={handleNext}
+                    disabled={selectedAnswers[currentQuestion] === undefined || saving}
+                    size="lg"
+                  >
+                    {saving ? (
+                      "Saving..."
+                    ) : currentQuestion < questions.length - 1 ? (
+                      <>
+                        Next Question
+                        <ArrowRight className="h-5 w-5 ml-2" />
+                      </>
+                    ) : (
+                      <>
+                        Submit Test
+                        <CheckCircle2 className="h-5 w-5 ml-2" />
+                      </>
+                    )}
+                  </Button>
+                </div>
               </div>
-            </div>
-          </Card>
+            </Card>
+          </div>
         </div>
       </div>
     </div>
