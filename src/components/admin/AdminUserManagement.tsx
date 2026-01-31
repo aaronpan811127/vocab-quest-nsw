@@ -24,6 +24,8 @@ interface User {
   total_xp: number;
   level: number;
   study_streak: number;
+  test_type_name: string | null;
+  test_type_code: string | null;
   current_unit_title: string | null;
   current_unit_number: number | null;
   in_progress_units: InProgressUnit[];
@@ -191,6 +193,11 @@ export const AdminUserManagement = () => {
                         <span className="flex items-center gap-1">
                           <Flame className="h-3 w-3 text-warning" /> {user.study_streak} day streak
                         </span>
+                        {user.test_type_name && (
+                          <Badge variant="secondary" className="text-xs">
+                            {user.test_type_name}
+                          </Badge>
+                        )}
                       </div>
                     </div>
                   </div>
