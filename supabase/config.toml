@@ -53,3 +53,9 @@ verify_jwt = false
 
 [functions.admin-get-users]
 verify_jwt = false
+
+[functions.generate-cloze-passage]
+verify_jwt = false
+
+[functions.get-or-create-game-snapshot]
+verify_jwt = false

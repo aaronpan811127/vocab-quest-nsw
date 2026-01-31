@@ -11,6 +11,7 @@ import {
   Target,
   FileQuestion,
   ClipboardCheck,
+  FileText,
   LucideIcon,
 } from "lucide-react";
 
@@ -28,6 +29,7 @@ export const iconMap: Record<string, LucideIcon> = {
   Target,
   FileQuestion,
   ClipboardCheck,
+  FileText,
 };
 
 export const getGameIcon = (iconName: string): LucideIcon => {

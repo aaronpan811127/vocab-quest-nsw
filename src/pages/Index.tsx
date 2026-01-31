@@ -13,6 +13,7 @@ import { OddOneOutGame } from "@/components/OddOneOutGame";
 import { WordIntuitionGame } from "@/components/WordIntuitionGame";
 import { ContextMasterGame } from "@/components/ContextMasterGame";
 import { ClozeChallengeGame } from "@/components/ClozeChallengeGame";
+import { ClozePassageGame } from "@/components/ClozePassageGame";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/useProfile";
 import { useExpiredSessionCheck } from "@/hooks/useExpiredSessionCheck";
@@ -97,6 +98,8 @@ const Index = () => {
         return <ContextMasterGame {...commonProps} />;
       case "cloze_challenge":
         return <ClozeChallengeGame {...commonProps} />;
+      case "cloze_passage":
+        return <ClozePassageGame {...commonProps} />;
       default:
         return <ReadingGame {...commonProps} />;
     }
