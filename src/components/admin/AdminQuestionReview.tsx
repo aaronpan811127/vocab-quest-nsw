@@ -645,8 +645,34 @@ export const AdminQuestionReview = () => {
                           </Button>
                         </CollapsibleTrigger>
                         <CollapsibleContent>
-                          <div className="mt-2 p-4 bg-muted rounded-lg text-sm max-h-64 overflow-y-auto">
-                            <p className="whitespace-pre-wrap">{passageGroup.passage_content}</p>
+                          <div className="mt-2 space-y-3 max-h-80 overflow-y-auto">
+                            {(() => {
+                              try {
+                                const extracts = JSON.parse(passageGroup.passage_content);
+                                if (Array.isArray(extracts)) {
+                                  return extracts.map((extract: { label?: string; title?: string; content?: string }, idx: number) => (
+                                    <div key={idx} className="p-3 bg-muted rounded-lg border border-border/50">
+                                      <div className="flex items-center gap-2 mb-2">
+                                        {extract.label && (
+                                          <span className="px-2 py-0.5 bg-primary/10 text-primary text-xs font-semibold rounded">
+                                            {extract.label}
+                                          </span>
+                                        )}
+                                        {extract.title && (
+                                          <span className="font-medium text-sm">{extract.title}</span>
+                                        )}
+                                      </div>
+                                      {extract.content && (
+                                        <p className="text-sm text-muted-foreground whitespace-pre-wrap">{extract.content}</p>
+                                      )}
+                                    </div>
+                                  ));
+                                }
+                                return <p className="p-4 bg-muted rounded-lg text-sm whitespace-pre-wrap">{passageGroup.passage_content}</p>;
+                              } catch {
+                                return <p className="p-4 bg-muted rounded-lg text-sm whitespace-pre-wrap">{passageGroup.passage_content}</p>;
+                              }
+                            })()}
                           </div>
                         </CollapsibleContent>
                       </Collapsible>
