@@ -48,14 +48,22 @@ Deno.serve(async (req) => {
     const url = new URL(req.url);
     const status = url.searchParams.get('status') || 'pending';
     const gameType = url.searchParams.get('game_type') || 'all';
+    const testTypeId = url.searchParams.get('test_type_id') || 'all';
+    const unitId = url.searchParams.get('unit_id') || 'all';
     const page = parseInt(url.searchParams.get('page') || '1');
     const limit = parseInt(url.searchParams.get('limit') || '20');
     const offset = (page - 1) * limit;
 
-    console.log(`Admin ${adminUser.id} fetching questions: status=${status}, game_type=${gameType}, page=${page}`);
+    console.log(`Admin ${adminUser.id} fetching questions: status=${status}, game_type=${gameType}, test_type=${testTypeId}, unit=${unitId}, page=${page}`);
 
     // Get all games first to filter by game_type
     const { data: games } = await supabase.from('games').select('id, name, game_type');
+    
+    // Get all test types
+    const { data: testTypes } = await supabase.from('test_types').select('id, name, code').order('name');
+    
+    // Get all units with test type info
+    const { data: allUnits } = await supabase.from('units').select('id, title, unit_number, test_type_id').order('unit_number');
     
     // Build query
     let query = supabase
@@ -87,6 +95,19 @@ Deno.serve(async (req) => {
       if (gameIds.length > 0) {
         query = query.in('game_id', gameIds);
       }
+    }
+
+    // Filter by test_type_id (via unit's test_type_id)
+    if (testTypeId !== 'all' && allUnits) {
+      const unitIdsForTestType = allUnits.filter(u => u.test_type_id === testTypeId).map(u => u.id);
+      if (unitIdsForTestType.length > 0) {
+        query = query.in('unit_id', unitIdsForTestType);
+      }
+    }
+
+    // Filter by unit_id
+    if (unitId !== 'all') {
+      query = query.eq('unit_id', unitId);
     }
 
     query = query.range(offset, offset + limit - 1);
@@ -149,7 +170,9 @@ Deno.serve(async (req) => {
         page,
         limit,
         total_pages: Math.ceil((count || 0) / limit),
-        game_types: gameTypes
+        game_types: gameTypes,
+        test_types: testTypes || [],
+        units: allUnits?.map(u => ({ id: u.id, title: u.title, unit_number: u.unit_number, test_type_id: u.test_type_id })) || []
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
