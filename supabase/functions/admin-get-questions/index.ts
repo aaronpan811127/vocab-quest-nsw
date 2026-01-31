@@ -47,13 +47,17 @@ Deno.serve(async (req) => {
 
     const url = new URL(req.url);
     const status = url.searchParams.get('status') || 'pending';
+    const gameType = url.searchParams.get('game_type') || 'all';
     const page = parseInt(url.searchParams.get('page') || '1');
     const limit = parseInt(url.searchParams.get('limit') || '20');
     const offset = (page - 1) * limit;
 
-    console.log(`Admin ${adminUser.id} fetching questions with status: ${status}, page: ${page}`);
+    console.log(`Admin ${adminUser.id} fetching questions with status: ${status}, game_type: ${gameType}, page: ${page}`);
 
-    // Get questions with pagination
+    // Get all games first to filter by game_type
+    const { data: games } = await supabase.from('games').select('id, name, game_type');
+    
+    // Build query
     let query = supabase
       .from('question_bank')
       .select(`
@@ -71,12 +75,21 @@ Deno.serve(async (req) => {
         game_id,
         passage_id
       `, { count: 'exact' })
-      .order('created_at', { ascending: false })
-      .range(offset, offset + limit - 1);
+      .order('created_at', { ascending: false });
 
     if (status !== 'all') {
       query = query.eq('review_status', status);
     }
+
+    // Filter by game_type if specified
+    if (gameType !== 'all' && games) {
+      const gameIds = games.filter(g => g.game_type === gameType).map(g => g.id);
+      if (gameIds.length > 0) {
+        query = query.in('game_id', gameIds);
+      }
+    }
+
+    query = query.range(offset, offset + limit - 1);
 
     const { data: questions, count, error } = await query;
 
@@ -88,20 +101,44 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Get units and games for reference
+    // Get units for reference
     const { data: units } = await supabase.from('units').select('id, title, unit_number');
-    const { data: games } = await supabase.from('games').select('id, name, game_type');
+    
+    // Get passages for reading questions
+    const passageIds = questions?.filter(q => q.passage_id).map(q => q.passage_id) || [];
+    let passages: Record<string, { title: string; content: string }> = {};
+    
+    if (passageIds.length > 0) {
+      const { data: passageData } = await supabase
+        .from('reading_passages')
+        .select('id, title, content')
+        .in('id', passageIds);
+      
+      if (passageData) {
+        passages = passageData.reduce((acc, p) => {
+          acc[p.id] = { title: p.title, content: p.content };
+          return acc;
+        }, {} as Record<string, { title: string; content: string }>);
+      }
+    }
 
-    // Enrich questions with unit and game info
+    // Get distinct game types for filter options
+    const gameTypes = [...new Set(games?.map(g => g.game_type) || [])].sort();
+
+    // Enrich questions with unit, game info, and passage content
     const enrichedQuestions = questions?.map(q => {
       const unit = units?.find(u => u.id === q.unit_id);
       const game = games?.find(g => g.id === q.game_id);
+      const passage = q.passage_id ? passages[q.passage_id] : null;
+      
       return {
         ...q,
         unit_title: unit?.title || 'Unknown',
         unit_number: unit?.unit_number || 0,
         game_name: game?.name || 'Unknown',
-        game_type: game?.game_type || 'Unknown'
+        game_type: game?.game_type || 'Unknown',
+        passage_title: passage?.title || null,
+        passage_content: passage?.content || null
       };
     });
 
@@ -111,7 +148,8 @@ Deno.serve(async (req) => {
         total: count,
         page,
         limit,
-        total_pages: Math.ceil((count || 0) / limit)
+        total_pages: Math.ceil((count || 0) / limit),
+        game_types: gameTypes
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
