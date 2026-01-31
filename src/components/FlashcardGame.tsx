@@ -552,11 +552,10 @@ export const FlashcardGame = ({ unitId, unitTitle, gameId, onComplete, onBack }:
           </Button>
 
           <Button 
-            variant="game" 
             onClick={handleMarkLearned}
             disabled={learnedWords.has(currentWord.id)}
             size="sm"
-            className="animate-pulse-subtle"
+            className="animate-pulse-subtle bg-green-600 hover:bg-green-700 text-white"
           >
             <Check className="h-4 w-4 mr-1" />
             {learnedWords.has(currentWord.id) ? "Learned!" : "Got It!"}
