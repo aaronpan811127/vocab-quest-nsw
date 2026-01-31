@@ -12,6 +12,8 @@ interface InProgressUnit {
   unit_id: string;
   unit_title: string;
   unit_number: number;
+  test_type_id: string;
+  test_type_name: string;
   games_completed: number;
   games_total: number;
 }
@@ -215,11 +217,16 @@ export const AdminUserManagement = () => {
                     <div className="space-y-2">
                       {user.in_progress_units.map((unit) => (
                         <div
-                          key={unit.unit_id}
+                          key={`${unit.unit_id}-${unit.test_type_id}`}
                           className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
                         >
                           <div>
-                            <p className="font-medium">Unit {unit.unit_number}: {unit.unit_title}</p>
+                            <div className="flex items-center gap-2">
+                              <p className="font-medium">Unit {unit.unit_number}: {unit.unit_title}</p>
+                              <Badge variant="secondary" className="text-xs">
+                                {unit.test_type_name}
+                              </Badge>
+                            </div>
                             <p className="text-sm text-muted-foreground">
                               {unit.games_completed} / {unit.games_total} games completed
                             </p>
@@ -284,7 +291,7 @@ export const AdminUserManagement = () => {
           
           <div className="py-4">
             <p className="text-sm">
-              You are about to reset <strong>Unit {selectedUnit?.unit_number}: {selectedUnit?.unit_title}</strong> for user <strong>{selectedUser?.username || "Unknown"}</strong>.
+              You are about to reset <strong>Unit {selectedUnit?.unit_number}: {selectedUnit?.unit_title}</strong> ({selectedUnit?.test_type_name}) for user <strong>{selectedUser?.username || "Unknown"}</strong>.
             </p>
             <div className="mt-4 p-3 bg-destructive/10 rounded-lg text-sm">
               <p className="font-medium text-destructive mb-2">This will delete:</p>

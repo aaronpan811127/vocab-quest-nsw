@@ -90,17 +90,44 @@ Deno.serve(async (req) => {
       .select('user_id, total_xp, level, study_streak, test_type_id')
       .in('user_id', userIds);
 
-    // Get units for reference
-    const { data: units } = await supabase.from('units').select('id, title, unit_number');
+    // Get units with test type info
+    const { data: units } = await supabase
+      .from('units')
+      .select('id, title, unit_number, test_type_id');
 
     // Get test types for reference
     const { data: testTypes } = await supabase.from('test_types').select('id, name, code');
 
+    // Get test_type_games to know required games per test type
+    const { data: testTypeGames } = await supabase
+      .from('test_type_games')
+      .select('test_type_id, game_id, required_for_unlock')
+      .eq('is_enabled', true);
+
+    // Build a map of test_type_id -> required game count
+    const requiredGamesPerTestType: Record<string, number> = {};
+    testTypeGames?.forEach(ttg => {
+      if (ttg.required_for_unlock) {
+        requiredGamesPerTestType[ttg.test_type_id] = (requiredGamesPerTestType[ttg.test_type_id] || 0) + 1;
+      }
+    });
+
     // Get user progress (in-progress units)
     const { data: progressData } = await supabase
       .from('user_progress')
-      .select('user_id, unit_id, completed')
+      .select('user_id, unit_id, game_id, completed')
       .in('user_id', userIds);
+
+    // Get required game IDs per test type for accurate counting
+    const requiredGameIdsPerTestType: Record<string, Set<string>> = {};
+    testTypeGames?.forEach(ttg => {
+      if (ttg.required_for_unlock) {
+        if (!requiredGameIdsPerTestType[ttg.test_type_id]) {
+          requiredGameIdsPerTestType[ttg.test_type_id] = new Set();
+        }
+        requiredGameIdsPerTestType[ttg.test_type_id].add(ttg.game_id);
+      }
+    });
 
     // Enrich profiles
     const enrichedProfiles = profiles?.map(p => {
@@ -110,30 +137,70 @@ Deno.serve(async (req) => {
       
       // Find units with in-progress games for this user
       const userProgress = progressData?.filter(pr => pr.user_id === p.user_id) || [];
-      const unitProgress: Record<string, { total: number; completed: number }> = {};
+      
+      // Group progress by unit_id
+      const unitProgressMap: Record<string, { completed: Set<string>; all: Set<string> }> = {};
       
       userProgress.forEach(pr => {
-        if (!unitProgress[pr.unit_id]) {
-          unitProgress[pr.unit_id] = { total: 0, completed: 0 };
+        if (!unitProgressMap[pr.unit_id]) {
+          unitProgressMap[pr.unit_id] = { completed: new Set(), all: new Set() };
         }
-        unitProgress[pr.unit_id].total++;
+        unitProgressMap[pr.unit_id].all.add(pr.game_id);
         if (pr.completed) {
-          unitProgress[pr.unit_id].completed++;
+          unitProgressMap[pr.unit_id].completed.add(pr.game_id);
         }
       });
 
-      const inProgressUnits = Object.entries(unitProgress)
-        .filter(([_, progress]) => progress.total > 0 && progress.completed < progress.total)
-        .map(([unitId, progress]) => {
-          const unit = units?.find(u => u.id === unitId);
-          return {
-            unit_id: unitId,
-            unit_title: unit?.title || 'Unknown',
-            unit_number: unit?.unit_number || 0,
-            games_completed: progress.completed,
-            games_total: progress.total
-          };
+      // Build in-progress units list with correct total games from test_type_games
+      const inProgressUnits: Array<{
+        unit_id: string;
+        unit_title: string;
+        unit_number: number;
+        test_type_id: string;
+        test_type_name: string;
+        games_completed: number;
+        games_total: number;
+      }> = [];
+
+      Object.entries(unitProgressMap).forEach(([unitId, progress]) => {
+        const unit = units?.find(u => u.id === unitId);
+        if (!unit || !unit.test_type_id) return;
+
+        const unitTestType = testTypes?.find(t => t.id === unit.test_type_id);
+        const requiredGameIds = requiredGameIdsPerTestType[unit.test_type_id];
+        const totalRequiredGames = requiredGamesPerTestType[unit.test_type_id] || 0;
+
+        if (!requiredGameIds || totalRequiredGames === 0) return;
+
+        // Count completed required games only
+        let completedRequiredGames = 0;
+        progress.completed.forEach(gameId => {
+          if (requiredGameIds.has(gameId)) {
+            completedRequiredGames++;
+          }
         });
+
+        // Only show as in-progress if started but not completed
+        if (progress.all.size > 0 && completedRequiredGames < totalRequiredGames) {
+          inProgressUnits.push({
+            unit_id: unitId,
+            unit_title: unit.title || 'Unknown',
+            unit_number: unit.unit_number || 0,
+            test_type_id: unit.test_type_id,
+            test_type_name: unitTestType?.name || 'Unknown',
+            games_completed: completedRequiredGames,
+            games_total: totalRequiredGames
+          });
+        }
+      });
+
+      // Sort by test type name, then unit number
+      inProgressUnits.sort((a, b) => {
+        if (a.test_type_name !== b.test_type_name) {
+          return a.test_type_name.localeCompare(b.test_type_name);
+        }
+        return a.unit_number - b.unit_number;
+      });
 
       return {
         ...p,
