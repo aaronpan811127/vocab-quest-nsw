@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertTriangle, TrendingDown, BookOpen, Volume2, Mic, Target, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -17,12 +18,20 @@ interface WordStruggleData {
   successRate: number;
   lastIncorrectDate: string;
   gameTypes: string[];
+  unitId: string;
+  unitNumber: number;
 }
 
 interface GameTypeStats {
   gameType: string;
   totalIncorrect: number;
   uniqueWords: number;
+}
+
+interface UnitInfo {
+  id: string;
+  unit_number: number;
+  title: string;
 }
 
 export const WordStruggleAnalytics = () => {
@@ -34,6 +43,8 @@ export const WordStruggleAnalytics = () => {
   const [gameStats, setGameStats] = useState<GameTypeStats[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("all");
+  const [units, setUnits] = useState<UnitInfo[]>([]);
+  const [selectedUnitId, setSelectedUnitId] = useState<string>("all");
 
   useEffect(() => {
     if (user && selectedTestType) {
@@ -46,17 +57,23 @@ export const WordStruggleAnalytics = () => {
     setLoading(true);
 
     try {
-      const { data: units } = await supabase
+      const { data: unitData } = await supabase
         .from("units")
-        .select("id")
-        .eq("test_type_id", selectedTestType.id);
+        .select("id, unit_number, title")
+        .eq("test_type_id", selectedTestType.id)
+        .order("unit_number");
 
-      if (!units || units.length === 0) {
+      if (!unitData || unitData.length === 0) {
         setLoading(false);
         return;
       }
 
-      const unitIds = units.map((u) => u.id);
+      setUnits(unitData);
+      const unitIds = unitData.map((u) => u.id);
+      const unitMap: Record<string, number> = {};
+      unitData.forEach((u) => {
+        unitMap[u.id] = u.unit_number;
+      });
 
       const { data: attempts } = await supabase
         .from("game_attempts")
@@ -70,6 +87,10 @@ export const WordStruggleAnalytics = () => {
       }
 
       const attemptIds = attempts.map((a) => a.id);
+      const attemptUnitMap: Record<string, string> = {};
+      attempts.forEach((a) => {
+        attemptUnitMap[a.id] = a.unit_id;
+      });
 
       const { data: incorrectAnswers } = await supabase
         .from("attempt_incorrect_answers")
@@ -77,18 +98,18 @@ export const WordStruggleAnalytics = () => {
         .in("attempt_id", attemptIds);
 
       const questionIds = [...new Set(incorrectAnswers?.map((a) => a.question_id) || [])];
-      let questionWordMap: Record<string, string> = {};
+      let questionWordMap: Record<string, { word: string; unitId: string }> = {};
       
       if (questionIds.length > 0) {
         const { data: questions } = await supabase
           .from("question_bank")
-          .select("id, word, game_id")
+          .select("id, word, game_id, unit_id")
           .in("id", questionIds);
 
         if (questions) {
           questions.forEach((q) => {
             if (q.word) {
-              questionWordMap[q.id] = q.word;
+              questionWordMap[q.id] = { word: q.word, unitId: q.unit_id };
             }
           });
         }
@@ -119,20 +140,28 @@ export const WordStruggleAnalytics = () => {
         count: number; 
         dates: string[];
         gameTypes: Set<string>;
+        unitId: string;
+        unitNumber: number;
       }> = {};
 
       incorrectAnswers?.forEach((ia) => {
-        const word = questionWordMap[ia.question_id];
-        if (word) {
-          const normalizedWord = word.toLowerCase();
-          if (!wordIncorrectMap[normalizedWord]) {
-            wordIncorrectMap[normalizedWord] = { count: 0, dates: [], gameTypes: new Set() };
+        const questionInfo = questionWordMap[ia.question_id];
+        if (questionInfo?.word) {
+          const key = `${questionInfo.word.toLowerCase()}-${questionInfo.unitId}`;
+          if (!wordIncorrectMap[key]) {
+            wordIncorrectMap[key] = { 
+              count: 0, 
+              dates: [], 
+              gameTypes: new Set(),
+              unitId: questionInfo.unitId,
+              unitNumber: unitMap[questionInfo.unitId] || 0
+            };
           }
-          wordIncorrectMap[normalizedWord].count++;
-          wordIncorrectMap[normalizedWord].dates.push(ia.created_at);
+          wordIncorrectMap[key].count++;
+          wordIncorrectMap[key].dates.push(ia.created_at);
           const gameId = attemptGameMap[ia.attempt_id];
           if (gameId && gameMap[gameId]) {
-            wordIncorrectMap[normalizedWord].gameTypes.add(gameMap[gameId].type);
+            wordIncorrectMap[key].gameTypes.add(gameMap[gameId].type);
           }
         }
       });
@@ -141,40 +170,53 @@ export const WordStruggleAnalytics = () => {
         count: number;
         dates: string[];
         gameTypes: Set<string>;
+        unitId: string;
+        unitNumber: number;
       }> = {};
 
       dictationIncorrect?.forEach((ia) => {
-        const normalizedWord = ia.incorrect_word.toLowerCase();
-        if (!dictationIncorrectMap[normalizedWord]) {
-          dictationIncorrectMap[normalizedWord] = { count: 0, dates: [], gameTypes: new Set() };
+        const attemptUnitId = attemptUnitMap[ia.attempt_id];
+        const key = `${ia.incorrect_word.toLowerCase()}-${attemptUnitId}`;
+        if (!dictationIncorrectMap[key]) {
+          dictationIncorrectMap[key] = { 
+            count: 0, 
+            dates: [], 
+            gameTypes: new Set(),
+            unitId: attemptUnitId,
+            unitNumber: unitMap[attemptUnitId] || 0
+          };
         }
-        dictationIncorrectMap[normalizedWord].count++;
-        dictationIncorrectMap[normalizedWord].dates.push(ia.created_at);
+        dictationIncorrectMap[key].count++;
+        dictationIncorrectMap[key].dates.push(ia.created_at);
         const gameId = attemptGameMap[ia.attempt_id];
         if (gameId && gameMap[gameId]) {
-          dictationIncorrectMap[normalizedWord].gameTypes.add(gameMap[gameId].type);
+          dictationIncorrectMap[key].gameTypes.add(gameMap[gameId].type);
         }
       });
 
       const wordDataArray: WordStruggleData[] = Object.entries(wordIncorrectMap)
-        .map(([word, data]) => ({
-          word,
+        .map(([key, data]) => ({
+          word: key.split('-')[0],
           incorrectCount: data.count,
           totalAttempts: data.count,
           successRate: 0,
           lastIncorrectDate: data.dates.sort().reverse()[0] || "",
           gameTypes: Array.from(data.gameTypes),
+          unitId: data.unitId,
+          unitNumber: data.unitNumber,
         }))
         .sort((a, b) => b.incorrectCount - a.incorrectCount);
 
       const dictationDataArray: WordStruggleData[] = Object.entries(dictationIncorrectMap)
-        .map(([word, data]) => ({
-          word,
+        .map(([key, data]) => ({
+          word: key.split('-')[0],
           incorrectCount: data.count,
           totalAttempts: data.count,
           successRate: 0,
           lastIncorrectDate: data.dates.sort().reverse()[0] || "",
           gameTypes: Array.from(data.gameTypes),
+          unitId: data.unitId,
+          unitNumber: data.unitNumber,
         }))
         .sort((a, b) => b.incorrectCount - a.incorrectCount);
 
@@ -187,8 +229,8 @@ export const WordStruggleAnalytics = () => {
           gameTypeStatsMap[gameType] = { incorrect: 0, words: new Set() };
         }
         gameTypeStatsMap[gameType].incorrect++;
-        const word = questionWordMap[ia.question_id];
-        if (word) gameTypeStatsMap[gameType].words.add(word.toLowerCase());
+        const questionInfo = questionWordMap[ia.question_id];
+        if (questionInfo?.word) gameTypeStatsMap[gameType].words.add(questionInfo.word.toLowerCase());
       });
 
       dictationIncorrect?.forEach((ia) => {
@@ -219,10 +261,23 @@ export const WordStruggleAnalytics = () => {
     }
   };
 
-  const allWords = [...wordData, ...dictationData].sort((a, b) => b.incorrectCount - a.incorrectCount);
+  // Filter data based on selected unit
+  const filteredWordData = selectedUnitId === "all" 
+    ? wordData 
+    : wordData.filter(w => w.unitId === selectedUnitId);
+  
+  const filteredDictationData = selectedUnitId === "all"
+    ? dictationData
+    : dictationData.filter(w => w.unitId === selectedUnitId);
+
+  const allWords = [...filteredWordData, ...filteredDictationData].sort((a, b) => b.incorrectCount - a.incorrectCount);
   const totalIncorrect = allWords.reduce((sum, w) => sum + w.incorrectCount, 0);
-  const uniqueStruggleWords = new Set([...wordData.map(w => w.word), ...dictationData.map(w => w.word)]).size;
-  const topWords = allWords.slice(0, 3);
+  const uniqueStruggleWords = new Set([...filteredWordData.map(w => w.word), ...filteredDictationData.map(w => w.word)]).size;
+  
+  // For compact card, show overall stats (not filtered)
+  const allWordsUnfiltered = [...wordData, ...dictationData].sort((a, b) => b.incorrectCount - a.incorrectCount);
+  const uniqueStruggleWordsTotal = new Set([...wordData.map(w => w.word), ...dictationData.map(w => w.word)]).size;
+  const topWords = allWordsUnfiltered.slice(0, 3);
 
   if (loading) {
     return (
@@ -251,11 +306,11 @@ export const WordStruggleAnalytics = () => {
               </div>
               <div>
                 <h3 className="font-medium text-sm">Words to Practice</h3>
-                {allWords.length === 0 ? (
+                {allWordsUnfiltered.length === 0 ? (
                   <p className="text-xs text-muted-foreground">No mistakes yet - keep it up!</p>
                 ) : (
                   <p className="text-xs text-muted-foreground">
-                    <span className="text-destructive font-semibold">{uniqueStruggleWords}</span> words need review
+                    <span className="text-destructive font-semibold">{uniqueStruggleWordsTotal}</span> words need review
                   </p>
                 )}
               </div>
@@ -290,7 +345,7 @@ export const WordStruggleAnalytics = () => {
           </DialogHeader>
           
           <div className="flex-1 overflow-y-auto space-y-4">
-            {allWords.length === 0 ? (
+            {allWordsUnfiltered.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-8 text-center">
                 <div className="rounded-full bg-success/10 p-4 mb-4">
                   <Target className="h-8 w-8 text-success" />
@@ -301,6 +356,24 @@ export const WordStruggleAnalytics = () => {
               </div>
             ) : (
               <>
+                {/* Unit Filter */}
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">Filter by unit:</span>
+                  <Select value={selectedUnitId} onValueChange={setSelectedUnitId}>
+                    <SelectTrigger className="w-[180px] h-8">
+                      <SelectValue placeholder="All units" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Units</SelectItem>
+                      {units.map((unit) => (
+                        <SelectItem key={unit.id} value={unit.id}>
+                          Unit {unit.unit_number}: {unit.title}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
                 {/* Summary Stats */}
                 <div className="grid grid-cols-2 gap-3">
                   <div className="rounded-lg bg-destructive/10 p-3 text-center">
@@ -314,7 +387,7 @@ export const WordStruggleAnalytics = () => {
                 </div>
 
                 {/* Game Type Breakdown */}
-                {gameStats.length > 0 && (
+                {gameStats.length > 0 && selectedUnitId === "all" && (
                   <div className="space-y-2">
                     <h4 className="text-sm font-medium text-muted-foreground">By Game Type</h4>
                     <div className="flex flex-wrap gap-2">
@@ -339,8 +412,8 @@ export const WordStruggleAnalytics = () => {
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                   <TabsList className="grid w-full grid-cols-3">
                     <TabsTrigger value="all" className="text-xs">All ({allWords.length})</TabsTrigger>
-                    <TabsTrigger value="quiz" className="text-xs">Quiz ({wordData.length})</TabsTrigger>
-                    <TabsTrigger value="dictation" className="text-xs">Audio ({dictationData.length})</TabsTrigger>
+                    <TabsTrigger value="quiz" className="text-xs">Quiz ({filteredWordData.length})</TabsTrigger>
+                    <TabsTrigger value="dictation" className="text-xs">Audio ({filteredDictationData.length})</TabsTrigger>
                   </TabsList>
 
                   <TabsContent value="all" className="mt-3">
@@ -348,11 +421,11 @@ export const WordStruggleAnalytics = () => {
                   </TabsContent>
 
                   <TabsContent value="quiz" className="mt-3">
-                    <WordList words={wordData.slice(0, 10)} maxCount={wordData[0]?.incorrectCount || 1} />
+                    <WordList words={filteredWordData.slice(0, 10)} maxCount={filteredWordData[0]?.incorrectCount || 1} />
                   </TabsContent>
 
                   <TabsContent value="dictation" className="mt-3">
-                    <WordList words={dictationData.slice(0, 10)} maxCount={dictationData[0]?.incorrectCount || 1} />
+                    <WordList words={filteredDictationData.slice(0, 10)} maxCount={filteredDictationData[0]?.incorrectCount || 1} />
                   </TabsContent>
                 </Tabs>
               </>
@@ -404,7 +477,7 @@ const WordList = ({ words, maxCount }: WordListProps) => {
       <div className="space-y-2">
         {words.map((word, index) => (
           <div
-            key={`${word.word}-${index}`}
+            key={`${word.word}-${word.unitId}-${index}`}
             className="flex items-center gap-3 rounded-lg border border-border/50 bg-background/50 p-3"
           >
             <div className="flex h-6 w-6 items-center justify-center rounded-full bg-destructive/10 text-xs font-bold text-destructive">
@@ -413,6 +486,9 @@ const WordList = ({ words, maxCount }: WordListProps) => {
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
                 <span className="font-medium capitalize truncate">{word.word}</span>
+                <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4">
+                  U{word.unitNumber}
+                </Badge>
                 {word.incorrectCount >= 3 && (
                   <AlertTriangle className="h-3.5 w-3.5 text-warning flex-shrink-0" />
                 )}
