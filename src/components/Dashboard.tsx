@@ -753,11 +753,9 @@ Game XP = (Avg Score over all attempts × 0.5) + Time Bonus
         </div>
 
         {/* Stats Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
-          <div className="grid grid-cols-2 gap-3 sm:gap-4">
-            <StatsCard {...stats[0]} action={<LeaderboardDialog />} />
-            <StreakChart />
-          </div>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
+          <StatsCard {...stats[0]} action={<LeaderboardDialog />} />
+          <StreakChart />
           <WordStruggleAnalytics />
         </div>
 
