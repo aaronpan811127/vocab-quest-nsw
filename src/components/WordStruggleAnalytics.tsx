@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -281,12 +281,10 @@ export const WordStruggleAnalytics = () => {
 
   if (loading) {
     return (
-      <Card className="border-border/50 bg-card/80 backdrop-blur-sm">
-        <CardContent className="p-4">
-          <div className="flex items-center justify-center py-4">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
-          </div>
-        </CardContent>
+      <Card className="p-3 space-y-2 border backdrop-blur-sm border-primary/20 bg-primary/5">
+        <div className="flex items-center justify-center py-4">
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+        </div>
       </Card>
     );
   }
@@ -295,40 +293,33 @@ export const WordStruggleAnalytics = () => {
     <>
       {/* Compact Summary Card */}
       <Card 
-        className="border-border/50 bg-card/80 backdrop-blur-sm cursor-pointer hover:bg-card/90 transition-colors"
+        className="p-3 space-y-2 border backdrop-blur-sm transition-all duration-300 hover:shadow-card hover:scale-[1.02] animate-slide-up border-primary/20 bg-primary/5 cursor-pointer"
         onClick={() => setIsOpen(true)}
       >
-        <CardContent className="p-2.5 sm:p-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="rounded-full bg-primary/10 p-1.5">
-                <TrendingDown className="h-3.5 w-3.5 text-primary" />
-              </div>
-              <div>
-                <h3 className="font-medium text-xs">Words to Practice</h3>
-                {allWordsUnfiltered.length === 0 ? (
-                  <p className="text-[10px] text-muted-foreground">No mistakes yet</p>
-                ) : (
-                  <p className="text-[10px] text-muted-foreground">
-                    <span className="text-destructive font-semibold">{uniqueStruggleWordsTotal}</span> to review
-                  </p>
-                )}
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              {topWords.length > 0 && (
-                <div className="hidden sm:flex items-center gap-1">
-                  {topWords.slice(0, 2).map((w, i) => (
-                    <Badge key={i} variant="outline" className="text-[10px] px-1.5 py-0 h-4 capitalize">
-                      {w.word}
-                    </Badge>
-                  ))}
-                </div>
-              )}
-              <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
-            </div>
+        <div className="flex items-center justify-between">
+          <p className="text-xs text-muted-foreground font-medium">Words to Practice</p>
+          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+        </div>
+        
+        <div>
+          {allWordsUnfiltered.length === 0 ? (
+            <p className="text-xl font-bold tracking-tight">All good! ✓</p>
+          ) : (
+            <p className="text-xl font-bold tracking-tight">
+              <span className="text-destructive">{uniqueStruggleWordsTotal}</span> words
+            </p>
+          )}
+        </div>
+
+        {topWords.length > 0 && (
+          <div className="flex items-center gap-1 flex-wrap">
+            {topWords.slice(0, 3).map((w, i) => (
+              <Badge key={i} variant="outline" className="text-[10px] px-1.5 py-0 h-4 capitalize bg-background/50">
+                {w.word}
+              </Badge>
+            ))}
           </div>
-        </CardContent>
+        )}
       </Card>
 
       {/* Full Dashboard Dialog */}
