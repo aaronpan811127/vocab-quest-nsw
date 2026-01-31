@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
-import { Check, X, Star, Loader2, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, BookOpen, Sparkles, Pencil } from "lucide-react";
+import { Check, X, Star, Loader2, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, BookOpen, Pencil } from "lucide-react";
 
 interface VocabularyItem {
   id: string;
@@ -491,10 +491,6 @@ export const AdminQuestionReview = () => {
                       <CardTitle className="text-xl">{vocab.word}</CardTitle>
                       <div className="flex flex-wrap items-center gap-2 mt-1">
                         <Badge variant="outline">Unit {vocab.unit_number}: {vocab.unit_title}</Badge>
-                        <Badge className="bg-primary/20 text-primary border-primary/30">
-                          <Sparkles className="h-3 w-3 mr-1" />
-                          AI Generated
-                        </Badge>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -707,6 +703,14 @@ export const AdminQuestionReview = () => {
                                 size="sm"
                                 variant="outline"
                                 className="gap-1 h-7 text-xs"
+                                onClick={() => openActionDialog(question, "edit")}
+                              >
+                                <Pencil className="h-3 w-3" /> Edit
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="gap-1 h-7 text-xs"
                                 onClick={() => openActionDialog(question, "approve")}
                               >
                                 <Check className="h-3 w-3" /> Approve
@@ -726,14 +730,6 @@ export const AdminQuestionReview = () => {
                                 onClick={() => openActionDialog(question, "score")}
                               >
                                 <Star className="h-3 w-3" /> Score
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="gap-1 h-7 text-xs"
-                                onClick={() => openActionDialog(question, "edit")}
-                              >
-                                <Pencil className="h-3 w-3" /> Edit
                               </Button>
                             </div>
                           </div>
@@ -790,7 +786,15 @@ export const AdminQuestionReview = () => {
                           </div>
                         )}
 
-                        <div className="flex gap-2 pt-2">
+                        <div className="flex flex-wrap gap-2 pt-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="gap-1"
+                            onClick={() => openActionDialog(question, "edit")}
+                          >
+                            <Pencil className="h-4 w-4" /> Edit
+                          </Button>
                           <Button
                             size="sm"
                             variant="outline"
@@ -814,14 +818,6 @@ export const AdminQuestionReview = () => {
                             onClick={() => openActionDialog(question, "score")}
                           >
                             <Star className="h-4 w-4" /> Score
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="gap-1"
-                            onClick={() => openActionDialog(question, "edit")}
-                          >
-                            <Pencil className="h-4 w-4" /> Edit
                           </Button>
                         </div>
                       </div>
