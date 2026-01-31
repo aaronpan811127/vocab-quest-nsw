@@ -98,13 +98,13 @@ Deno.serve(async (req) => {
     // Get test types for reference
     const { data: testTypes } = await supabase.from('test_types').select('id, name, code');
 
-    // Get test_type_games to know required games per test type
+    // Get test_type_games to know required games per test type (fallback for units without snapshots)
     const { data: testTypeGames } = await supabase
       .from('test_type_games')
       .select('test_type_id, game_id, required_for_unlock')
       .eq('is_enabled', true);
 
-    // Build a map of test_type_id -> required game count
+    // Build a map of test_type_id -> required game count (fallback)
     const requiredGamesPerTestType: Record<string, number> = {};
     testTypeGames?.forEach(ttg => {
       if (ttg.required_for_unlock) {
@@ -115,10 +115,10 @@ Deno.serve(async (req) => {
     // Get user progress (in-progress units)
     const { data: progressData } = await supabase
       .from('user_progress')
-      .select('user_id, unit_id, game_id, completed')
+      .select('user_id, unit_id, game_id, completed, attempts, best_score')
       .in('user_id', userIds);
 
-    // Get required game IDs per test type for accurate counting
+    // Get required game IDs per test type for accurate counting (fallback)
     const requiredGameIdsPerTestType: Record<string, Set<string>> = {};
     testTypeGames?.forEach(ttg => {
       if (ttg.required_for_unlock) {
@@ -129,6 +129,31 @@ Deno.serve(async (req) => {
       }
     });
 
+    // Get user snapshots to use locked-in game configs
+    const { data: snapshotsData } = await supabase
+      .from('user_unit_game_snapshots')
+      .select('user_id, unit_id, test_type_id, games_config')
+      .in('user_id', userIds);
+
+    // Build map: user_id -> unit_id -> snapshot games_config
+    const userSnapshotsMap: Record<string, Record<string, any[]>> = {};
+    snapshotsData?.forEach(s => {
+      if (!userSnapshotsMap[s.user_id]) {
+        userSnapshotsMap[s.user_id] = {};
+      }
+      userSnapshotsMap[s.user_id][s.unit_id] = s.games_config as any[];
+    });
+
+    // Get games table for max_attempts lookup (fallback)
+    const { data: gamesData } = await supabase
+      .from('games')
+      .select('id, rules');
+    
+    const gameRulesMap: Record<string, any> = {};
+    gamesData?.forEach(g => {
+      gameRulesMap[g.id] = g.rules;
+    });
+
     // Enrich profiles
     const enrichedProfiles = profiles?.map(p => {
       const leaderboard = leaderboardData?.find(l => l.user_id === p.user_id);
@@ -137,21 +162,45 @@ Deno.serve(async (req) => {
       
       // Find units with in-progress games for this user
       const userProgress = progressData?.filter(pr => pr.user_id === p.user_id) || [];
+      const userSnapshots = userSnapshotsMap[p.user_id] || {};
       
       // Group progress by unit_id
-      const unitProgressMap: Record<string, { completed: Set<string>; all: Set<string> }> = {};
+      const unitProgressMap: Record<string, Array<{ game_id: string; completed: boolean; attempts: number; best_score: number }>> = {};
       
       userProgress.forEach(pr => {
         if (!unitProgressMap[pr.unit_id]) {
-          unitProgressMap[pr.unit_id] = { completed: new Set(), all: new Set() };
+          unitProgressMap[pr.unit_id] = [];
         }
-        unitProgressMap[pr.unit_id].all.add(pr.game_id);
-        if (pr.completed) {
-          unitProgressMap[pr.unit_id].completed.add(pr.game_id);
-        }
+        unitProgressMap[pr.unit_id].push({
+          game_id: pr.game_id,
+          completed: pr.completed,
+          attempts: pr.attempts || 0,
+          best_score: pr.best_score || 0
+        });
       });
 
-      // Build in-progress units list with correct total games from test_type_games
+      // Helper to check if game is effectively completed
+      const isGameEffectivelyCompleted = (gameId: string, completed: boolean, attempts: number, bestScore: number, snapshotGames?: any[]) => {
+        // Check max_attempts from snapshot first, then fallback to games table
+        let maxAttempts: number | null = null;
+        if (snapshotGames) {
+          const snapshotGame = snapshotGames.find((g: any) => g.game_id === gameId);
+          if (snapshotGame?.rules?.max_attempts !== undefined) {
+            maxAttempts = snapshotGame.rules.max_attempts;
+          }
+        }
+        if (maxAttempts === null && gameRulesMap[gameId]) {
+          maxAttempts = gameRulesMap[gameId]?.max_attempts ?? null;
+        }
+        
+        // For single-attempt games, treat as completed if attempted
+        if (maxAttempts === 1 && (attempts > 0 || bestScore > 0)) {
+          return true;
+        }
+        return completed;
+      };
+
+      // Build in-progress units list using snapshot required games
       const inProgressUnits: Array<{
         unit_id: string;
         unit_title: string;
@@ -162,26 +211,42 @@ Deno.serve(async (req) => {
         games_total: number;
       }> = [];
 
-      Object.entries(unitProgressMap).forEach(([unitId, progress]) => {
+      Object.entries(unitProgressMap).forEach(([unitId, progressList]) => {
         const unit = units?.find(u => u.id === unitId);
         if (!unit || !unit.test_type_id) return;
 
         const unitTestType = testTypes?.find(t => t.id === unit.test_type_id);
-        const requiredGameIds = requiredGameIdsPerTestType[unit.test_type_id];
-        const totalRequiredGames = requiredGamesPerTestType[unit.test_type_id] || 0;
+        const snapshotGames = userSnapshots[unitId];
+        
+        // Use snapshot required games if available, otherwise fallback to global config
+        let requiredGameIds: Set<string>;
+        let totalRequiredGames: number;
+        
+        if (snapshotGames && Array.isArray(snapshotGames)) {
+          // Use snapshot - this is the user's locked-in game configuration
+          const snapshotRequiredGames = snapshotGames.filter((g: any) => g.required_for_unlock);
+          requiredGameIds = new Set(snapshotRequiredGames.map((g: any) => g.game_id));
+          totalRequiredGames = snapshotRequiredGames.length;
+        } else {
+          // Fallback to global config (for units never accessed)
+          requiredGameIds = requiredGameIdsPerTestType[unit.test_type_id] || new Set();
+          totalRequiredGames = requiredGamesPerTestType[unit.test_type_id] || 0;
+        }
 
-        if (!requiredGameIds || totalRequiredGames === 0) return;
+        if (totalRequiredGames === 0) return;
 
         // Count completed required games only
         let completedRequiredGames = 0;
-        progress.completed.forEach(gameId => {
-          if (requiredGameIds.has(gameId)) {
-            completedRequiredGames++;
+        progressList.forEach(pr => {
+          if (requiredGameIds.has(pr.game_id)) {
+            if (isGameEffectivelyCompleted(pr.game_id, pr.completed, pr.attempts, pr.best_score, snapshotGames)) {
+              completedRequiredGames++;
+            }
           }
         });
 
         // Only show as in-progress if started but not completed
-        if (progress.all.size > 0 && completedRequiredGames < totalRequiredGames) {
+        if (progressList.length > 0 && completedRequiredGames < totalRequiredGames) {
           inProgressUnits.push({
             unit_id: unitId,
             unit_title: unit.title || 'Unknown',
