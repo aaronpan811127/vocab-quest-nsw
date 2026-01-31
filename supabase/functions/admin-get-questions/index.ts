@@ -54,7 +54,7 @@ Deno.serve(async (req) => {
     const limit = parseInt(url.searchParams.get('limit') || '20');
     const offset = (page - 1) * limit;
 
-    console.log(`Admin ${adminUser.id} fetching questions: status=${status}, game_type=${gameType}, test_type=${testTypeId}, unit=${unitId}, page=${page}`);
+    console.log(`[v2] Admin ${adminUser.id} fetching questions: status=${status}, game_type=${gameType}, test_type=${testTypeId}, unit=${unitId}, page=${page}`);
 
     // Get all games first to filter by game_type
     const { data: games } = await supabase.from('games').select('id, name, game_type');
