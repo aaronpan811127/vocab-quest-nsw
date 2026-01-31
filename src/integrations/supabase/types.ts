@@ -406,6 +406,11 @@ export type Database = {
           options: Json | null
           passage_id: string | null
           question_text: string
+          rejection_reason: string | null
+          review_score: number | null
+          review_status: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
           unit_id: string
           word: string | null
         }
@@ -417,6 +422,11 @@ export type Database = {
           options?: Json | null
           passage_id?: string | null
           question_text: string
+          rejection_reason?: string | null
+          review_score?: number | null
+          review_status?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           unit_id: string
           word?: string | null
         }
@@ -428,6 +438,11 @@ export type Database = {
           options?: Json | null
           passage_id?: string | null
           question_text?: string
+          rejection_reason?: string | null
+          review_score?: number | null
+          review_status?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           unit_id?: string
           word?: string | null
         }
@@ -876,6 +891,7 @@ export type Database = {
           role: string
         }[]
       }
+      is_admin: { Args: { p_user_id: string }; Returns: boolean }
       validate_dictation_game_submission:
         | {
             Args: {
