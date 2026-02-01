@@ -118,10 +118,10 @@ export const AdminContentStats = () => {
         payload = { unit_id: stat.unit_id, words: unit.words };
       } else if (stat.game_type === 'cloze_passage') {
         functionName = 'generate-cloze-passage';
-        payload = { unit_id: stat.unit_id, words: unit.words, test_type_code: testTypeCode };
+        payload = { unit_id: stat.unit_id, words: unit.words, test_type_code: testTypeCode, unit_title: unit.title };
       } else if (stat.game_type === 'reading') {
         functionName = 'generate-passage';
-        payload = { unit_id: stat.unit_id, words: unit.words, test_type_code: testTypeCode };
+        payload = { unit_id: stat.unit_id, words: unit.words, test_type_code: testTypeCode, unit_title: unit.title };
       } else if (stat.game_type === 'intuition') {
         functionName = 'generate-intuition-questions';
         payload = { unit_id: stat.unit_id, words: unit.words };
@@ -144,16 +144,47 @@ export const AdminContentStats = () => {
         return;
       }
 
-      const { data, error } = await supabase.functions.invoke(functionName, {
-        body: payload
-      });
+      // For passage-based games, loop until we have enough passages
+      const isPassageBasedGame = ['cloze_passage', 'reading'].includes(stat.game_type);
+      let totalGenerated = 0;
+      const maxIterations = 5; // Safety limit
+      
+      if (isPassageBasedGame) {
+        for (let i = 0; i < maxIterations; i++) {
+          const { data, error } = await supabase.functions.invoke(functionName, {
+            body: payload
+          });
 
-      if (error) throw error;
+          if (error) throw error;
+          
+          // If skipped, we have enough passages
+          if (data?.skipped) {
+            console.log('Generation skipped - sufficient passages exist');
+            break;
+          }
+          
+          totalGenerated++;
+          console.log(`Generated passage ${totalGenerated}`);
+        }
+        
+        toast({
+          title: "Generation Complete",
+          description: totalGenerated > 0 
+            ? `Successfully generated ${totalGenerated} passage(s) for ${stat.game_name}` 
+            : `${stat.game_name} already has enough passages`,
+        });
+      } else {
+        const { data, error } = await supabase.functions.invoke(functionName, {
+          body: payload
+        });
 
-      toast({
-        title: "Generation Complete",
-        description: `Successfully generated content for ${stat.game_name}`,
-      });
+        if (error) throw error;
+
+        toast({
+          title: "Generation Complete",
+          description: `Successfully generated content for ${stat.game_name}`,
+        });
+      }
 
       // Refresh stats
       await fetchStats();
