@@ -34,11 +34,12 @@ interface Passage {
 interface ReadingGameProps {
   unitId: string;
   unitTitle: string;
+  unitWords: string[];
   onComplete: () => void;
   onBack: () => void;
 }
 
-export const ReadingGame = ({ unitId, unitTitle, onComplete, onBack }: ReadingGameProps) => {
+export const ReadingGame = ({ unitId, unitTitle, unitWords, onComplete, onBack }: ReadingGameProps) => {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<number[]>([]);
   const [showResults, setShowResults] = useState(false);

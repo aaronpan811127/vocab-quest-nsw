@@ -23,6 +23,7 @@ interface GameState {
   unitId: string;
   unitTitle: string;
   gameType: string;
+  unitWords: string[];
   playAllWordsOnStart?: boolean;
 }
 
@@ -51,8 +52,8 @@ const Index = () => {
     }
   };
 
-  const handleStartGame = (gameType: string, unitId: string, unitTitle: string, playAllWordsOnStart?: boolean) => {
-    setGameState({ unitId, unitTitle, gameType, playAllWordsOnStart });
+  const handleStartGame = (gameType: string, unitId: string, unitTitle: string, unitWords: string[], playAllWordsOnStart?: boolean) => {
+    setGameState({ unitId, unitTitle, gameType, unitWords, playAllWordsOnStart });
     setCurrentView("game");
   };
 
@@ -73,6 +74,7 @@ const Index = () => {
     const commonProps = {
       unitId: gameState.unitId,
       unitTitle: gameState.unitTitle,
+      unitWords: gameState.unitWords,
       onComplete: () => setCurrentView("dashboard"),
       onBack: () => setCurrentView("dashboard"),
     };

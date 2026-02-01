@@ -14,6 +14,7 @@ import { selectBalancedQuestions, shuffleArray } from "@/utils/questionSelection
 interface WordIntuitionGameProps {
   unitId: string;
   unitTitle: string;
+  unitWords: string[];
   onComplete: () => void;
   onBack: () => void;
 }
@@ -26,7 +27,7 @@ interface Question {
   explanation: string;
 }
 
-export const WordIntuitionGame = ({ unitId, unitTitle, onComplete, onBack }: WordIntuitionGameProps) => {
+export const WordIntuitionGame = ({ unitId, unitTitle, unitWords, onComplete, onBack }: WordIntuitionGameProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const { celebrate } = useCelebration();
@@ -123,18 +124,8 @@ export const WordIntuitionGame = ({ unitId, unitTitle, onComplete, onBack }: Wor
       if (vocabulary && vocabulary.length > 0) {
         words = vocabulary.map((v) => v.word);
       } else {
-        // Get words from unit and generate vocabulary
-        const { data: unit, error: unitError } = await supabase
-          .from("units")
-          .select("words")
-          .eq("id", unitId)
-          .single();
-
-        if (unitError) throw unitError;
-
-        if (unit?.words && Array.isArray(unit.words)) {
-          const unitWords = unit.words as string[];
-          
+        // Use unitWords from snapshot instead of fetching from database
+        if (unitWords && unitWords.length > 0) {
           // Generate vocabulary using AI
           toast({
             title: "Generating vocabulary...",

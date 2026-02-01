@@ -14,6 +14,7 @@ import { useCelebration } from "@/hooks/useCelebration";
 interface VoiceMasterGameProps {
   unitId: string;
   unitTitle: string;
+  unitWords: string[];
   onComplete: () => void;
   onBack: () => void;
   playAllWordsOnStart?: boolean;
@@ -29,6 +30,7 @@ interface WordQuestion {
 export const VoiceMasterGame = ({
   unitId,
   unitTitle,
+  unitWords,
   onComplete,
   onBack,
   playAllWordsOnStart = false,
@@ -122,11 +124,8 @@ export const VoiceMasterGame = ({
     setLoading(true);
 
     try {
-      const { data: unit, error } = await supabase.from("units").select("words").eq("id", unitId).single();
-
-      if (error) throw error;
-
-      if (!unit || !unit.words) {
+      // Use unitWords from snapshot instead of fetching from database
+      if (!unitWords || unitWords.length === 0) {
         toast({
           title: "No words found",
           description: "This unit doesn't have any vocabulary words.",
@@ -136,7 +135,7 @@ export const VoiceMasterGame = ({
         return;
       }
 
-      const wordList: string[] = Array.isArray(unit.words) ? unit.words : JSON.parse(unit.words as string);
+      const wordList: string[] = unitWords;
 
       let finalWords: string[];
       let priorityWords: string[] = [];

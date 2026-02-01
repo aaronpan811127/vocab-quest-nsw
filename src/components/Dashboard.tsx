@@ -39,7 +39,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
 interface DashboardProps {
-  onStartGame?: (gameType: string, unitId: string, unitTitle: string, playAllWordsOnStart?: boolean, gameId?: string) => void;
+  onStartGame?: (gameType: string, unitId: string, unitTitle: string, unitWords: string[], playAllWordsOnStart?: boolean, gameId?: string) => void;
   onBack?: () => void;
   selectedUnitId?: string | null;
   onUnitChange?: (unitId: string | null) => void;
@@ -103,6 +103,7 @@ export const Dashboard = ({ onStartGame, onBack, selectedUnitId, onUnitChange }:
   const { 
     games: gamesConfig, 
     groupedGames, 
+    unitConfig,
     loading: gamesLoading, 
     getSortedSections, 
     getRequiredGames 
@@ -845,7 +846,7 @@ Game XP = (Avg Score over all attempts × 0.5) + Time Bonus
                       key={game.title}
                       variant="outline"
                       className={`h-auto py-4 flex flex-col items-center gap-2 hover:bg-primary/10 hover:border-primary/50 transition-all relative ${game.isCompleted ? 'border-green-500/50 bg-green-500/5' : ''}`}
-                      onClick={() => onStartGame && onStartGame(game.gameType, currentUnit.id, `Unit ${currentUnit.unitNumber}`, false, game.gameId)}
+                      onClick={() => onStartGame && onStartGame(game.gameType, currentUnit.id, `Unit ${currentUnit.unitNumber}`, unitConfig?.words || [], false, game.gameId)}
                     >
                       {game.isCompleted && (
                         <CheckCircle2 className="h-4 w-4 text-green-500 absolute top-2 right-2" />
@@ -920,7 +921,7 @@ Game XP = (Avg Score over all attempts × 0.5) + Time Bonus
                                     game.gameType === "speaking" ||
                                     game.gameType === "writing");
 
-                                onStartGame(game.gameType, currentUnit.id, `Unit ${currentUnit.unitNumber}`, playAllWordsOnStart, game.gameId);
+                                onStartGame(game.gameType, currentUnit.id, `Unit ${currentUnit.unitNumber}`, unitConfig?.words || [], playAllWordsOnStart, game.gameId);
                               }
                             }
                           }
@@ -1000,7 +1001,8 @@ Game XP = (Avg Score over all attempts × 0.5) + Time Bonus
                     onStartGame(
                       testConfirmDialog.gameType, 
                       currentUnit.id, 
-                      `Unit ${currentUnit.unitNumber}`, 
+                      `Unit ${currentUnit.unitNumber}`,
+                      unitConfig?.words || [],
                       false, 
                       testConfirmDialog.gameId
                     );

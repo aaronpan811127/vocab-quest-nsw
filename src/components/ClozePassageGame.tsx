@@ -39,13 +39,14 @@ interface Question {
 interface ClozePassageGameProps {
   unitId: string;
   unitTitle: string;
+  unitWords: string[];
   onComplete: () => void;
   onBack: () => void;
 }
 
 const DEFAULT_SECONDS_PER_QUESTION = 45; // More time for passage-based questions
 
-export const ClozePassageGame = ({ unitId, unitTitle, onComplete, onBack }: ClozePassageGameProps) => {
+export const ClozePassageGame = ({ unitId, unitTitle, unitWords, onComplete, onBack }: ClozePassageGameProps) => {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<number[]>([]);
   const [showResults, setShowResults] = useState(false);

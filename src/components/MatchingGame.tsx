@@ -27,6 +27,7 @@ interface Word {
 interface MatchingGameProps {
   unitId: string;
   unitTitle: string;
+  unitWords: string[];
   gameId?: string;
   onComplete: () => void;
   onBack: () => void;
@@ -40,7 +41,7 @@ interface MatchItem {
   isMatched: boolean;
 }
 
-export const MatchingGame = ({ unitId, unitTitle, gameId, onComplete, onBack }: MatchingGameProps) => {
+export const MatchingGame = ({ unitId, unitTitle, unitWords, gameId, onComplete, onBack }: MatchingGameProps) => {
   const [words, setWords] = useState<Word[]>([]);
   const [items, setItems] = useState<MatchItem[]>([]);
   const [selectedItem, setSelectedItem] = useState<MatchItem | null>(null);
@@ -120,15 +121,12 @@ export const MatchingGame = ({ unitId, unitTitle, gameId, onComplete, onBack }: 
       if (fetchError) throw fetchError;
 
       if (!data || data.length === 0) {
-        const { data: unitData, error: unitError } = await supabase
-          .from('units')
-          .select('words')
-          .eq('id', unitId)
-          .single();
-
-        if (unitError) throw unitError;
-
-        const unitWords = unitData.words as string[];
+        // Use unitWords from snapshot instead of fetching from database
+        if (!unitWords || unitWords.length === 0) {
+          setError("No vocabulary words found for this unit.");
+          setLoading(false);
+          return;
+        }
         
         const basicWords: Word[] = unitWords.slice(0, 10).map((word, index) => ({
           id: `temp-${index}`,

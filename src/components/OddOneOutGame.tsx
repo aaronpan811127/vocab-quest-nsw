@@ -45,6 +45,7 @@ interface StoredQuestion {
 interface OddOneOutGameProps {
   unitId: string;
   unitTitle: string;
+  unitWords: string[];
   gameId?: string;
   onComplete: () => void;
   onBack: () => void;
@@ -53,7 +54,7 @@ interface OddOneOutGameProps {
 const QUESTIONS_PER_WORD = 10;
 const ODD_ONE_OUT_GAME_ID = 'bb7a0b79-7b92-41df-96b3-c985b07dcd83';
 
-export const OddOneOutGame = ({ unitId, unitTitle, gameId, onComplete, onBack }: OddOneOutGameProps) => {
+export const OddOneOutGame = ({ unitId, unitTitle, unitWords, gameId, onComplete, onBack }: OddOneOutGameProps) => {
   const [words, setWords] = useState<Word[]>([]);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentQuestion, setCurrentQuestion] = useState(0);
@@ -111,17 +112,8 @@ export const OddOneOutGame = ({ unitId, unitTitle, gameId, onComplete, onBack }:
 
       // If no vocabulary or not enough, generate it
       if (!vocabData || vocabData.length < 4) {
-        const { data: unitData, error: unitError } = await supabase
-          .from('units')
-          .select('words')
-          .eq('id', unitId)
-          .single();
-
-        if (unitError) throw unitError;
-
-        const unitWords = unitData.words as string[];
-        
-        if (unitWords.length < 4) {
+        // Use unitWords from snapshot instead of fetching from database
+        if (!unitWords || unitWords.length < 4) {
           toast({
             title: "Not enough words",
             description: "This unit needs at least 4 words to play.",
