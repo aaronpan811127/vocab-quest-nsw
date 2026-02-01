@@ -478,6 +478,10 @@ export type Database = {
           highlighted_words: string[] | null
           id: string
           is_generated: boolean
+          rejection_reason: string | null
+          review_status: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
           title: string
           unit_id: string
         }
@@ -488,6 +492,10 @@ export type Database = {
           highlighted_words?: string[] | null
           id?: string
           is_generated?: boolean
+          rejection_reason?: string | null
+          review_status?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           title: string
           unit_id: string
         }
@@ -498,6 +506,10 @@ export type Database = {
           highlighted_words?: string[] | null
           id?: string
           is_generated?: boolean
+          rejection_reason?: string | null
+          review_status?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           title?: string
           unit_id?: string
         }
