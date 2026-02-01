@@ -475,60 +475,42 @@ export const AdminContentStats = () => {
                           </div>
                         )}
 
-                        <div className="flex flex-wrap gap-1 pt-1">
+                        <div className="flex flex-wrap gap-1 pt-2 border-t">
                           {isVocabGame ? (
                             <>
-                              {stat.approved_vocab > 0 && (
-                                <Badge variant="outline" className="text-xs bg-success/10 text-success border-success/30">
-                                  {stat.approved_vocab} approved
-                                </Badge>
-                              )}
-                              {stat.pending_vocab > 0 && (
-                                <Badge variant="outline" className="text-xs">
-                                  {stat.pending_vocab} pending
-                                </Badge>
-                              )}
-                              {stat.rejected_vocab > 0 && (
-                                <Badge variant="outline" className="text-xs bg-destructive/10 text-destructive border-destructive/30">
-                                  {stat.rejected_vocab} rejected
-                                </Badge>
-                              )}
+                              <Badge variant="outline" className="text-xs bg-success/10 text-success border-success/30">
+                                ✓ {stat.approved_vocab}
+                              </Badge>
+                              <Badge variant="outline" className="text-xs">
+                                ⏳ {stat.pending_vocab}
+                              </Badge>
+                              <Badge variant="outline" className="text-xs bg-destructive/10 text-destructive border-destructive/30">
+                                ✗ {stat.rejected_vocab}
+                              </Badge>
                             </>
                           ) : isPassageGame ? (
                             <>
-                              {stat.approved_passages > 0 && (
-                                <Badge variant="outline" className="text-xs bg-success/10 text-success border-success/30">
-                                  {stat.approved_passages} approved
-                                </Badge>
-                              )}
-                              {stat.pending_passages > 0 && (
-                                <Badge variant="outline" className="text-xs">
-                                  {stat.pending_passages} pending
-                                </Badge>
-                              )}
-                              {stat.rejected_passages > 0 && (
-                                <Badge variant="outline" className="text-xs bg-destructive/10 text-destructive border-destructive/30">
-                                  {stat.rejected_passages} rejected
-                                </Badge>
-                              )}
+                              <Badge variant="outline" className="text-xs bg-success/10 text-success border-success/30">
+                                ✓ {stat.approved_passages}
+                              </Badge>
+                              <Badge variant="outline" className="text-xs">
+                                ⏳ {stat.pending_passages}
+                              </Badge>
+                              <Badge variant="outline" className="text-xs bg-destructive/10 text-destructive border-destructive/30">
+                                ✗ {stat.rejected_passages}
+                              </Badge>
                             </>
                           ) : (
                             <>
-                              {stat.approved_questions > 0 && (
-                                <Badge variant="outline" className="text-xs bg-success/10 text-success border-success/30">
-                                  {stat.approved_questions} approved
-                                </Badge>
-                              )}
-                              {stat.pending_questions > 0 && (
-                                <Badge variant="outline" className="text-xs">
-                                  {stat.pending_questions} pending
-                                </Badge>
-                              )}
-                              {stat.rejected_questions > 0 && (
-                                <Badge variant="outline" className="text-xs bg-destructive/10 text-destructive border-destructive/30">
-                                  {stat.rejected_questions} rejected
-                                </Badge>
-                              )}
+                              <Badge variant="outline" className="text-xs bg-success/10 text-success border-success/30">
+                                ✓ {stat.approved_questions}
+                              </Badge>
+                              <Badge variant="outline" className="text-xs">
+                                ⏳ {stat.pending_questions}
+                              </Badge>
+                              <Badge variant="outline" className="text-xs bg-destructive/10 text-destructive border-destructive/30">
+                                ✗ {stat.rejected_questions}
+                              </Badge>
                             </>
                           )}
                         </div>
