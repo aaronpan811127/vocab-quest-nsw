@@ -75,7 +75,16 @@ serve(async (req) => {
     const vocabularyWords = unitData?.words || [];
     const unitTitleToUse = unit_title || unitData?.title || 'Vocabulary Practice';
 
-    console.log('Generating passage for unit:', unitTitleToUse, 'with', vocabularyWords.length, 'vocabulary words');
+    // Get game rules for question count
+    const { data: gameRules } = await supabaseAdmin
+      .from('games')
+      .select('rules')
+      .eq('game_type', 'reading')
+      .single();
+
+    const questionsPerPassage = (gameRules?.rules as any)?.questions_per_passage || 10;
+
+    console.log('Generating passage for unit:', unitTitleToUse, 'with', vocabularyWords.length, 'vocabulary words', 'questions:', questionsPerPassage);
 
     // Call Lovable AI Gateway to generate passage with questions
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -91,7 +100,7 @@ serve(async (req) => {
             role: "system",
             content: `You are an expert educational content creator specializing in reading comprehension passages for NSW selective school preparation. 
 
-Your task is to create an engaging reading passage and 10 multiple-choice comprehension questions. The passage should:
+Your task is to create an engaging reading passage and ${questionsPerPassage} multiple-choice comprehension questions. The passage should:
 1. Be 200-300 words long
 2. Be appropriate for students aged 10-12
 3. Include interesting, educational content
@@ -108,7 +117,7 @@ You MUST respond with ONLY valid JSON. No other text, no markdown.`
           },
           {
             role: "user",
-            content: `Create a reading passage and 10 comprehension questions for the unit: "${unitTitleToUse}"
+            content: `Create a reading passage and ${questionsPerPassage} comprehension questions for the unit: "${unitTitleToUse}"
 
 ${vocabularyWords.length > 0 ? `Try to naturally incorporate some of these vocabulary words: ${JSON.stringify(vocabularyWords)}` : ''}
 
@@ -183,8 +192,8 @@ Respond with ONLY this JSON structure (no markdown, no explanation):
       throw new Error('Invalid content structure');
     }
 
-    if (generatedContent.questions.length < 10) {
-      console.warn('Generated fewer than 10 questions:', generatedContent.questions.length);
+    if (generatedContent.questions.length < questionsPerPassage) {
+      console.warn(`Generated fewer than ${questionsPerPassage} questions:`, generatedContent.questions.length);
     }
 
     // Insert the generated passage
