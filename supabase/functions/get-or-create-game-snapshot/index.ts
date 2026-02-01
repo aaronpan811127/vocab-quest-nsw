@@ -90,17 +90,23 @@ serve(async (req) => {
       );
     }
 
-    // Snapshot doesn't exist, create one by fetching current game config
-    const { data: gamesData, error: gamesError } = await supabase.rpc('get_test_type_games', {
-      p_test_type_id: test_type_id
-    });
+    // Snapshot doesn't exist, create one by fetching current game config and unit config
+    const [gamesResult, unitResult] = await Promise.all([
+      supabase.rpc('get_test_type_games', { p_test_type_id: test_type_id }),
+      supabase.from('units').select('title, description, words, unit_number').eq('id', unit_id).single()
+    ]);
 
-    if (gamesError) {
-      console.error('Error fetching games config:', gamesError);
-      throw gamesError;
+    if (gamesResult.error) {
+      console.error('Error fetching games config:', gamesResult.error);
+      throw gamesResult.error;
     }
 
-    const gamesConfig: GameConfig[] = (gamesData || []).map((game: any) => ({
+    if (unitResult.error) {
+      console.error('Error fetching unit config:', unitResult.error);
+      throw unitResult.error;
+    }
+
+    const gamesConfig: GameConfig[] = (gamesResult.data || []).map((game: any) => ({
       game_id: game.game_id,
       game_type: game.game_type,
       game_name: game.game_name,
@@ -116,6 +122,14 @@ serve(async (req) => {
       required_for_unlock: game.required_for_unlock,
     }));
 
+    // Capture unit config at the time of snapshot creation
+    const unitConfig = {
+      title: unitResult.data.title,
+      description: unitResult.data.description,
+      words: unitResult.data.words,
+      unit_number: unitResult.data.unit_number,
+    };
+
     // Insert the new snapshot
     const { data: newSnapshot, error: insertError } = await supabase
       .from('user_unit_game_snapshots')
@@ -123,7 +137,8 @@ serve(async (req) => {
         user_id: user.id,
         unit_id,
         test_type_id,
-        games_config: gamesConfig
+        games_config: gamesConfig,
+        unit_config: unitConfig
       })
       .select()
       .single();
