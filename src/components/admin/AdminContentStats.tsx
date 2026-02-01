@@ -49,6 +49,12 @@ interface WordQuestionCount {
   required: number;
 }
 
+interface WordVocabStatus {
+  word: string;
+  hasVocab: boolean;
+  status: 'approved' | 'pending' | 'rejected' | 'missing';
+}
+
 interface ContentStat {
   game_id: string;
   game_name: string;
@@ -80,6 +86,8 @@ interface ContentStat {
   meets_requirement: boolean;
   // Word-level breakdown for word-based games
   questionsByWord?: WordQuestionCount[];
+  // Word-level breakdown for vocab/flashcards
+  vocabByWord?: WordVocabStatus[];
 }
 
 // Game types that use passages
@@ -453,7 +461,7 @@ export const AdminContentStats = () => {
             // Fetch vocabulary stats
             const { data: vocabData } = await supabase
               .from('vocabulary')
-              .select('id, review_status')
+              .select('id, review_status, word')
               .eq('unit_id', unit.id);
 
             const vocab = vocabData || [];
@@ -463,6 +471,26 @@ export const AdminContentStats = () => {
             stat.rejected_vocab = vocab.filter(v => v.review_status === 'rejected').length;
             stat.required_vocab = totalWords; // One vocab entry per word
             stat.meets_requirement = (stat.vocab_count - stat.rejected_vocab) >= stat.required_vocab;
+
+            // Build word-level breakdown for flashcards
+            if (Array.isArray(unit.words)) {
+              const vocabByWord: WordVocabStatus[] = unit.words.map(word => {
+                const vocabEntry = vocab.find(v => v.word?.toLowerCase() === word.toLowerCase());
+                if (!vocabEntry) {
+                  return { word, hasVocab: false, status: 'missing' as const };
+                }
+                return {
+                  word,
+                  hasVocab: true,
+                  status: vocabEntry.review_status as 'approved' | 'pending' | 'rejected'
+                };
+              });
+              stat.vocabByWord = vocabByWord.sort((a, b) => {
+                // Sort missing first, then by status
+                const statusOrder = { missing: 0, rejected: 1, pending: 2, approved: 3 };
+                return statusOrder[a.status] - statusOrder[b.status];
+              });
+            }
           } else if (isPassageGame) {
             // Fetch passage stats
             const passagesPerGame = rules.passages_per_game || 3;
@@ -933,6 +961,52 @@ export const AdminContentStats = () => {
                                           )}
                                         </div>
                                       </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </CollapsibleContent>
+                          </Collapsible>
+                        )}
+
+                        {/* Word-level breakdown for vocabulary/flashcards */}
+                        {isVocabGame && stat.vocabByWord && stat.vocabByWord.length > 0 && (
+                          <Collapsible open={isExpanded} onOpenChange={() => toggleExpanded(cardKey)}>
+                            <CollapsibleTrigger asChild>
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="w-full h-7 text-xs justify-between px-2 mt-2"
+                              >
+                                <span>Vocabulary by Word</span>
+                                {isExpanded ? (
+                                  <ChevronDown className="h-3 w-3" />
+                                ) : (
+                                  <ChevronRight className="h-3 w-3" />
+                                )}
+                              </Button>
+                            </CollapsibleTrigger>
+                            <CollapsibleContent className="mt-2">
+                              <div className="max-h-48 overflow-y-auto space-y-1 rounded border p-2 bg-muted/30">
+                                {stat.vocabByWord.map((wordStat) => {
+                                  const statusIcon = {
+                                    approved: { icon: '✓', color: 'text-success' },
+                                    pending: { icon: '⏳', color: 'text-muted-foreground' },
+                                    rejected: { icon: '✗', color: 'text-destructive' },
+                                    missing: { icon: '—', color: 'text-warning' }
+                                  }[wordStat.status];
+                                  
+                                  return (
+                                    <div 
+                                      key={wordStat.word}
+                                      className="flex items-center justify-between text-xs py-1 px-2 rounded hover:bg-muted/50"
+                                    >
+                                      <span className={`font-medium ${wordStat.status === 'missing' || wordStat.status === 'rejected' ? 'text-warning' : ''}`}>
+                                        {wordStat.word}
+                                      </span>
+                                      <span className={statusIcon.color}>
+                                        {statusIcon.icon} {wordStat.status === 'missing' ? 'Missing' : wordStat.status.charAt(0).toUpperCase() + wordStat.status.slice(1)}
+                                      </span>
                                     </div>
                                   );
                                 })}
