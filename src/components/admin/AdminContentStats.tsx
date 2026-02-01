@@ -7,8 +7,9 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, CheckCircle2, AlertCircle, BookOpen, FileQuestion, Sparkles, Wand2 } from "lucide-react";
+import { Loader2, CheckCircle2, AlertCircle, BookOpen, FileQuestion, Sparkles, Wand2, ChevronDown, ChevronRight } from "lucide-react";
 
 interface TestType {
   id: string;
@@ -37,6 +38,15 @@ interface Game {
   name: string;
   game_type: string;
   rules: GameRules | null;
+}
+
+interface WordQuestionCount {
+  word: string;
+  total: number;
+  approved: number;
+  pending: number;
+  rejected: number;
+  required: number;
 }
 
 interface ContentStat {
@@ -68,6 +78,8 @@ interface ContentStat {
   required_vocab: number;
   // Status
   meets_requirement: boolean;
+  // Word-level breakdown for word-based games
+  questionsByWord?: WordQuestionCount[];
 }
 
 // Game types that use passages
@@ -79,6 +91,9 @@ const VOCAB_GAME_TYPES = ['flashcards'];
 // Game types excluded from stats (no reviewable content)
 const EXCLUDED_GAME_TYPES = ['listening', 'matching', 'speaking', 'writing', 'oddoneout'];
 
+// Word-based game types that should show per-word breakdown
+const WORD_BASED_GAME_TYPES = ['intuition', 'context_master', 'cloze_challenge'];
+
 export const AdminContentStats = () => {
   const [loading, setLoading] = useState(true);
   const [testTypes, setTestTypes] = useState<TestType[]>([]);
@@ -88,7 +103,20 @@ export const AdminContentStats = () => {
   const [games, setGames] = useState<Game[]>([]);
   const [stats, setStats] = useState<ContentStat[]>([]);
   const [generatingFor, setGeneratingFor] = useState<string | null>(null);
+  const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
   const { toast } = useToast();
+
+  const toggleExpanded = (key: string) => {
+    setExpandedCards(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+  };
 
   const getTestTypeCode = () => {
     const testType = testTypes.find(t => t.id === testTypeFilter);
@@ -360,10 +388,11 @@ export const AdminContentStats = () => {
             // Regular question-based games
             const questionsPerWord = rules.questions_per_word || 3;
             const questionsPerGame = rules.questions_per_game || 10;
+            const isWordBasedGame = WORD_BASED_GAME_TYPES.includes(game.game_type);
 
             const { data: questionData } = await supabase
               .from('question_bank')
-              .select('id, review_status')
+              .select('id, review_status, word')
               .eq('game_id', game.id)
               .eq('unit_id', unit.id);
 
@@ -373,6 +402,43 @@ export const AdminContentStats = () => {
             stat.pending_questions = questions.filter(q => q.review_status === 'pending').length;
             stat.rejected_questions = questions.filter(q => q.review_status === 'rejected').length;
             stat.required_questions = totalWords * questionsPerWord;
+
+            // For word-based games, build per-word breakdown
+            if (isWordBasedGame && Array.isArray(unit.words)) {
+              const wordCounts: Record<string, WordQuestionCount> = {};
+              
+              // Initialize all unit words
+              unit.words.forEach(word => {
+                const lowerWord = word.toLowerCase();
+                wordCounts[lowerWord] = {
+                  word: word,
+                  total: 0,
+                  approved: 0,
+                  pending: 0,
+                  rejected: 0,
+                  required: questionsPerWord
+                };
+              });
+
+              // Count questions per word
+              questions.forEach(q => {
+                const qWord = q.word?.toLowerCase();
+                if (qWord && wordCounts[qWord]) {
+                  wordCounts[qWord].total++;
+                  if (q.review_status === 'approved') {
+                    wordCounts[qWord].approved++;
+                  } else if (q.review_status === 'pending') {
+                    wordCounts[qWord].pending++;
+                  } else if (q.review_status === 'rejected') {
+                    wordCounts[qWord].rejected++;
+                  }
+                }
+              });
+
+              stat.questionsByWord = Object.values(wordCounts).sort((a, b) => 
+                a.word.localeCompare(b.word)
+              );
+            }
 
             // Meets requirement if non-rejected questions >= required
             stat.meets_requirement = (stat.question_count - stat.rejected_questions) >= stat.required_questions;
@@ -509,6 +575,9 @@ export const AdminContentStats = () => {
                   {unitData.games.map((stat) => {
                     const isPassageGame = PASSAGE_GAME_TYPES.includes(stat.game_type);
                     const isVocabGame = VOCAB_GAME_TYPES.includes(stat.game_type);
+                    const isWordBasedGame = WORD_BASED_GAME_TYPES.includes(stat.game_type);
+                    const cardKey = `${stat.unit_id}-${stat.game_id}`;
+                    const isExpanded = expandedCards.has(cardKey);
                     
                     let current: number, required: number, label: string;
                     let secondaryInfo: { current: number; required: number; label: string } | null = null;
@@ -643,6 +712,60 @@ export const AdminContentStats = () => {
                             </Button>
                           )}
                         </div>
+
+                        {/* Word-level breakdown for word-based games */}
+                        {isWordBasedGame && stat.questionsByWord && stat.questionsByWord.length > 0 && (
+                          <Collapsible open={isExpanded} onOpenChange={() => toggleExpanded(cardKey)}>
+                            <CollapsibleTrigger asChild>
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="w-full h-7 text-xs justify-between px-2 mt-2"
+                              >
+                                <span>Questions by Word</span>
+                                {isExpanded ? (
+                                  <ChevronDown className="h-3 w-3" />
+                                ) : (
+                                  <ChevronRight className="h-3 w-3" />
+                                )}
+                              </Button>
+                            </CollapsibleTrigger>
+                            <CollapsibleContent className="mt-2">
+                              <div className="max-h-48 overflow-y-auto space-y-1 rounded border p-2 bg-muted/30">
+                                {stat.questionsByWord.map((wordStat) => {
+                                  const nonRejected = wordStat.total - wordStat.rejected;
+                                  const meetsReq = nonRejected >= wordStat.required;
+                                  return (
+                                    <div 
+                                      key={wordStat.word}
+                                      className="flex items-center justify-between text-xs py-1 px-2 rounded hover:bg-muted/50"
+                                    >
+                                      <span className={`font-medium ${meetsReq ? '' : 'text-warning'}`}>
+                                        {wordStat.word}
+                                      </span>
+                                      <div className="flex items-center gap-2">
+                                        <span className={`${meetsReq ? 'text-success' : 'text-muted-foreground'}`}>
+                                          {nonRejected}/{wordStat.required}
+                                        </span>
+                                        <div className="flex gap-1">
+                                          {wordStat.approved > 0 && (
+                                            <span className="text-success">✓{wordStat.approved}</span>
+                                          )}
+                                          {wordStat.pending > 0 && (
+                                            <span className="text-muted-foreground">⏳{wordStat.pending}</span>
+                                          )}
+                                          {wordStat.rejected > 0 && (
+                                            <span className="text-destructive">✗{wordStat.rejected}</span>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </CollapsibleContent>
+                          </Collapsible>
+                        )}
                       </div>
                     );
                   })}
