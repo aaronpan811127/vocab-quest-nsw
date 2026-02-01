@@ -209,10 +209,32 @@ Respond with ONLY this JSON structure (no markdown, no explanation):
       if (jsonStr.endsWith('```')) {
         jsonStr = jsonStr.slice(0, -3);
       }
-      generatedContent = JSON.parse(jsonStr.trim());
+      
+      // Clean the JSON string - remove non-ASCII characters that might corrupt parsing
+      // Keep only printable ASCII and common Unicode whitespace/punctuation
+      jsonStr = jsonStr
+        .trim()
+        .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '') // Remove control characters
+        .replace(/[^\x20-\x7E\n\r\t\u00A0-\u00FF\u2000-\u206F\u2018-\u201F]/g, ''); // Remove non-standard chars
+      
+      generatedContent = JSON.parse(jsonStr);
     } catch (parseError) {
       console.error('Failed to parse AI response:', parseError, content);
-      throw new Error('Failed to parse generated content');
+      
+      // Try a more aggressive cleanup as fallback
+      try {
+        let fallbackStr = content
+          .replace(/```json\n?/g, '')
+          .replace(/```\n?/g, '')
+          .trim();
+        // Keep only basic ASCII and essential Unicode
+        fallbackStr = fallbackStr.replace(/[^\x20-\x7E\n\r\t]/g, '');
+        generatedContent = JSON.parse(fallbackStr);
+        console.log('Fallback JSON parsing succeeded');
+      } catch (fallbackError) {
+        console.error('Fallback parsing also failed:', fallbackError);
+        throw new Error('Failed to parse generated content');
+      }
     }
 
     if (!generatedContent.passage || !generatedContent.questions || !Array.isArray(generatedContent.questions)) {
