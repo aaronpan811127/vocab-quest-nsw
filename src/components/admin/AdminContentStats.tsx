@@ -527,7 +527,17 @@ export const AdminContentStats = () => {
               .eq('game_id', game.id)
               .eq('unit_id', unit.id);
 
-            const questions = questionData || [];
+            const allQuestions = questionData || [];
+            
+            // For word-based games, only count questions for words currently in the unit
+            const unitWordsLower = Array.isArray(unit.words) 
+              ? unit.words.map(w => w.toLowerCase()) 
+              : [];
+            
+            const questions = isWordBasedGame 
+              ? allQuestions.filter(q => q.word && unitWordsLower.includes(q.word.toLowerCase()))
+              : allQuestions;
+
             stat.question_count = questions.length;
             stat.approved_questions = questions.filter(q => q.review_status === 'approved').length;
             stat.pending_questions = questions.filter(q => q.review_status === 'pending').length;
