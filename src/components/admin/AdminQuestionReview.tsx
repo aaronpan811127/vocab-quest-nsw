@@ -182,6 +182,9 @@ export const AdminQuestionReview = () => {
   const [editVocabSynonyms, setEditVocabSynonyms] = useState("");
   const [editVocabAntonyms, setEditVocabAntonyms] = useState("");
   const [editVocabExamples, setEditVocabExamples] = useState("");
+  // Passage edit state
+  const [editPassageTitle, setEditPassageTitle] = useState("");
+  const [editPassageContent, setEditPassageContent] = useState("");
   const { toast } = useToast();
 
   const fetchQuestions = async (showLoading = true) => {
@@ -303,6 +306,12 @@ export const AdminQuestionReview = () => {
             antonyms: editVocabAntonyms.split(',').map(s => s.trim()).filter(s => s),
             examples: editVocabExamples.split('\n').map(s => s.trim()).filter(s => s),
           };
+        } else if (selectedPassage) {
+          // Passage edit
+          body.passage_data = {
+            title: editPassageTitle,
+            content: editPassageContent,
+          };
         } else {
           // Question edit
           body.options = editOptions;
@@ -348,6 +357,8 @@ export const AdminQuestionReview = () => {
       setEditVocabSynonyms("");
       setEditVocabAntonyms("");
       setEditVocabExamples("");
+      setEditPassageTitle("");
+      setEditPassageContent("");
       fetchQuestions(false);
     } catch (error) {
       console.error('Error reviewing:', error);
@@ -388,11 +399,15 @@ export const AdminQuestionReview = () => {
     setActionDialogOpen(true);
   };
 
-  const openPassageActionDialog = (passage: PassageGroup, action: "approve" | "reject") => {
+  const openPassageActionDialog = (passage: PassageGroup, action: "approve" | "reject" | "edit") => {
     setSelectedPassage(passage);
     setSelectedQuestion(null);
     setSelectedVocabulary(null);
     setActionType(action);
+    if (action === "edit") {
+      setEditPassageTitle(passage.passage_title);
+      setEditPassageContent(passage.passage_content);
+    }
     setActionDialogOpen(true);
   };
 
@@ -672,6 +687,14 @@ export const AdminQuestionReview = () => {
                           size="sm"
                           variant="outline"
                           className="gap-1"
+                          onClick={() => openPassageActionDialog(passageGroup, "edit")}
+                        >
+                          <Pencil className="h-4 w-4" /> Edit Passage
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="gap-1"
                           onClick={() => openPassageActionDialog(passageGroup, "approve")}
                         >
                           <Check className="h-4 w-4" /> Approve All
@@ -917,7 +940,8 @@ export const AdminQuestionReview = () => {
                 selectedVocabulary ? "Reject Vocabulary" : 
                 selectedPassage ? "Reject Passage" : "Reject Question"
               ) : actionType === "edit" ? (
-                selectedVocabulary ? "Edit Vocabulary" : "Edit Question"
+                selectedVocabulary ? "Edit Vocabulary" : 
+                selectedPassage ? "Edit Passage" : "Edit Question"
               ) : (
                 selectedVocabulary ? "Score Vocabulary" : "Score Question"
               )}
@@ -1013,6 +1037,32 @@ export const AdminQuestionReview = () => {
                     rows={3}
                     placeholder="Enter example sentences, one per line"
                   />
+                </div>
+              </div>
+            )}
+
+            {actionType === "edit" && selectedPassage && (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-passage-title">Passage Title</Label>
+                  <Input
+                    id="edit-passage-title"
+                    value={editPassageTitle}
+                    onChange={(e) => setEditPassageTitle(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-passage-content">Passage Content</Label>
+                  <Textarea
+                    id="edit-passage-content"
+                    value={editPassageContent}
+                    onChange={(e) => setEditPassageContent(e.target.value)}
+                    rows={10}
+                    className="font-mono text-sm"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    For Linked Extracts, edit the JSON array directly. For Reading Quest, edit the plain text content.
+                  </p>
                 </div>
               </div>
             )}
