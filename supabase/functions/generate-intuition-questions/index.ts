@@ -62,30 +62,49 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Check which words already have questions in this unit
     const intuitionGameId = '05155f78-2977-44cd-8d77-b6ec5a7b78cc';
+
+    // Get game rules for questions_per_word
+    const { data: gameData, error: gameError } = await supabase
+      .from("games")
+      .select("rules")
+      .eq("id", intuitionGameId)
+      .single();
+
+    if (gameError) {
+      console.error("Error fetching game rules:", gameError);
+      throw new Error("Failed to fetch game configuration");
+    }
+
+    const questionsPerWord = gameData?.rules?.questions_per_word || 1;
+    console.log(`Questions per word from rules: ${questionsPerWord}`);
+
+    // Check existing non-rejected questions for each word in this unit+game
     const { data: existingQuestions, error: fetchError } = await supabase
       .from("question_bank")
       .select("id, question_text, correct_answer, options, word")
       .eq("unit_id", unit_id)
-      .eq("game_id", intuitionGameId);
+      .eq("game_id", intuitionGameId)
+      .or("review_status.is.null,review_status.neq.rejected");
 
     if (fetchError) {
       console.error("Error fetching existing questions:", fetchError);
       throw new Error("Failed to check existing questions");
     }
 
-    // Extract words that already have questions from the word column
-    const existingWords = new Set<string>();
+    // Count non-rejected questions per word
+    const questionsCountByWord: Record<string, number> = {};
     existingQuestions?.forEach((q) => {
-      if (q.word) {
-        existingWords.add(q.word.toLowerCase());
+      const word = q.word?.toLowerCase();
+      if (word) {
+        questionsCountByWord[word] = (questionsCountByWord[word] || 0) + 1;
       } else {
         // Fallback for legacy data: try to get word from options
         try {
           const options = typeof q.options === "string" ? JSON.parse(q.options) : q.options;
           if (options?.word) {
-            existingWords.add(options.word.toLowerCase());
+            const legacyWord = options.word.toLowerCase();
+            questionsCountByWord[legacyWord] = (questionsCountByWord[legacyWord] || 0) + 1;
           }
         } catch (e) {
           console.error("Error parsing options:", e);
@@ -93,16 +112,31 @@ serve(async (req) => {
       }
     });
 
-    // Filter out words that already have questions
-    const wordsToGenerate = words.filter((word: string) => !existingWords.has(word.toLowerCase()));
+    // Filter words that need more questions
+    const wordsNeedingQuestions: string[] = [];
+    const wordsToGenerateCounts: Record<string, number> = {};
 
-    console.log("Existing words:", Array.from(existingWords));
-    console.log("Words to generate:", wordsToGenerate);
+    words.forEach((word: string) => {
+      const lowerWord = word.toLowerCase();
+      const currentCount = questionsCountByWord[lowerWord] || 0;
+      const needed = questionsPerWord - currentCount;
+      if (needed > 0) {
+        wordsNeedingQuestions.push(word);
+        wordsToGenerateCounts[lowerWord] = needed;
+      }
+    });
 
-    // If all words already have questions, return existing ones
-    if (wordsToGenerate.length === 0) {
-      console.log("All words already have questions, returning existing");
-      return new Response(JSON.stringify({ success: true, questions: existingQuestions, skipped: words }), {
+    console.log("Words needing questions:", wordsNeedingQuestions);
+    console.log("Questions needed per word:", wordsToGenerateCounts);
+
+    // If no words need questions, return existing ones
+    if (wordsNeedingQuestions.length === 0) {
+      console.log("All words have sufficient questions, returning existing");
+      return new Response(JSON.stringify({ 
+        success: true, 
+        questions: existingQuestions, 
+        generated: 0 
+      }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -112,13 +146,19 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    const prompt = `Generate word intuition questions for these vocabulary words: ${wordsToGenerate.join(", ")}
+    // Build generation request with specific counts per word
+    const wordRequests = wordsNeedingQuestions.map(w => 
+      `${w} (generate ${wordsToGenerateCounts[w.toLowerCase()]} questions)`
+    ).join(", ");
 
-For each word, create a question where:
+    const prompt = `Generate word intuition questions for these vocabulary words: ${wordRequests}
+
+For each word, create the specified number of questions where:
 1. The word is used naturally in a sentence context that clearly shows its connotation
 2. The student must identify if the word feels positive, negative, or neutral in that context
 3. The sentence should be age-appropriate for students (grades 5-12)
 4. DO NOT use any markdown formatting like asterisks or bold - just write the plain sentence with the word included naturally
+5. Each question for the same word should use a DIFFERENT sentence showing potentially different connotations
 
 Return ONLY a valid JSON array with this exact structure, no other text:
 [
@@ -140,7 +180,7 @@ The options are always: "positive", "negative", "neutral"
 Make sure each sentence clearly demonstrates the word's connotation in that specific context.
 IMPORTANT: Write plain sentences without any special formatting or markdown.`;
 
-    console.log("Generating intuition questions for words:", wordsToGenerate);
+    console.log("Generating intuition questions for words:", wordsNeedingQuestions, "with counts:", wordsToGenerateCounts);
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -197,7 +237,7 @@ IMPORTANT: Write plain sentences without any special formatting or markdown.`;
       throw new Error("Failed to parse questions data");
     }
 
-    // Use the same intuitionGameId declared at line 66
+    // Use the same intuitionGameId declared earlier
     const questionRecords = questionsData.map((item: any) => ({
       unit_id,
       game_id: intuitionGameId,
@@ -229,8 +269,7 @@ IMPORTANT: Write plain sentences without any special formatting or markdown.`;
     return new Response(JSON.stringify({ 
       success: true, 
       questions: allQuestions,
-      generated: insertedData?.length || 0,
-      skipped: words.filter((w: string) => existingWords.has(w.toLowerCase()))
+      generated: insertedData?.length || 0
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
