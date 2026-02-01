@@ -66,10 +66,11 @@ serve(async (req) => {
     }
 
     const gameId = gameData.id;
-    const numExtracts = gameData.rules?.num_extracts || 4;
-    const numQuestions = gameData.rules?.num_questions || 10;
+    const rules = gameData.rules as any || {};
+    const numExtracts = rules.num_extracts || 4;
+    const numQuestions = rules.questions_per_passage || rules.num_questions || 10;
 
-    console.log(`Generating cloze passage content for unit: ${unit_id}, words: ${words.length}`);
+    console.log(`Generating cloze passage content for unit: ${unit_id}, words: ${words.length}, questions: ${numQuestions}`);
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
