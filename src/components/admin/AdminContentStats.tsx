@@ -110,6 +110,9 @@ export const AdminContentStats = () => {
       let functionName: string;
       let payload: Record<string, unknown>;
 
+      // Supported question-based game types for generate-test-questions
+      const QUESTION_GAME_TYPES = ['context_master', 'cloze_challenge'];
+
       if (isVocabGame) {
         functionName = 'generate-vocabulary';
         payload = { unit_id: stat.unit_id, words: unit.words };
@@ -122,7 +125,7 @@ export const AdminContentStats = () => {
       } else if (stat.game_type === 'word_intuition') {
         functionName = 'generate-intuition-questions';
         payload = { unit_id: stat.unit_id, words: unit.words };
-      } else {
+      } else if (QUESTION_GAME_TYPES.includes(stat.game_type)) {
         functionName = 'generate-test-questions';
         payload = { 
           unit_id: stat.unit_id, 
@@ -131,6 +134,14 @@ export const AdminContentStats = () => {
           game_id: stat.game_id,
           test_type_code: testTypeCode 
         };
+      } else {
+        toast({
+          title: "Generation Not Supported",
+          description: `AI generation is not available for ${stat.game_name}`,
+          variant: "destructive",
+        });
+        setGeneratingFor(null);
+        return;
       }
 
       const { data, error } = await supabase.functions.invoke(functionName, {
