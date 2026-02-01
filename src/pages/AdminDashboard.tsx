@@ -86,7 +86,7 @@ const AdminDashboard = () => {
           </TabsContent>
 
           <TabsContent value="stats">
-            <AdminContentStats />
+            {activeTab === 'stats' && <AdminContentStats key={Date.now()} />}
           </TabsContent>
 
           <TabsContent value="units">
