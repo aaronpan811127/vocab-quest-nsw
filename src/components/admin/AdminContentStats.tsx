@@ -122,7 +122,7 @@ export const AdminContentStats = () => {
       } else if (stat.game_type === 'reading') {
         functionName = 'generate-passage';
         payload = { unit_id: stat.unit_id, words: unit.words, test_type_code: testTypeCode };
-      } else if (stat.game_type === 'word_intuition') {
+      } else if (stat.game_type === 'intuition') {
         functionName = 'generate-intuition-questions';
         payload = { unit_id: stat.unit_id, words: unit.words };
       } else if (QUESTION_GAME_TYPES.includes(stat.game_type)) {
