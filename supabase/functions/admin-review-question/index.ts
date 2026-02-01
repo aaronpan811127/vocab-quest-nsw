@@ -45,12 +45,12 @@ Deno.serve(async (req) => {
       );
     }
 
-    const { question_id, vocabulary_id, action, score, rejection_reason, options, correct_answer, vocabulary_data } = await req.json();
+    const { question_id, vocabulary_id, passage_id, action, score, rejection_reason, options, correct_answer, vocabulary_data } = await req.json();
 
-    // Either question_id or vocabulary_id must be provided
-    if (!question_id && !vocabulary_id) {
+    // Either question_id, vocabulary_id, or passage_id must be provided
+    if (!question_id && !vocabulary_id && !passage_id) {
       return new Response(
-        JSON.stringify({ error: 'Missing question_id or vocabulary_id' }),
+        JSON.stringify({ error: 'Missing question_id, vocabulary_id, or passage_id' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -65,6 +65,14 @@ Deno.serve(async (req) => {
     if (!['approve', 'reject', 'score', 'edit'].includes(action)) {
       return new Response(
         JSON.stringify({ error: 'Invalid action. Must be approve, reject, score, or edit' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Passage-level actions only support approve and reject
+    if (passage_id && !['approve', 'reject'].includes(action)) {
+      return new Response(
+        JSON.stringify({ error: 'Passage-level actions only support approve or reject' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -182,7 +190,33 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Handle question review
+    // Handle passage-level review (bulk update all questions in a passage)
+    if (passage_id) {
+      console.log(`Admin ${adminUser.id} reviewing passage ${passage_id} with action: ${action}`);
+
+      const { data, error } = await supabase
+        .from('question_bank')
+        .update(updateData)
+        .eq('passage_id', passage_id)
+        .select();
+
+      if (error) {
+        console.error('Error updating passage questions:', error);
+        return new Response(
+          JSON.stringify({ error: 'Failed to update passage questions' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      console.log(`Successfully reviewed ${data?.length || 0} questions in passage ${passage_id}`);
+
+      return new Response(
+        JSON.stringify({ success: true, questions: data, count: data?.length || 0 }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Handle individual question review
     console.log(`Admin ${adminUser.id} reviewing question ${question_id} with action: ${action}`);
 
     const { data, error } = await supabase

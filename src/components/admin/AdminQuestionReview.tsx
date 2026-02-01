@@ -89,6 +89,11 @@ interface PassageGroup {
   passage_title: string;
   passage_content: string;
   questions: Question[];
+  // Aggregate review status for passage-level display
+  review_status: string;
+  unit_title: string;
+  unit_number: number;
+  game_name: string;
 }
 
 // Group questions by passage for reading game types
@@ -104,11 +109,27 @@ const groupQuestionsByPassage = (questions: Question[]): { grouped: PassageGroup
           passage_title: q.passage_title || 'Reading Passage',
           passage_content: q.passage_content,
           questions: [],
+          review_status: q.review_status,
+          unit_title: q.unit_title,
+          unit_number: q.unit_number,
+          game_name: q.game_name,
         });
       }
       passageMap.get(q.passage_id)!.questions.push(q);
     } else {
       ungrouped.push(q);
+    }
+  });
+
+  // Calculate aggregate review status for each passage
+  passageMap.forEach((group) => {
+    const statuses = group.questions.map(q => q.review_status);
+    if (statuses.every(s => s === 'approved')) {
+      group.review_status = 'approved';
+    } else if (statuses.some(s => s === 'rejected')) {
+      group.review_status = 'rejected';
+    } else {
+      group.review_status = 'pending';
     }
   });
 
@@ -146,6 +167,7 @@ export const AdminQuestionReview = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(null);
   const [selectedVocabulary, setSelectedVocabulary] = useState<VocabularyItem | null>(null);
+  const [selectedPassage, setSelectedPassage] = useState<PassageGroup | null>(null);
   const [actionDialogOpen, setActionDialogOpen] = useState(false);
   const [actionType, setActionType] = useState<"approve" | "reject" | "score" | "edit">("approve");
   const [score, setScore] = useState(5);
@@ -246,7 +268,7 @@ export const AdminQuestionReview = () => {
     : units.filter(u => u.test_type_id === testTypeFilter);
 
   const handleAction = async () => {
-    if (!selectedQuestion && !selectedVocabulary) return;
+    if (!selectedQuestion && !selectedVocabulary && !selectedPassage) return;
     
     setActionLoading(true);
     try {
@@ -260,6 +282,9 @@ export const AdminQuestionReview = () => {
       // Set the ID based on what's selected
       if (selectedVocabulary) {
         body.vocabulary_id = selectedVocabulary.id;
+      } else if (selectedPassage) {
+        // Passage-level action - send passage_id for bulk update
+        body.passage_id = selectedPassage.passage_id;
       } else if (selectedQuestion) {
         body.question_id = selectedQuestion.id;
       }
@@ -303,7 +328,7 @@ export const AdminQuestionReview = () => {
         throw new Error(data.error);
       }
 
-      const itemType = selectedVocabulary ? "Vocabulary" : "Question";
+      const itemType = selectedVocabulary ? "Vocabulary" : selectedPassage ? "Passage" : "Question";
       const actionLabel = actionType === "approve" ? "approved" : actionType === "reject" ? "rejected" : actionType === "edit" ? "updated" : "scored";
       toast({
         title: "Success",
@@ -313,6 +338,7 @@ export const AdminQuestionReview = () => {
       setActionDialogOpen(false);
       setSelectedQuestion(null);
       setSelectedVocabulary(null);
+      setSelectedPassage(null);
       setRejectionReason("");
       setScore(5);
       setEditOptions([]);
@@ -338,6 +364,7 @@ export const AdminQuestionReview = () => {
   const openActionDialog = (question: Question, action: "approve" | "reject" | "score" | "edit") => {
     setSelectedQuestion(question);
     setSelectedVocabulary(null);
+    setSelectedPassage(null);
     setActionType(action);
     if (action === "edit") {
       setEditOptions(parseOptions(question.options));
@@ -349,6 +376,7 @@ export const AdminQuestionReview = () => {
   const openVocabActionDialog = (vocab: VocabularyItem, action: "approve" | "reject" | "score" | "edit") => {
     setSelectedVocabulary(vocab);
     setSelectedQuestion(null);
+    setSelectedPassage(null);
     setActionType(action);
     if (action === "edit") {
       setEditVocabWord(vocab.word);
@@ -357,6 +385,14 @@ export const AdminQuestionReview = () => {
       setEditVocabAntonyms(vocab.antonyms?.join(', ') || '');
       setEditVocabExamples(vocab.examples?.join('\n') || '');
     }
+    setActionDialogOpen(true);
+  };
+
+  const openPassageActionDialog = (passage: PassageGroup, action: "approve" | "reject") => {
+    setSelectedPassage(passage);
+    setSelectedQuestion(null);
+    setSelectedVocabulary(null);
+    setActionType(action);
     setActionDialogOpen(true);
   };
 
@@ -615,17 +651,41 @@ export const AdminQuestionReview = () => {
                           </CardTitle>
                           <div className="flex flex-wrap items-center gap-2 mt-1">
                             <Badge variant="outline" className="font-normal">
-                              Unit {passageGroup.questions[0]?.unit_number}: {passageGroup.questions[0]?.unit_title}
+                              Unit {passageGroup.unit_number}: {passageGroup.unit_title}
                             </Badge>
-                            <Badge variant="outline" className="font-normal">{passageGroup.questions[0]?.game_name}</Badge>
+                            <Badge variant="outline" className="font-normal">{passageGroup.game_name}</Badge>
                             <Badge variant="outline" className="font-normal">
                               {passageGroup.questions.length} question{passageGroup.questions.length !== 1 ? 's' : ''}
                             </Badge>
                           </div>
                         </div>
+                        <div className="flex items-center gap-2">
+                          {getStatusBadge(passageGroup.review_status)}
+                        </div>
                       </div>
                     </CardHeader>
                     <CardContent className="space-y-4">
+                      {/* Passage-level actions */}
+                      <div className="flex flex-wrap gap-2 p-3 bg-primary/5 rounded-lg border border-primary/20">
+                        <span className="text-sm font-medium text-muted-foreground mr-2 self-center">Passage Actions:</span>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="gap-1"
+                          onClick={() => openPassageActionDialog(passageGroup, "approve")}
+                        >
+                          <Check className="h-4 w-4" /> Approve All
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="gap-1"
+                          onClick={() => openPassageActionDialog(passageGroup, "reject")}
+                        >
+                          <X className="h-4 w-4" /> Reject All
+                        </Button>
+                      </div>
+
                       {/* Passage Content */}
                       <Collapsible 
                         open={expandedPassages.has(passageGroup.passage_id)}
@@ -677,23 +737,18 @@ export const AdminQuestionReview = () => {
                         </CollapsibleContent>
                       </Collapsible>
 
-                      {/* Questions for this passage */}
+                      {/* Questions for this passage - only Edit at question level */}
                       <div className="space-y-3 pl-4 border-l-2 border-muted">
                         {passageGroup.questions.map((question, qIdx) => (
                           <div key={question.id} className="p-3 bg-muted/50 rounded-lg">
                             <div className="flex items-start justify-between mb-2">
-                              <div>
+                              <div className="flex-1">
                                 <p className="font-medium text-sm">
                                   Q{qIdx + 1}: {question.question_text}
                                 </p>
                               </div>
-                              <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-2 ml-2">
                                 {getStatusBadge(question.review_status)}
-                                {question.review_score !== null && (
-                                  <Badge variant="secondary" className="gap-1 text-xs">
-                                    <Star className="h-3 w-3" /> {question.review_score}/10
-                                  </Badge>
-                                )}
                               </div>
                             </div>
 
@@ -719,6 +774,7 @@ export const AdminQuestionReview = () => {
                               </div>
                             )}
 
+                            {/* Only Edit available at question level */}
                             <div className="flex gap-2">
                               <Button
                                 size="sm"
@@ -726,31 +782,7 @@ export const AdminQuestionReview = () => {
                                 className="gap-1 h-7 text-xs"
                                 onClick={() => openActionDialog(question, "edit")}
                               >
-                                <Pencil className="h-3 w-3" /> Edit
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="gap-1 h-7 text-xs"
-                                onClick={() => openActionDialog(question, "approve")}
-                              >
-                                <Check className="h-3 w-3" /> Approve
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="gap-1 h-7 text-xs"
-                                onClick={() => openActionDialog(question, "reject")}
-                              >
-                                <X className="h-3 w-3" /> Reject
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="gap-1 h-7 text-xs"
-                                onClick={() => openActionDialog(question, "score")}
-                              >
-                                <Star className="h-3 w-3" /> Score
+                                <Pencil className="h-3 w-3" /> Edit Question
                               </Button>
                             </div>
                           </div>
@@ -874,22 +906,38 @@ export const AdminQuestionReview = () => {
         </div>
       )}
 
-      {/* Action Dialog */}
       <Dialog open={actionDialogOpen} onOpenChange={setActionDialogOpen}>
         <DialogContent className={actionType === "edit" ? "max-w-lg" : ""}>
           <DialogHeader>
             <DialogTitle>
-              {actionType === "approve" ? (selectedVocabulary ? "Approve Vocabulary" : "Approve Question") : 
-               actionType === "reject" ? (selectedVocabulary ? "Reject Vocabulary" : "Reject Question") : 
-               actionType === "edit" ? (selectedVocabulary ? "Edit Vocabulary" : "Edit Question") : 
-               (selectedVocabulary ? "Score Vocabulary" : "Score Question")}
+              {actionType === "approve" ? (
+                selectedVocabulary ? "Approve Vocabulary" : 
+                selectedPassage ? "Approve Passage" : "Approve Question"
+              ) : actionType === "reject" ? (
+                selectedVocabulary ? "Reject Vocabulary" : 
+                selectedPassage ? "Reject Passage" : "Reject Question"
+              ) : actionType === "edit" ? (
+                selectedVocabulary ? "Edit Vocabulary" : "Edit Question"
+              ) : (
+                selectedVocabulary ? "Score Vocabulary" : "Score Question"
+              )}
             </DialogTitle>
           </DialogHeader>
           
           <div className="py-4">
             {actionType !== "edit" && (
               <p className="text-sm text-muted-foreground mb-4">
-                {selectedQuestion?.question_text || selectedVocabulary?.word}
+                {selectedQuestion?.question_text || selectedVocabulary?.word || (
+                  selectedPassage && (
+                    <span>
+                      <strong>{selectedPassage.passage_title}</strong>
+                      <br />
+                      <span className="text-xs">
+                        This will {actionType} all {selectedPassage.questions.length} questions in this passage.
+                      </span>
+                    </span>
+                  )
+                )}
               </p>
             )}
 
