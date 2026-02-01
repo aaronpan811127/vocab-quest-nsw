@@ -103,6 +103,8 @@ export const AdminContentStats = () => {
   const [games, setGames] = useState<Game[]>([]);
   const [stats, setStats] = useState<ContentStat[]>([]);
   const [generatingFor, setGeneratingFor] = useState<string | null>(null);
+  const [generatingUnit, setGeneratingUnit] = useState<string | null>(null);
+  const [generatingAll, setGeneratingAll] = useState(false);
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
   const { toast } = useToast();
 
@@ -225,6 +227,135 @@ export const AdminContentStats = () => {
       });
     } finally {
       setGeneratingFor(null);
+    }
+  };
+
+  // Generate all content for a specific unit
+  const handleGenerateUnit = async (unitId: string) => {
+    const unitStats = stats.filter(s => s.unit_id === unitId && !s.meets_requirement);
+    if (unitStats.length === 0) {
+      toast({
+        title: "Already Complete",
+        description: "All games in this unit meet their requirements.",
+      });
+      return;
+    }
+
+    setGeneratingUnit(unitId);
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (const stat of unitStats) {
+      try {
+        await handleGenerateSingle(stat);
+        successCount++;
+      } catch (error) {
+        console.error('Generation error for', stat.game_name, error);
+        errorCount++;
+      }
+    }
+
+    setGeneratingUnit(null);
+    await fetchStats();
+
+    toast({
+      title: "Unit Generation Complete",
+      description: `Generated content for ${successCount} game(s)${errorCount > 0 ? `, ${errorCount} failed` : ''}`,
+    });
+  };
+
+  // Generate all content globally (all units)
+  const handleGenerateAll = async () => {
+    const incompleteStats = stats.filter(s => !s.meets_requirement);
+    if (incompleteStats.length === 0) {
+      toast({
+        title: "Already Complete",
+        description: "All games meet their requirements.",
+      });
+      return;
+    }
+
+    setGeneratingAll(true);
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (const stat of incompleteStats) {
+      try {
+        await handleGenerateSingle(stat);
+        successCount++;
+      } catch (error) {
+        console.error('Generation error for', stat.game_name, error);
+        errorCount++;
+      }
+    }
+
+    setGeneratingAll(false);
+    await fetchStats();
+
+    toast({
+      title: "Global Generation Complete",
+      description: `Generated content for ${successCount} game(s)${errorCount > 0 ? `, ${errorCount} failed` : ''}`,
+    });
+  };
+
+  // Single generation helper (extracted from handleGenerate)
+  const handleGenerateSingle = async (stat: ContentStat) => {
+    const unit = units.find(u => u.id === stat.unit_id);
+    if (!unit) throw new Error('Unit not found');
+
+    const testTypeCode = getTestTypeCode();
+    const isPassageGame = PASSAGE_GAME_TYPES.includes(stat.game_type);
+    const isVocabGame = VOCAB_GAME_TYPES.includes(stat.game_type);
+
+    let functionName: string;
+    let payload: Record<string, unknown>;
+
+    const QUESTION_GAME_TYPES = ['context_master', 'cloze_challenge'];
+
+    if (isVocabGame) {
+      functionName = 'generate-vocabulary';
+      payload = { unit_id: stat.unit_id, words: unit.words };
+    } else if (stat.game_type === 'cloze_passage') {
+      functionName = 'generate-cloze-passage';
+      payload = { unit_id: stat.unit_id, words: unit.words, test_type_code: testTypeCode, unit_title: unit.title };
+    } else if (stat.game_type === 'reading') {
+      functionName = 'generate-passage';
+      payload = { unit_id: stat.unit_id, words: unit.words, test_type_code: testTypeCode, unit_title: unit.title };
+    } else if (stat.game_type === 'intuition') {
+      functionName = 'generate-intuition-questions';
+      payload = { unit_id: stat.unit_id, words: unit.words };
+    } else if (QUESTION_GAME_TYPES.includes(stat.game_type)) {
+      functionName = 'generate-test-questions';
+      payload = { 
+        unit_id: stat.unit_id, 
+        words: unit.words, 
+        game_type: stat.game_type,
+        game_id: stat.game_id,
+        test_type_code: testTypeCode 
+      };
+    } else {
+      throw new Error(`Generation not supported for ${stat.game_name}`);
+    }
+
+    // For passage-based games, loop until we have enough passages
+    const isPassageBasedGame = ['cloze_passage', 'reading'].includes(stat.game_type);
+    const maxIterations = 5;
+    
+    if (isPassageBasedGame) {
+      for (let i = 0; i < maxIterations; i++) {
+        const { data, error } = await supabase.functions.invoke(functionName, {
+          body: payload
+        });
+
+        if (error) throw error;
+        if (data?.skipped) break;
+      }
+    } else {
+      const { error } = await supabase.functions.invoke(functionName, {
+        body: payload
+      });
+
+      if (error) throw error;
     }
   };
 
@@ -492,11 +623,28 @@ export const AdminContentStats = () => {
       .join(' ');
   };
 
+  const incompleteCount = stats.filter(s => !s.meets_requirement).length;
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-bold">Content Statistics</h2>
+          {/* Global Generate All Button */}
+          {incompleteCount > 0 && (
+            <Button
+              onClick={handleGenerateAll}
+              disabled={generatingAll || generatingUnit !== null}
+              className="gap-2"
+            >
+              {generatingAll ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Wand2 className="h-4 w-4" />
+              )}
+              Generate All ({incompleteCount})
+            </Button>
+          )}
         </div>
 
         {/* Test Type Radio Buttons */}
@@ -555,17 +703,33 @@ export const AdminContentStats = () => {
                       {unitData.total_words} words in unit
                     </CardDescription>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex items-center gap-2">
                     {unitData.games.every(g => g.meets_requirement) ? (
                       <Badge className="bg-success text-success-foreground gap-1">
                         <CheckCircle2 className="h-3 w-3" />
                         All Complete
                       </Badge>
                     ) : (
-                      <Badge variant="secondary" className="gap-1">
-                        <AlertCircle className="h-3 w-3" />
-                        Incomplete
-                      </Badge>
+                      <>
+                        <Badge variant="secondary" className="gap-1">
+                          <AlertCircle className="h-3 w-3" />
+                          Incomplete
+                        </Badge>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="gap-1"
+                          onClick={() => handleGenerateUnit(unitId)}
+                          disabled={generatingUnit === unitId || generatingAll}
+                        >
+                          {generatingUnit === unitId ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          ) : (
+                            <Wand2 className="h-3 w-3" />
+                          )}
+                          Generate Unit
+                        </Button>
+                      </>
                     )}
                   </div>
                 </div>
