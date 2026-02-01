@@ -3,11 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Shield, LogOut, FileQuestion, Users, Loader2, BarChart3 } from "lucide-react";
+import { Shield, LogOut, FileQuestion, Users, Loader2, BarChart3, Settings } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AdminQuestionReview } from "@/components/admin/AdminQuestionReview";
 import { AdminUserManagement } from "@/components/admin/AdminUserManagement";
 import { AdminContentStats } from "@/components/admin/AdminContentStats";
+import { AdminUnitEditor } from "@/components/admin/AdminUnitEditor";
 
 const AdminDashboard = () => {
   const { isAdmin, loading, user } = useAdminAuth();
@@ -66,6 +67,10 @@ const AdminDashboard = () => {
               <BarChart3 className="h-4 w-4" />
               Game Management
             </TabsTrigger>
+            <TabsTrigger value="units" className="gap-2">
+              <Settings className="h-4 w-4" />
+              Unit Config
+            </TabsTrigger>
             <TabsTrigger value="questions" className="gap-2">
               <FileQuestion className="h-4 w-4" />
               Question Review
@@ -82,6 +87,10 @@ const AdminDashboard = () => {
 
           <TabsContent value="stats">
             <AdminContentStats />
+          </TabsContent>
+
+          <TabsContent value="units">
+            <AdminUnitEditor />
           </TabsContent>
 
           <TabsContent value="users">
