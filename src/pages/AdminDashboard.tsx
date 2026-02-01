@@ -3,10 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Shield, LogOut, FileQuestion, Users, Loader2 } from "lucide-react";
+import { Shield, LogOut, FileQuestion, Users, Loader2, BarChart3 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AdminQuestionReview } from "@/components/admin/AdminQuestionReview";
 import { AdminUserManagement } from "@/components/admin/AdminUserManagement";
+import { AdminContentStats } from "@/components/admin/AdminContentStats";
 
 const AdminDashboard = () => {
   const { isAdmin, loading, user } = useAdminAuth();
@@ -65,6 +66,10 @@ const AdminDashboard = () => {
               <FileQuestion className="h-4 w-4" />
               Question Review
             </TabsTrigger>
+            <TabsTrigger value="stats" className="gap-2">
+              <BarChart3 className="h-4 w-4" />
+              Content Stats
+            </TabsTrigger>
             <TabsTrigger value="users" className="gap-2">
               <Users className="h-4 w-4" />
               User Management
@@ -73,6 +78,10 @@ const AdminDashboard = () => {
 
           <TabsContent value="questions">
             <AdminQuestionReview />
+          </TabsContent>
+
+          <TabsContent value="stats">
+            <AdminContentStats />
           </TabsContent>
 
           <TabsContent value="users">
