@@ -86,12 +86,14 @@ serve(async (req) => {
     const questionsPerPassage = rules.questions_per_passage || 10;
     const passagesPerGame = rules.passages_per_game || 3;
 
-    // Check how many non-rejected passages already exist for this unit
+    // Check how many non-rejected Reading Quest passages already exist for this unit
+    // Exclude Cloze Passage entries which belong to a different game
     const { count: existingPassageCount } = await supabaseAdmin
       .from('reading_passages')
       .select('id', { count: 'exact', head: true })
       .eq('unit_id', unit_id)
-      .neq('review_status', 'rejected');
+      .neq('review_status', 'rejected')
+      .not('title', 'ilike', 'Cloze Passage:%');
 
     const currentCount = existingPassageCount || 0;
 
