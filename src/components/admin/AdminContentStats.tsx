@@ -1011,6 +1011,23 @@ export const AdminContentStats = () => {
                                   );
                                 })}
                               </div>
+                              {/* Generate missing vocab button */}
+                              {stat.vocabByWord.some(w => w.status === 'missing' || w.status === 'rejected') && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="w-full mt-2 h-7 text-xs gap-1"
+                                  onClick={() => handleGenerate(stat)}
+                                  disabled={generatingFor === `${stat.unit_id}-${stat.game_id}`}
+                                >
+                                  {generatingFor === `${stat.unit_id}-${stat.game_id}` ? (
+                                    <Loader2 className="h-3 w-3 animate-spin" />
+                                  ) : (
+                                    <Wand2 className="h-3 w-3" />
+                                  )}
+                                  Generate Missing Vocabulary
+                                </Button>
+                              )}
                             </CollapsibleContent>
                           </Collapsible>
                         )}
