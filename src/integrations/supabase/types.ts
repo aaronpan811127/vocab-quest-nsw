@@ -720,6 +720,7 @@ export type Database = {
           games_config: Json
           id: string
           test_type_id: string
+          unit_config: Json | null
           unit_id: string
           user_id: string
         }
@@ -728,6 +729,7 @@ export type Database = {
           games_config?: Json
           id?: string
           test_type_id: string
+          unit_config?: Json | null
           unit_id: string
           user_id: string
         }
@@ -736,6 +738,7 @@ export type Database = {
           games_config?: Json
           id?: string
           test_type_id?: string
+          unit_config?: Json | null
           unit_id?: string
           user_id?: string
         }

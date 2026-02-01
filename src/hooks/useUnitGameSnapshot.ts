@@ -26,12 +26,20 @@ export interface GroupedGames {
   };
 }
 
+export interface UnitConfig {
+  title: string;
+  description: string | null;
+  words: string[];
+  unit_number: number;
+}
+
 interface Snapshot {
   id: string;
   user_id: string;
   unit_id: string;
   test_type_id: string;
   games_config: GameConfig[];
+  unit_config: UnitConfig | null;
   created_at: string;
 }
 
@@ -43,6 +51,7 @@ export const useUnitGameSnapshot = (unitId: string | null, testTypeId: string | 
   const { user } = useAuth();
   const [games, setGames] = useState<GameConfig[]>([]);
   const [groupedGames, setGroupedGames] = useState<GroupedGames>({});
+  const [unitConfig, setUnitConfig] = useState<UnitConfig | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [snapshotId, setSnapshotId] = useState<string | null>(null);
@@ -51,6 +60,7 @@ export const useUnitGameSnapshot = (unitId: string | null, testTypeId: string | 
     if (!unitId || !testTypeId || !user) {
       setGames([]);
       setGroupedGames({});
+      setUnitConfig(null);
       setLoading(false);
       return;
     }
@@ -75,6 +85,7 @@ export const useUnitGameSnapshot = (unitId: string | null, testTypeId: string | 
       
       setGames(gamesData);
       setSnapshotId(snapshot.id);
+      setUnitConfig(snapshot.unit_config || null);
 
       // Group games by section
       const grouped: GroupedGames = {};
@@ -136,6 +147,7 @@ export const useUnitGameSnapshot = (unitId: string | null, testTypeId: string | 
   return {
     games,
     groupedGames,
+    unitConfig,
     loading,
     error,
     snapshotId,
