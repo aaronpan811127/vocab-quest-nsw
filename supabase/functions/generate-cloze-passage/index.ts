@@ -69,8 +69,34 @@ serve(async (req) => {
     const rules = gameData.rules as any || {};
     const numExtracts = rules.num_extracts || 4;
     const numQuestions = rules.questions_per_passage || rules.num_questions || 10;
+    const passagesPerGame = rules.passages_per_game || 3;
 
-    console.log(`Generating cloze passage content for unit: ${unit_id}, words: ${words.length}, questions: ${numQuestions}`);
+    // Check how many cloze passages already exist for this unit
+    const { count: existingPassageCount } = await supabase
+      .from('reading_passages')
+      .select('id', { count: 'exact', head: true })
+      .eq('unit_id', unit_id)
+      .ilike('title', 'Cloze Passage:%');
+
+    const currentCount = existingPassageCount || 0;
+
+    console.log(`Unit ${unit_id}: ${currentCount}/${passagesPerGame} cloze passages exist`);
+
+    // If we already have enough passages, return without generating
+    if (currentCount >= passagesPerGame) {
+      console.log('Sufficient cloze passages exist, skipping generation');
+      return new Response(JSON.stringify({ 
+        success: true, 
+        skipped: true,
+        message: `Already have ${currentCount} cloze passages (minimum: ${passagesPerGame})`,
+        existing_count: currentCount,
+        required_count: passagesPerGame
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    console.log(`Generating cloze passage ${currentCount + 1}/${passagesPerGame} for unit: ${unit_id}, words: ${words.length}, questions: ${numQuestions}`);
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {

@@ -75,16 +75,43 @@ serve(async (req) => {
     const vocabularyWords = unitData?.words || [];
     const unitTitleToUse = unit_title || unitData?.title || 'Vocabulary Practice';
 
-    // Get game rules for question count
+    // Get game rules for question count and passages per game
     const { data: gameRules } = await supabaseAdmin
       .from('games')
       .select('rules')
       .eq('game_type', 'reading')
       .single();
 
-    const questionsPerPassage = (gameRules?.rules as any)?.questions_per_passage || 10;
+    const rules = (gameRules?.rules as any) || {};
+    const questionsPerPassage = rules.questions_per_passage || 10;
+    const passagesPerGame = rules.passages_per_game || 3;
 
-    console.log('Generating passage for unit:', unitTitleToUse, 'with', vocabularyWords.length, 'vocabulary words', 'questions:', questionsPerPassage);
+    // Check how many passages already exist for this unit
+    const { count: existingPassageCount } = await supabaseAdmin
+      .from('reading_passages')
+      .select('id', { count: 'exact', head: true })
+      .eq('unit_id', unit_id);
+
+    const currentCount = existingPassageCount || 0;
+
+    console.log(`Unit ${unit_id}: ${currentCount}/${passagesPerGame} passages exist`);
+
+    // If we already have enough passages, return without generating
+    if (currentCount >= passagesPerGame) {
+      console.log('Sufficient passages exist, skipping generation');
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          skipped: true,
+          message: `Already have ${currentCount} passages (minimum: ${passagesPerGame})`,
+          existing_count: currentCount,
+          required_count: passagesPerGame
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log(`Generating passage ${currentCount + 1}/${passagesPerGame} for unit:`, unitTitleToUse, 'with', vocabularyWords.length, 'vocabulary words', 'questions:', questionsPerPassage);
 
     // Call Lovable AI Gateway to generate passage with questions
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
