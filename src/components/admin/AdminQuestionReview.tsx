@@ -30,6 +30,25 @@ interface VocabularyItem {
   rejection_reason: string | null;
 }
 
+interface LinkedExtract {
+  label: string;
+  title: string;
+  content: string;
+  text_type: string;
+}
+
+const parseLinkedExtracts = (content: string): LinkedExtract[] | null => {
+  try {
+    const parsed = JSON.parse(content);
+    if (Array.isArray(parsed) && parsed.length > 0 && 'label' in parsed[0] && 'content' in parsed[0]) {
+      return parsed;
+    }
+  } catch {
+    // Not JSON, return null for plain text handling
+  }
+  return null;
+};
+
 interface Question {
   id: string;
   question_text: string;
@@ -185,6 +204,8 @@ export const AdminQuestionReview = () => {
   // Passage edit state
   const [editPassageTitle, setEditPassageTitle] = useState("");
   const [editPassageContent, setEditPassageContent] = useState("");
+  const [editLinkedExtracts, setEditLinkedExtracts] = useState<LinkedExtract[]>([]);
+  const [isLinkedExtracts, setIsLinkedExtracts] = useState(false);
   const { toast } = useToast();
 
   const fetchQuestions = async (showLoading = true) => {
@@ -310,7 +331,7 @@ export const AdminQuestionReview = () => {
           // Passage edit
           body.passage_data = {
             title: editPassageTitle,
-            content: editPassageContent,
+            content: isLinkedExtracts ? JSON.stringify(editLinkedExtracts) : editPassageContent,
           };
         } else {
           // Question edit
@@ -359,6 +380,8 @@ export const AdminQuestionReview = () => {
       setEditVocabExamples("");
       setEditPassageTitle("");
       setEditPassageContent("");
+      setEditLinkedExtracts([]);
+      setIsLinkedExtracts(false);
       fetchQuestions(false);
     } catch (error) {
       console.error('Error reviewing:', error);
@@ -406,9 +429,26 @@ export const AdminQuestionReview = () => {
     setActionType(action);
     if (action === "edit") {
       setEditPassageTitle(passage.passage_title);
-      setEditPassageContent(passage.passage_content);
+      const extracts = parseLinkedExtracts(passage.passage_content);
+      if (extracts) {
+        setIsLinkedExtracts(true);
+        setEditLinkedExtracts(extracts);
+        setEditPassageContent("");
+      } else {
+        setIsLinkedExtracts(false);
+        setEditLinkedExtracts([]);
+        setEditPassageContent(passage.passage_content);
+      }
     }
     setActionDialogOpen(true);
+  };
+
+  const handleExtractChange = (index: number, field: keyof LinkedExtract, value: string) => {
+    setEditLinkedExtracts(prev => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], [field]: value };
+      return updated;
+    });
   };
 
   const handleOptionChange = (index: number, value: string) => {
@@ -930,7 +970,7 @@ export const AdminQuestionReview = () => {
       )}
 
       <Dialog open={actionDialogOpen} onOpenChange={setActionDialogOpen}>
-        <DialogContent className={actionType === "edit" ? "max-w-lg" : ""}>
+        <DialogContent className={actionType === "edit" ? (selectedPassage && isLinkedExtracts ? "max-w-3xl max-h-[80vh] overflow-y-auto" : "max-w-lg") : ""}>
           <DialogHeader>
             <DialogTitle>
               {actionType === "approve" ? (
@@ -1051,19 +1091,57 @@ export const AdminQuestionReview = () => {
                     onChange={(e) => setEditPassageTitle(e.target.value)}
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="edit-passage-content">Passage Content</Label>
-                  <Textarea
-                    id="edit-passage-content"
-                    value={editPassageContent}
-                    onChange={(e) => setEditPassageContent(e.target.value)}
-                    rows={10}
-                    className="font-mono text-sm"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    For Linked Extracts, edit the JSON array directly. For Reading Quest, edit the plain text content.
-                  </p>
-                </div>
+                
+                {isLinkedExtracts ? (
+                  <div className="space-y-4">
+                    <Label>Linked Extracts</Label>
+                    {editLinkedExtracts.map((extract, idx) => (
+                      <Card key={idx} className="p-4">
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline">{extract.label}</Badge>
+                            <span className="text-xs text-muted-foreground">{extract.text_type}</span>
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor={`extract-title-${idx}`}>Title</Label>
+                            <Input
+                              id={`extract-title-${idx}`}
+                              value={extract.title}
+                              onChange={(e) => handleExtractChange(idx, 'title', e.target.value)}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor={`extract-content-${idx}`}>Content</Label>
+                            <Textarea
+                              id={`extract-content-${idx}`}
+                              value={extract.content}
+                              onChange={(e) => handleExtractChange(idx, 'content', e.target.value)}
+                              rows={5}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor={`extract-type-${idx}`}>Text Type</Label>
+                            <Input
+                              id={`extract-type-${idx}`}
+                              value={extract.text_type}
+                              onChange={(e) => handleExtractChange(idx, 'text_type', e.target.value)}
+                            />
+                          </div>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-passage-content">Passage Content</Label>
+                    <Textarea
+                      id="edit-passage-content"
+                      value={editPassageContent}
+                      onChange={(e) => setEditPassageContent(e.target.value)}
+                      rows={10}
+                    />
+                  </div>
+                )}
               </div>
             )}
 
