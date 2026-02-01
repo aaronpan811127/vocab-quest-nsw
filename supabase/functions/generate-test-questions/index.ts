@@ -77,17 +77,20 @@ serve(async (req) => {
     const questionsPerWord = gameData?.rules?.questions_per_word || 3;
     console.log(`Questions per word from rules: ${questionsPerWord}`);
 
-    // Check existing questions for each word in this unit+game
+    // Check existing non-rejected questions for each word in this unit+game
     const { data: existingQuestions, error: fetchError } = await supabase
       .from("question_bank")
-      .select("id, question_text, correct_answer, options, word")
+      .select("id, question_text, correct_answer, options, word, review_status")
       .eq("unit_id", unit_id)
-      .eq("game_id", game_id);
+      .eq("game_id", game_id)
+      .neq("review_status", "rejected");
 
     if (fetchError) {
       console.error("Error fetching existing questions:", fetchError);
       throw new Error("Failed to check existing questions");
     }
+
+    console.log(`Found ${existingQuestions?.length || 0} non-rejected questions for unit ${unit_id}, game ${game_id}`);
 
     // Count questions per word
     const questionsCountByWord: Record<string, number> = {};
@@ -279,13 +282,29 @@ IMPORTANT:
     }
 
     try {
-      const cleanContent = content
+      // Clean the response - remove markdown formatting and sanitize
+      let jsonStr = content
         .replace(/```json\n?/g, "")
         .replace(/```\n?/g, "")
         .trim();
-      questionsData = JSON.parse(cleanContent);
+      
+      // Remove any control characters and problematic unicode
+      jsonStr = jsonStr
+        .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
+        .replace(/[^\x20-\x7E\n\r\t\u00A0-\u00FF\u2000-\u206F\u2018-\u201F]/g, '');
+      
+      try {
+        questionsData = JSON.parse(jsonStr);
+      } catch (firstParseError) {
+        console.log("First parse attempt failed, trying aggressive cleanup...");
+        jsonStr = jsonStr
+          .replace(/[^\x20-\x7E\n\r\t]/g, '')
+          .replace(/\s+/g, ' ')
+          .trim();
+        questionsData = JSON.parse(jsonStr);
+      }
     } catch (parseError) {
-      console.error("Failed to parse AI response:", content);
+      console.error("Failed to parse AI response:", content.substring(0, 500));
       throw new Error("Failed to parse questions data");
     }
 
