@@ -45,7 +45,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    const { question_id, vocabulary_id, passage_id, action, score, rejection_reason, options, correct_answer, vocabulary_data } = await req.json();
+    const { question_id, vocabulary_id, passage_id, action, score, rejection_reason, options, correct_answer, vocabulary_data, passage_data } = await req.json();
 
     // Either question_id, vocabulary_id, or passage_id must be provided
     if (!question_id && !vocabulary_id && !passage_id) {
@@ -69,10 +69,10 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Passage-level actions only support approve and reject
-    if (passage_id && !['approve', 'reject'].includes(action)) {
+    // Passage-level actions support approve, reject, and edit
+    if (passage_id && !['approve', 'reject', 'edit'].includes(action)) {
       return new Response(
-        JSON.stringify({ error: 'Passage-level actions only support approve or reject' }),
+        JSON.stringify({ error: 'Passage-level actions only support approve, reject, or edit' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -190,10 +190,45 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Handle passage-level review (bulk update all questions in a passage)
+    // Handle passage-level review (bulk update all questions in a passage or edit passage itself)
     if (passage_id) {
       console.log(`Admin ${adminUser.id} reviewing passage ${passage_id} with action: ${action}`);
 
+      // Handle passage edit with passage_data
+      if (action === 'edit' && passage_data) {
+        const passageUpdateData: Record<string, unknown> = {};
+
+        if (passage_data.title !== undefined) {
+          passageUpdateData.title = passage_data.title.trim();
+        }
+        if (passage_data.content !== undefined) {
+          passageUpdateData.content = passage_data.content;
+        }
+
+        const { data, error } = await supabase
+          .from('reading_passages')
+          .update(passageUpdateData)
+          .eq('id', passage_id)
+          .select()
+          .single();
+
+        if (error) {
+          console.error('Error updating passage:', error);
+          return new Response(
+            JSON.stringify({ error: 'Failed to update passage' }),
+            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        console.log(`Successfully edited passage ${passage_id}`);
+
+        return new Response(
+          JSON.stringify({ success: true, passage: data }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Bulk update all questions in the passage (approve/reject)
       const { data, error } = await supabase
         .from('question_bank')
         .update(updateData)
