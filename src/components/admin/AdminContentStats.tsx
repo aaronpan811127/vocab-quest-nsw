@@ -479,10 +479,19 @@ export const AdminContentStats = () => {
                 if (!vocabEntry) {
                   return { word, hasVocab: false, status: 'missing' as const };
                 }
+
+                // Normalize null/unknown statuses to 'pending' to keep UI + sorting stable
+                const normalizedStatus: 'approved' | 'pending' | 'rejected' =
+                  vocabEntry.review_status === 'approved'
+                    ? 'approved'
+                    : vocabEntry.review_status === 'rejected'
+                      ? 'rejected'
+                      : 'pending';
+
                 return {
                   word,
                   hasVocab: true,
-                  status: vocabEntry.review_status as 'approved' | 'pending' | 'rejected'
+                  status: normalizedStatus,
                 };
               });
               stat.vocabByWord = vocabByWord.sort((a, b) => {
@@ -780,6 +789,12 @@ export const AdminContentStats = () => {
                     const isWordBasedGame = WORD_BASED_GAME_TYPES.includes(stat.game_type);
                     const cardKey = `${stat.unit_id}-${stat.game_id}`;
                     const isExpanded = expandedCards.has(cardKey);
+
+                    const missingOrRejectedVocab = isVocabGame
+                      ? (stat.vocabByWord ?? []).filter(
+                          (w) => w.status === 'missing' || w.status === 'rejected'
+                        )
+                      : [];
                     
                     let current: number, required: number, label: string;
                     let secondaryInfo: { current: number; required: number; label: string } | null = null;
@@ -870,6 +885,12 @@ export const AdminContentStats = () => {
                               <Badge variant="outline" className="text-xs bg-destructive/10 text-destructive border-destructive/30">
                                 ✗ {stat.rejected_vocab}
                               </Badge>
+
+                              {missingOrRejectedVocab.length > 0 && (
+                                <Badge variant="secondary" className="text-xs">
+                                  Missing: {missingOrRejectedVocab.length}
+                                </Badge>
+                              )}
                             </>
                           ) : isPassageGame ? (
                             <>
@@ -910,7 +931,7 @@ export const AdminContentStats = () => {
                               ) : (
                                 <Wand2 className="h-3 w-3" />
                               )}
-                              Generate
+                              {isVocabGame ? 'Generate Missing Vocabulary' : 'Generate'}
                             </Button>
                           )}
                         </div>
