@@ -235,13 +235,31 @@ IMPORTANT:
 
     let parsedContent;
     try {
-      const cleanContent = content
+      // Clean the response - remove markdown formatting and sanitize
+      let jsonStr = content
         .replace(/```json\n?/g, "")
         .replace(/```\n?/g, "")
         .trim();
-      parsedContent = JSON.parse(cleanContent);
+      
+      // Remove any control characters and problematic unicode that might have slipped in
+      jsonStr = jsonStr
+        .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '') // Remove control characters
+        .replace(/[^\x20-\x7E\n\r\t\u00A0-\u00FF\u2000-\u206F\u2018-\u201F]/g, ''); // Remove non-standard chars
+      
+      try {
+        parsedContent = JSON.parse(jsonStr);
+      } catch (firstParseError) {
+        console.log("First parse attempt failed, trying aggressive cleanup...");
+        // More aggressive cleanup - remove anything that's not standard ASCII or common punctuation
+        jsonStr = jsonStr
+          .replace(/[^\x20-\x7E\n\r\t]/g, '') // Keep only printable ASCII
+          .replace(/\s+/g, ' ') // Normalize whitespace
+          .trim();
+        
+        parsedContent = JSON.parse(jsonStr);
+      }
     } catch (parseError) {
-      console.error("Failed to parse AI response:", content);
+      console.error("Failed to parse AI response:", content.substring(0, 500));
       throw new Error("Failed to parse generated content");
     }
 
