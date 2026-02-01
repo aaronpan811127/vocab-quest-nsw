@@ -2,12 +2,13 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, CheckCircle2, AlertCircle, BookOpen, FileQuestion, Sparkles } from "lucide-react";
+import { Loader2, CheckCircle2, AlertCircle, BookOpen, FileQuestion, Sparkles, Wand2 } from "lucide-react";
 
 interface TestType {
   id: string;
@@ -86,7 +87,76 @@ export const AdminContentStats = () => {
   const [units, setUnits] = useState<Unit[]>([]);
   const [games, setGames] = useState<Game[]>([]);
   const [stats, setStats] = useState<ContentStat[]>([]);
+  const [generatingFor, setGeneratingFor] = useState<string | null>(null);
   const { toast } = useToast();
+
+  const getTestTypeCode = () => {
+    const testType = testTypes.find(t => t.id === testTypeFilter);
+    return testType?.code || 'SELECTIVE';
+  };
+
+  const handleGenerate = async (stat: ContentStat) => {
+    const unit = units.find(u => u.id === stat.unit_id);
+    if (!unit) return;
+
+    const generatingKey = `${stat.unit_id}-${stat.game_id}`;
+    setGeneratingFor(generatingKey);
+
+    try {
+      const testTypeCode = getTestTypeCode();
+      const isPassageGame = PASSAGE_GAME_TYPES.includes(stat.game_type);
+      const isVocabGame = VOCAB_GAME_TYPES.includes(stat.game_type);
+
+      let functionName: string;
+      let payload: Record<string, unknown>;
+
+      if (isVocabGame) {
+        functionName = 'generate-vocabulary';
+        payload = { unit_id: stat.unit_id, words: unit.words };
+      } else if (stat.game_type === 'cloze_passage') {
+        functionName = 'generate-cloze-passage';
+        payload = { unit_id: stat.unit_id, words: unit.words, test_type_code: testTypeCode };
+      } else if (stat.game_type === 'reading') {
+        functionName = 'generate-passage';
+        payload = { unit_id: stat.unit_id, words: unit.words, test_type_code: testTypeCode };
+      } else if (stat.game_type === 'word_intuition') {
+        functionName = 'generate-intuition-questions';
+        payload = { unit_id: stat.unit_id, words: unit.words };
+      } else {
+        functionName = 'generate-test-questions';
+        payload = { 
+          unit_id: stat.unit_id, 
+          words: unit.words, 
+          game_type: stat.game_type,
+          game_id: stat.game_id,
+          test_type_code: testTypeCode 
+        };
+      }
+
+      const { data, error } = await supabase.functions.invoke(functionName, {
+        body: payload
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Generation Complete",
+        description: `Successfully generated content for ${stat.game_name}`,
+      });
+
+      // Refresh stats
+      await fetchStats();
+    } catch (error) {
+      console.error('Generation error:', error);
+      toast({
+        title: "Generation Failed",
+        description: error instanceof Error ? error.message : "Failed to generate content",
+        variant: "destructive",
+      });
+    } finally {
+      setGeneratingFor(null);
+    }
+  };
 
   // Fetch initial data
   useEffect(() => {
@@ -475,7 +545,7 @@ export const AdminContentStats = () => {
                           </div>
                         )}
 
-                        <div className="flex flex-wrap gap-1 pt-2 border-t">
+                        <div className="flex flex-wrap items-center gap-1 pt-2 border-t">
                           {isVocabGame ? (
                             <>
                               <Badge variant="outline" className="text-xs bg-success/10 text-success border-success/30">
@@ -512,6 +582,23 @@ export const AdminContentStats = () => {
                                 ✗ {stat.rejected_questions}
                               </Badge>
                             </>
+                          )}
+                          
+                          {!stat.meets_requirement && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="ml-auto h-6 text-xs gap-1"
+                              onClick={() => handleGenerate(stat)}
+                              disabled={generatingFor === `${stat.unit_id}-${stat.game_id}`}
+                            >
+                              {generatingFor === `${stat.unit_id}-${stat.game_id}` ? (
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                              ) : (
+                                <Wand2 className="h-3 w-3" />
+                              )}
+                              Generate
+                            </Button>
                           )}
                         </div>
                       </div>
