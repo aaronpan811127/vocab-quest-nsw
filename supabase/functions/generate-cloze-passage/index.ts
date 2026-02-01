@@ -71,12 +71,13 @@ serve(async (req) => {
     const numQuestions = rules.questions_per_passage || rules.num_questions || 10;
     const passagesPerGame = rules.passages_per_game || 3;
 
-    // Check how many cloze passages already exist for this unit
+    // Check how many non-rejected cloze passages already exist for this unit
     const { count: existingPassageCount } = await supabase
       .from('reading_passages')
       .select('id', { count: 'exact', head: true })
       .eq('unit_id', unit_id)
-      .ilike('title', 'Cloze Passage:%');
+      .ilike('title', 'Cloze Passage:%')
+      .neq('review_status', 'rejected');
 
     const currentCount = existingPassageCount || 0;
 
