@@ -63,13 +63,13 @@ const AdminDashboard = () => {
       <main className="max-w-7xl mx-auto px-4 py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="mb-6">
+            <TabsTrigger value="units" className="gap-2">
+              <Settings className="h-4 w-4" />
+              Unit Management
+            </TabsTrigger>
             <TabsTrigger value="stats" className="gap-2">
               <BarChart3 className="h-4 w-4" />
               Game Management
-            </TabsTrigger>
-            <TabsTrigger value="units" className="gap-2">
-              <Settings className="h-4 w-4" />
-              Unit Config
             </TabsTrigger>
             <TabsTrigger value="questions" className="gap-2">
               <FileQuestion className="h-4 w-4" />
