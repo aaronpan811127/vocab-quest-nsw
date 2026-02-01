@@ -20,6 +20,7 @@ import { useCelebration } from "@/hooks/useCelebration";
 import { useGameTimer } from "@/hooks/useGameTimer";
 import { useTestSession } from "@/hooks/useTestSession";
 import { GameTimer } from "@/components/GameTimer";
+import { selectBalancedQuestions } from "@/utils/questionSelection";
 
 interface Question {
   id: string;
@@ -201,9 +202,8 @@ export const ClozeChallengeGame = ({ unitId, unitTitle, onComplete, onBack }: Cl
           setCurrentQuestion(testSession.sessionData.current_question);
         }
       } else {
-        // New session - shuffle and take 15 questions
-        const shuffled = allQuestions.sort(() => Math.random() - 0.5);
-        selectedQuestions = shuffled.slice(0, Math.min(15, shuffled.length));
+        // New session - use balanced selection to ensure each word is tested at least once
+        selectedQuestions = selectBalancedQuestions(allQuestions, Math.min(15, allQuestions.length));
       }
       
       setQuestions(selectedQuestions);

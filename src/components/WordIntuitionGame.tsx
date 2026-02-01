@@ -9,6 +9,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { GameResultActions } from "./GameResultActions";
 import { useCelebration } from "@/hooks/useCelebration";
+import { selectBalancedQuestions, shuffleArray } from "@/utils/questionSelection";
 
 interface WordIntuitionGameProps {
   unitId: string;
@@ -74,20 +75,21 @@ export const WordIntuitionGame = ({ unitId, unitTitle, onComplete, onBack }: Wor
       }
 
       if (existingQuestions && existingQuestions.length >= 5) {
-        // Use existing questions
+        // Use existing questions - format them first
         const formattedQuestions = existingQuestions.map((q) => {
           const options = typeof q.options === "string" ? JSON.parse(q.options) : q.options;
           return {
             id: q.id,
-            word: options.word,
+            word: options.word?.toLowerCase() || '',
             sentence: q.question_text,
             correctAnswer: q.correct_answer,
             explanation: options.explanation,
           };
         });
-        const shuffled = shuffleArray(formattedQuestions).slice(0, 10);
-        setAllQuestions(shuffled);
-        setQuestions(shuffled);
+        // Use balanced selection to ensure each word is tested at least once
+        const selected = selectBalancedQuestions(formattedQuestions, 10);
+        setAllQuestions(selected);
+        setQuestions(selected);
         setStartTime(Date.now());
       } else {
         // Generate new questions using AI
@@ -193,15 +195,16 @@ export const WordIntuitionGame = ({ unitId, unitTitle, onComplete, onBack }: Wor
           const options = typeof q.options === "string" ? JSON.parse(q.options) : q.options;
           return {
             id: q.id,
-            word: options.word,
+            word: options.word?.toLowerCase() || '',
             sentence: q.question_text,
             correctAnswer: q.correct_answer,
             explanation: options.explanation,
           };
         });
-        const shuffled = shuffleArray(formattedQuestions).slice(0, 10);
-        setAllQuestions(shuffled);
-        setQuestions(shuffled);
+        // Use balanced selection to ensure each word is tested at least once
+        const selected = selectBalancedQuestions(formattedQuestions, 10);
+        setAllQuestions(selected);
+        setQuestions(selected);
         setStartTime(Date.now());
       }
     } catch (error) {
@@ -216,14 +219,7 @@ export const WordIntuitionGame = ({ unitId, unitTitle, onComplete, onBack }: Wor
     }
   };
 
-  const shuffleArray = <T,>(array: T[]): T[] => {
-    const shuffled = [...array];
-    for (let i = shuffled.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-    }
-    return shuffled;
-  };
+  // Remove local shuffleArray since we now use the one from utils
 
   const handleAnswer = (answer: string) => {
     if (showResult) return;
