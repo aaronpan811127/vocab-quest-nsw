@@ -642,7 +642,7 @@ export const AdminContentStats = () => {
               ) : (
                 <Wand2 className="h-4 w-4" />
               )}
-              Generate All ({incompleteCount})
+              Generate All ({incompleteCount} games)
             </Button>
           )}
         </div>
