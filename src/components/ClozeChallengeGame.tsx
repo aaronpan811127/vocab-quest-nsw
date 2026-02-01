@@ -32,6 +32,7 @@ interface Question {
 interface ClozeChallengeGameProps {
   unitId: string;
   unitTitle: string;
+  unitWords: string[];
   onComplete: () => void;
   onBack: () => void;
 }
@@ -39,7 +40,7 @@ interface ClozeChallengeGameProps {
 const CLOZE_CHALLENGE_GAME_ID = 'd7e0f1a2-b3c4-5d6e-8f7a-8b9c0d1e2f3a';
 const DEFAULT_SECONDS_PER_QUESTION = 30;
 
-export const ClozeChallengeGame = ({ unitId, unitTitle, onComplete, onBack }: ClozeChallengeGameProps) => {
+export const ClozeChallengeGame = ({ unitId, unitTitle, unitWords, onComplete, onBack }: ClozeChallengeGameProps) => {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<number[]>([]);
   const [showResults, setShowResults] = useState(false);
@@ -135,16 +136,8 @@ export const ClozeChallengeGame = ({ unitId, unitTitle, onComplete, onBack }: Cl
         }
       }
 
-      // Fetch unit words
-      const { data: unitData, error: unitError } = await supabase
-        .from('units')
-        .select('words')
-        .eq('id', unitId)
-        .single();
-
-      if (unitError) throw unitError;
-
-      const words: string[] = Array.isArray(unitData?.words) ? unitData.words as string[] : [];
+      // Use unitWords from snapshot instead of fetching from database
+      const words: string[] = unitWords || [];
       if (words.length === 0) {
         setError("No vocabulary words found for this unit.");
         setLoading(false);

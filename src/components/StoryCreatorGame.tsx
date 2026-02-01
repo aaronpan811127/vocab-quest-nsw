@@ -15,6 +15,7 @@ import { useCelebration } from "@/hooks/useCelebration";
 interface StoryCreatorGameProps {
   unitId: string;
   unitTitle: string;
+  unitWords: string[];
   onComplete: () => void;
   onBack: () => void;
   playAllWordsOnStart?: boolean;
@@ -28,7 +29,7 @@ interface WordQuestion {
   isPriority?: boolean;
 }
 
-export const StoryCreatorGame = ({ unitId, unitTitle, onComplete, onBack, playAllWordsOnStart = false }: StoryCreatorGameProps) => {
+export const StoryCreatorGame = ({ unitId, unitTitle, unitWords, onComplete, onBack, playAllWordsOnStart = false }: StoryCreatorGameProps) => {
   const [words, setWords] = useState<string[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [questions, setQuestions] = useState<WordQuestion[]>([]);
@@ -65,11 +66,8 @@ export const StoryCreatorGame = ({ unitId, unitTitle, onComplete, onBack, playAl
     setLoading(true);
 
     try {
-      const { data: unit, error } = await supabase.from("units").select("words").eq("id", unitId).single();
-
-      if (error) throw error;
-
-      if (!unit || !unit.words) {
+      // Use unitWords from snapshot instead of fetching from database
+      if (!unitWords || unitWords.length === 0) {
         toast({
           title: "No words found",
           description: "This unit doesn't have any vocabulary words.",
@@ -79,7 +77,7 @@ export const StoryCreatorGame = ({ unitId, unitTitle, onComplete, onBack, playAl
         return;
       }
 
-      const wordList: string[] = Array.isArray(unit.words) ? unit.words : JSON.parse(unit.words as string);
+      const wordList: string[] = unitWords;
 
       let finalWords: string[];
       let priorityWords: string[] = [];

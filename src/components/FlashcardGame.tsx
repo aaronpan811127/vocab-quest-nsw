@@ -29,12 +29,13 @@ interface Word {
 interface FlashcardGameProps {
   unitId: string;
   unitTitle: string;
+  unitWords: string[];
   gameId?: string;
   onComplete: () => void;
   onBack: () => void;
 }
 
-export const FlashcardGame = ({ unitId, unitTitle, gameId, onComplete, onBack }: FlashcardGameProps) => {
+export const FlashcardGame = ({ unitId, unitTitle, unitWords, gameId, onComplete, onBack }: FlashcardGameProps) => {
   const [words, setWords] = useState<Word[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
@@ -215,16 +216,12 @@ export const FlashcardGame = ({ unitId, unitTitle, gameId, onComplete, onBack }:
       if (fetchError) throw fetchError;
 
       if (!data || data.length === 0) {
-        // Fetch words from units table and generate vocabulary
-        const { data: unitData, error: unitError } = await supabase
-          .from('units')
-          .select('words')
-          .eq('id', unitId)
-          .single();
-
-        if (unitError) throw unitError;
-
-        const unitWords = unitData.words as string[];
+        // Use unitWords from snapshot instead of fetching from database
+        if (!unitWords || unitWords.length === 0) {
+          setError("No vocabulary words found for this unit.");
+          setLoading(false);
+          return;
+        }
         
         // Create temporary basic words while generating
         const basicWords: Word[] = unitWords.map((word, index) => ({

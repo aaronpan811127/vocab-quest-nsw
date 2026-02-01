@@ -33,6 +33,7 @@ interface Question {
 interface ContextMasterGameProps {
   unitId: string;
   unitTitle: string;
+  unitWords: string[];
   onComplete: () => void;
   onBack: () => void;
 }
@@ -40,7 +41,7 @@ interface ContextMasterGameProps {
 const CONTEXT_MASTER_GAME_ID = 'c6d9e0f1-a2b3-4c5d-8e6f-7a8b9c0d1e2f';
 const DEFAULT_SECONDS_PER_QUESTION = 30;
 
-export const ContextMasterGame = ({ unitId, unitTitle, onComplete, onBack }: ContextMasterGameProps) => {
+export const ContextMasterGame = ({ unitId, unitTitle, unitWords, onComplete, onBack }: ContextMasterGameProps) => {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<number[]>([]);
   const [showResults, setShowResults] = useState(false);
@@ -141,16 +142,8 @@ export const ContextMasterGame = ({ unitId, unitTitle, onComplete, onBack }: Con
         }
       }
 
-      // Fetch unit words
-      const { data: unitData, error: unitError } = await supabase
-        .from('units')
-        .select('words')
-        .eq('id', unitId)
-        .single();
-
-      if (unitError) throw unitError;
-
-      const words: string[] = Array.isArray(unitData?.words) ? unitData.words as string[] : [];
+      // Use unitWords from snapshot instead of fetching from database
+      const words: string[] = unitWords || [];
       if (words.length === 0) {
         setError("No vocabulary words found for this unit.");
         setLoading(false);
