@@ -71,33 +71,109 @@ serve(async (req) => {
     const numQuestions = rules.questions_per_passage || rules.num_questions || 10;
     const passagesPerGame = rules.passages_per_game || 3;
 
-    // Check how many non-rejected cloze passages already exist for this unit
-    const { count: existingPassageCount } = await supabase
-      .from('reading_passages')
-      .select('id', { count: 'exact', head: true })
-      .eq('unit_id', unit_id)
-      .ilike('title', 'Cloze Passage:%')
-      .neq('review_status', 'rejected');
+    // A "valid" Linked Extracts passage must have >= numQuestions non-rejected questions.
+    // Previously we only counted passages, which can get stuck if all questions are rejected.
+    const { data: existingPassages, error: passagesError } = await supabase
+      .from("reading_passages")
+      .select("id, review_status")
+      .eq("unit_id", unit_id)
+      .ilike("title", "Cloze Passage:%")
+      .or("review_status.is.null,review_status.neq.rejected");
 
-    const currentCount = existingPassageCount || 0;
-
-    console.log(`Unit ${unit_id}: ${currentCount}/${passagesPerGame} cloze passages exist`);
-
-    // If we already have enough passages, return without generating
-    if (currentCount >= passagesPerGame) {
-      console.log('Sufficient cloze passages exist, skipping generation');
-      return new Response(JSON.stringify({ 
-        success: true, 
-        skipped: true,
-        message: `Already have ${currentCount} cloze passages (minimum: ${passagesPerGame})`,
-        existing_count: currentCount,
-        required_count: passagesPerGame
-      }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    if (passagesError) {
+      console.error("Error fetching existing passages:", passagesError);
+      throw new Error("Failed to check existing passages");
     }
 
-    console.log(`Generating cloze passage ${currentCount + 1}/${passagesPerGame} for unit: ${unit_id}, words: ${words.length}, questions: ${numQuestions}`);
+    const passageIds = (existingPassages || []).map((p: any) => p.id as string);
+    let validPassageCount = 0;
+
+    if (passageIds.length > 0) {
+      const { data: allQuestionsForPassages, error: questionsError } = await supabase
+        .from("question_bank")
+        .select("id, passage_id, review_status")
+        .eq("unit_id", unit_id)
+        .eq("game_id", gameId)
+        .in("passage_id", passageIds);
+
+      if (questionsError) {
+        console.error("Error fetching existing questions:", questionsError);
+        throw new Error("Failed to check existing questions");
+      }
+
+      const totalByPassage = new Map<string, number>();
+      const nonRejectedByPassage = new Map<string, number>();
+
+      for (const q of allQuestionsForPassages || []) {
+        const pid = (q as any).passage_id as string | null;
+        if (!pid) continue;
+        totalByPassage.set(pid, (totalByPassage.get(pid) || 0) + 1);
+        const status = (q as any).review_status as string | null;
+        if (status !== "rejected") {
+          nonRejectedByPassage.set(pid, (nonRejectedByPassage.get(pid) || 0) + 1);
+        }
+      }
+
+      // Count valid passages
+      const invalidButGeneratedPassageIds: string[] = [];
+      for (const pid of passageIds) {
+        const nonRejected = nonRejectedByPassage.get(pid) || 0;
+        if (nonRejected >= numQuestions) {
+          validPassageCount += 1;
+        } else {
+          const total = totalByPassage.get(pid) || 0;
+          // If we have a full set of questions but ALL were rejected, mark the passage rejected too
+          // to keep the pool consistent and allow regeneration.
+          if (total >= numQuestions && nonRejected === 0) {
+            invalidButGeneratedPassageIds.push(pid);
+          }
+        }
+      }
+
+      if (invalidButGeneratedPassageIds.length > 0) {
+        console.log(
+          `Marking ${invalidButGeneratedPassageIds.length} Linked Extracts passages as rejected because all questions were rejected.`
+        );
+        const { error: rejectPassagesError } = await supabase
+          .from("reading_passages")
+          .update({
+            review_status: "rejected",
+            rejection_reason: "All Linked Extracts questions rejected; regenerating",
+          })
+          .in("id", invalidButGeneratedPassageIds);
+
+        if (rejectPassagesError) {
+          console.error("Error marking passages rejected:", rejectPassagesError);
+          // Non-fatal: generation can still proceed using validPassageCount
+        } else {
+          // Those passages are no longer non-rejected, so they shouldn't contribute to the valid pool.
+          // (validPassageCount is unaffected because we only incremented it for valid passages.)
+        }
+      }
+    }
+
+    console.log(`Unit ${unit_id}: ${validPassageCount}/${passagesPerGame} valid Linked Extracts passages exist`);
+
+    // If we already have enough valid passages, return without generating
+    if (validPassageCount >= passagesPerGame) {
+      console.log("Sufficient valid Linked Extracts passages exist, skipping generation");
+      return new Response(
+        JSON.stringify({
+          success: true,
+          skipped: true,
+          message: `Already have ${validPassageCount} valid Linked Extracts passages (minimum: ${passagesPerGame})`,
+          existing_count: validPassageCount,
+          required_count: passagesPerGame,
+        }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    console.log(
+      `Generating Linked Extracts passage ${validPassageCount + 1}/${passagesPerGame} for unit: ${unit_id}, words: ${words.length}, questions: ${numQuestions}`
+    );
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
