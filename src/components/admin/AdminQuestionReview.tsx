@@ -710,341 +710,62 @@ export const AdminQuestionReview = () => {
         </Card>
       ) : (
         <div className="space-y-4">
-          {/* Show vocabulary section when filter is 'all' and vocabulary exists */}
-          {gameTypeFilter === 'all' && vocabulary.length > 0 && (
-            <>
-              <h3 className="text-lg font-semibold flex items-center gap-2 mt-4">
-                <Badge variant="outline" className="text-base px-3 py-1">Flashcards</Badge>
-                <span className="text-sm text-muted-foreground">({vocabulary.length} items)</span>
-              </h3>
-              <div className="space-y-4">
-                {vocabulary.map((vocab) => (
-                  <Card key={vocab.id}>
-                    <CardHeader className="pb-2">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <CardTitle className="text-xl">{vocab.word}</CardTitle>
-                          <div className="flex flex-wrap items-center gap-2 mt-1">
-                            <Badge variant="outline">Unit {vocab.unit_number}: {vocab.unit_title}</Badge>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {getStatusBadge(vocab.review_status || 'pending')}
-                          {vocab.review_score !== null && (
-                            <Badge variant="secondary" className="gap-1">
-                              <Star className="h-3 w-3" /> {vocab.review_score}/10
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-3">
-                        <div>
-                          <p className="text-sm font-medium text-muted-foreground mb-1">Definition:</p>
-                          <p className="text-base">{vocab.definition}</p>
-                        </div>
-                        
-                        {vocab.synonyms && vocab.synonyms.length > 0 && (
-                          <div>
-                            <p className="text-sm font-medium text-muted-foreground mb-1">Synonyms:</p>
-                            <div className="flex flex-wrap gap-2">
-                              {vocab.synonyms.map((syn, idx) => (
-                                <Badge key={idx} variant="outline">{syn}</Badge>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                        
-                        {vocab.antonyms && vocab.antonyms.length > 0 && (
-                          <div>
-                            <p className="text-sm font-medium text-muted-foreground mb-1">Antonyms:</p>
-                            <div className="flex flex-wrap gap-2">
-                              {vocab.antonyms.map((ant, idx) => (
-                                <Badge key={idx} variant="outline">{ant}</Badge>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                        
-                        {vocab.examples && vocab.examples.length > 0 && (
-                          <div>
-                            <p className="text-sm font-medium text-muted-foreground mb-1">Examples:</p>
-                            <ul className="list-disc list-inside space-y-1">
-                              {vocab.examples.map((ex, idx) => (
-                                <li key={idx} className="text-sm text-muted-foreground italic">{ex}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-
-                        {vocab.rejection_reason && (
-                          <div className="p-2 bg-destructive/10 rounded text-sm text-destructive">
-                            Rejection reason: {vocab.rejection_reason}
-                          </div>
-                        )}
-
-                        <div className="flex flex-wrap gap-2 pt-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="gap-1"
-                            onClick={() => openVocabActionDialog(vocab, "edit")}
-                          >
-                            <Pencil className="h-4 w-4" /> Edit
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="gap-1"
-                            onClick={() => openVocabActionDialog(vocab, "approve")}
-                          >
-                            <Check className="h-4 w-4" /> Approve
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="gap-1"
-                            onClick={() => openVocabActionDialog(vocab, "reject")}
-                          >
-                            <X className="h-4 w-4" /> Reject
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="gap-1"
-                            onClick={() => openVocabActionDialog(vocab, "score")}
-                          >
-                            <Star className="h-4 w-4" /> Score
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </>
-          )}
-
-          {/* Questions section header when showing 'all' */}
-          {gameTypeFilter === 'all' && questions.length > 0 && (
-            <h3 className="text-lg font-semibold flex items-center gap-2 mt-6">
-              <Badge variant="outline" className="text-base px-3 py-1">Questions</Badge>
-              <span className="text-sm text-muted-foreground">({questions.length} items)</span>
-            </h3>
-          )}
-
-          {/* Group reading questions by passage */}
-          {questions.length > 0 && (() => {
+          {/* Group all content by game type for proper ordering */}
+          {(() => {
             const { grouped, ungrouped } = groupQuestionsByPassage(questions);
             
-            // Group by game_name for headers
+            // Group passages by game_name
             const passagesByGame = grouped.reduce((acc, pg) => {
               if (!acc[pg.game_name]) acc[pg.game_name] = [];
               acc[pg.game_name].push(pg);
               return acc;
             }, {} as Record<string, PassageGroup[]>);
 
+            // Group ungrouped questions by game_name
             const ungroupedByGame = ungrouped.reduce((acc, q) => {
               if (!acc[q.game_name]) acc[q.game_name] = [];
               acc[q.game_name].push(q);
               return acc;
             }, {} as Record<string, Question[]>);
 
-            // Get sorted game names
-            const allGameNames = [...new Set([...Object.keys(passagesByGame), ...Object.keys(ungroupedByGame)])].sort();
+            // Build ordered list of game types (Flashcards first if showing 'all', then alphabetically)
+            const questionGameNames = [...new Set([...Object.keys(passagesByGame), ...Object.keys(ungroupedByGame)])].sort();
+            const allGameSections: { type: 'flashcards' | 'questions'; gameName: string }[] = [];
             
-            return (
-              <>
-                {allGameNames.map((gameName) => (
-                  <div key={gameName} className="space-y-4">
-                    {/* Game type header */}
+            // Add Flashcards section first when filter is 'all'
+            if (gameTypeFilter === 'all' && vocabulary.length > 0) {
+              allGameSections.push({ type: 'flashcards', gameName: 'Flashcards' });
+            }
+            
+            // Add all question game types
+            questionGameNames.forEach(gameName => {
+              allGameSections.push({ type: 'questions', gameName });
+            });
+
+            return allGameSections.map((section) => {
+              if (section.type === 'flashcards') {
+                // Render Flashcards section
+                return (
+                  <div key="flashcards" className="space-y-4">
                     <h4 className="text-md font-semibold flex items-center gap-2 mt-4 border-b pb-2">
-                      <Badge variant="secondary" className="text-sm px-3 py-1">{gameName}</Badge>
-                      <span className="text-sm text-muted-foreground">
-                        ({(passagesByGame[gameName]?.length || 0) + (ungroupedByGame[gameName]?.length || 0)} items)
-                      </span>
+                      <Badge variant="secondary" className="text-sm px-3 py-1">Flashcards</Badge>
+                      <span className="text-sm text-muted-foreground">({vocabulary.length} items)</span>
                     </h4>
-
-                    {/* Render grouped passage questions for this game */}
-                    {passagesByGame[gameName]?.map((passageGroup) => (
-                  <Card key={passageGroup.passage_id} className="border-2 border-primary/20">
-                    <CardHeader className="pb-2">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <CardTitle className="text-lg flex items-center gap-2">
-                            <BookOpen className="h-5 w-5 text-primary" />
-                            {passageGroup.passage_title}
-                          </CardTitle>
-                          <div className="flex flex-wrap items-center gap-2 mt-1">
-                            <Badge variant="outline" className="font-normal">
-                              Unit {passageGroup.unit_number}: {passageGroup.unit_title}
-                            </Badge>
-                            <Badge variant="outline" className="font-normal">{passageGroup.game_name}</Badge>
-                            <Badge variant="outline" className="font-normal">
-                              {passageGroup.questions.length} question{passageGroup.questions.length !== 1 ? 's' : ''}
-                            </Badge>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {getStatusBadge(passageGroup.review_status)}
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      {/* Passage-level actions */}
-                      <div className="flex flex-wrap gap-2 p-3 bg-primary/5 rounded-lg border border-primary/20">
-                        <span className="text-sm font-medium text-muted-foreground mr-2 self-center">Passage Actions:</span>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="gap-1"
-                          onClick={() => openPassageActionDialog(passageGroup, "edit")}
-                        >
-                          <Pencil className="h-4 w-4" /> Edit Passage
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="gap-1"
-                          onClick={() => openPassageActionDialog(passageGroup, "approve")}
-                        >
-                          <Check className="h-4 w-4" /> Approve All
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="gap-1"
-                          onClick={() => openPassageActionDialog(passageGroup, "reject")}
-                        >
-                          <X className="h-4 w-4" /> Reject All
-                        </Button>
-                      </div>
-
-                      {/* Passage Content */}
-                      <Collapsible 
-                        open={expandedPassages.has(passageGroup.passage_id)}
-                        onOpenChange={() => togglePassage(passageGroup.passage_id)}
-                      >
-                        <CollapsibleTrigger asChild>
-                          <Button variant="outline" size="sm" className="w-full justify-between gap-2">
-                            <span className="flex items-center gap-2">
-                              <BookOpen className="h-4 w-4" />
-                              {expandedPassages.has(passageGroup.passage_id) ? "Hide Extract" : "Show Extract"}
-                            </span>
-                            {expandedPassages.has(passageGroup.passage_id) ? (
-                              <ChevronUp className="h-4 w-4" />
-                            ) : (
-                              <ChevronDown className="h-4 w-4" />
-                            )}
-                          </Button>
-                        </CollapsibleTrigger>
-                        <CollapsibleContent>
-                          <div className="mt-2 space-y-3 max-h-80 overflow-y-auto">
-                            {(() => {
-                              try {
-                                const extracts = JSON.parse(passageGroup.passage_content);
-                                if (Array.isArray(extracts)) {
-                                  return extracts.map((extract: { label?: string; title?: string; content?: string }, idx: number) => (
-                                    <div key={idx} className="p-3 bg-muted rounded-lg border border-border/50">
-                                      <div className="flex items-center gap-2 mb-2">
-                                        {extract.label && (
-                                          <span className="px-2 py-0.5 bg-primary/10 text-primary text-xs font-semibold rounded">
-                                            {extract.label}
-                                          </span>
-                                        )}
-                                        {extract.title && (
-                                          <span className="font-medium text-sm">{extract.title}</span>
-                                        )}
-                                      </div>
-                                      {extract.content && (
-                                        <p className="text-sm text-muted-foreground whitespace-pre-wrap">{extract.content}</p>
-                                      )}
-                                    </div>
-                                  ));
-                                }
-                                return <p className="p-4 bg-muted rounded-lg text-sm whitespace-pre-wrap">{passageGroup.passage_content}</p>;
-                              } catch {
-                                return <p className="p-4 bg-muted rounded-lg text-sm whitespace-pre-wrap">{passageGroup.passage_content}</p>;
-                              }
-                            })()}
-                          </div>
-                        </CollapsibleContent>
-                      </Collapsible>
-
-                      {/* Questions for this passage - only Edit at question level */}
-                      <div className="space-y-3 pl-4 border-l-2 border-muted">
-                        {passageGroup.questions.map((question, qIdx) => (
-                          <div key={question.id} className="p-3 bg-muted/50 rounded-lg">
-                            <div className="flex items-start justify-between mb-2">
-                              <div className="flex-1">
-                                <p className="font-medium text-sm">
-                                  Q{qIdx + 1}: {question.question_text}
-                                </p>
-                              </div>
-                              <div className="flex items-center gap-2 ml-2">
-                                {getStatusBadge(question.review_status)}
-                              </div>
-                            </div>
-
-                            <div className="mb-2">
-                              <p className="text-xs text-muted-foreground mb-1">Options:</p>
-                              <div className="flex flex-wrap gap-1">
-                                {parseOptions(question.options).map((option: string, idx: number) => (
-                                  <Badge
-                                    key={idx}
-                                    variant="outline"
-                                    className={`text-xs font-normal ${option === question.correct_answer ? "bg-success text-success-foreground border-success" : ""}`}
-                                  >
-                                    {option}
-                                    {option === question.correct_answer && " ✓"}
-                                  </Badge>
-                                ))}
-                              </div>
-                            </div>
-
-                            {question.rejection_reason && (
-                              <div className="p-2 bg-destructive/10 rounded text-xs text-destructive mb-2">
-                                Rejection reason: {question.rejection_reason}
-                              </div>
-                            )}
-
-                            {/* Only Edit available at question level */}
-                            <div className="flex gap-2">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="gap-1 h-7 text-xs"
-                                onClick={() => openActionDialog(question, "edit")}
-                              >
-                                <Pencil className="h-3 w-3" /> Edit Question
-                              </Button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-                    ))}
-
-                    {/* Render ungrouped questions for this game */}
-                    {ungroupedByGame[gameName]?.map((question) => (
-                      <Card key={question.id}>
+                    {vocabulary.map((vocab) => (
+                      <Card key={vocab.id}>
                         <CardHeader className="pb-2">
                           <div className="flex items-start justify-between">
                             <div>
-                              <CardTitle className="text-lg">{question.question_text}</CardTitle>
+                              <CardTitle className="text-xl">{vocab.word}</CardTitle>
                               <div className="flex flex-wrap items-center gap-2 mt-1">
-                                <Badge variant="outline" className="font-normal">Unit {question.unit_number}: {question.unit_title}</Badge>
-                                <Badge variant="outline" className="font-normal">{question.game_name}</Badge>
-                                {question.word && <Badge variant="outline" className="font-normal">Word: {question.word}</Badge>}
+                                <Badge variant="outline">Unit {vocab.unit_number}: {vocab.unit_title}</Badge>
                               </div>
                             </div>
                             <div className="flex items-center gap-2">
-                              {getStatusBadge(question.review_status)}
-                              {question.review_score !== null && (
+                              {getStatusBadge(vocab.review_status || 'pending')}
+                              {vocab.review_score !== null && (
                                 <Badge variant="secondary" className="gap-1">
-                                  <Star className="h-3 w-3" /> {question.review_score}/10
+                                  <Star className="h-3 w-3" /> {vocab.review_score}/10
                                 </Badge>
                               )}
                             </div>
@@ -1053,24 +774,46 @@ export const AdminQuestionReview = () => {
                         <CardContent>
                           <div className="space-y-3">
                             <div>
-                              <p className="text-sm text-muted-foreground mb-1">Options:</p>
-                              <div className="flex flex-wrap gap-2">
-                                {parseOptions(question.options).map((option: string, idx: number) => (
-                                  <Badge
-                                    key={idx}
-                                    variant="outline"
-                                    className={`font-normal ${option === question.correct_answer ? "bg-success text-success-foreground border-success" : ""}`}
-                                  >
-                                    {option}
-                                    {option === question.correct_answer && " ✓"}
-                                  </Badge>
-                                ))}
-                              </div>
+                              <p className="text-sm font-medium text-muted-foreground mb-1">Definition:</p>
+                              <p className="text-base">{vocab.definition}</p>
                             </div>
+                            
+                            {vocab.synonyms && vocab.synonyms.length > 0 && (
+                              <div>
+                                <p className="text-sm font-medium text-muted-foreground mb-1">Synonyms:</p>
+                                <div className="flex flex-wrap gap-2">
+                                  {vocab.synonyms.map((syn, idx) => (
+                                    <Badge key={idx} variant="outline">{syn}</Badge>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                            
+                            {vocab.antonyms && vocab.antonyms.length > 0 && (
+                              <div>
+                                <p className="text-sm font-medium text-muted-foreground mb-1">Antonyms:</p>
+                                <div className="flex flex-wrap gap-2">
+                                  {vocab.antonyms.map((ant, idx) => (
+                                    <Badge key={idx} variant="outline">{ant}</Badge>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                            
+                            {vocab.examples && vocab.examples.length > 0 && (
+                              <div>
+                                <p className="text-sm font-medium text-muted-foreground mb-1">Examples:</p>
+                                <ul className="list-disc list-inside space-y-1">
+                                  {vocab.examples.map((ex, idx) => (
+                                    <li key={idx} className="text-sm text-muted-foreground italic">{ex}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
 
-                            {question.rejection_reason && (
+                            {vocab.rejection_reason && (
                               <div className="p-2 bg-destructive/10 rounded text-sm text-destructive">
-                                Rejection reason: {question.rejection_reason}
+                                Rejection reason: {vocab.rejection_reason}
                               </div>
                             )}
 
@@ -1079,7 +822,7 @@ export const AdminQuestionReview = () => {
                                 size="sm"
                                 variant="outline"
                                 className="gap-1"
-                                onClick={() => openActionDialog(question, "edit")}
+                                onClick={() => openVocabActionDialog(vocab, "edit")}
                               >
                                 <Pencil className="h-4 w-4" /> Edit
                               </Button>
@@ -1087,7 +830,7 @@ export const AdminQuestionReview = () => {
                                 size="sm"
                                 variant="outline"
                                 className="gap-1"
-                                onClick={() => openActionDialog(question, "approve")}
+                                onClick={() => openVocabActionDialog(vocab, "approve")}
                               >
                                 <Check className="h-4 w-4" /> Approve
                               </Button>
@@ -1095,7 +838,7 @@ export const AdminQuestionReview = () => {
                                 size="sm"
                                 variant="outline"
                                 className="gap-1"
-                                onClick={() => openActionDialog(question, "reject")}
+                                onClick={() => openVocabActionDialog(vocab, "reject")}
                               >
                                 <X className="h-4 w-4" /> Reject
                               </Button>
@@ -1103,7 +846,7 @@ export const AdminQuestionReview = () => {
                                 size="sm"
                                 variant="outline"
                                 className="gap-1"
-                                onClick={() => openActionDialog(question, "score")}
+                                onClick={() => openVocabActionDialog(vocab, "score")}
                               >
                                 <Star className="h-4 w-4" /> Score
                               </Button>
@@ -1113,9 +856,272 @@ export const AdminQuestionReview = () => {
                       </Card>
                     ))}
                   </div>
-                ))}
-              </>
-            );
+                );
+              }
+              
+              // Render Questions section for this game type
+              const gameName = section.gameName;
+              const passages = passagesByGame[gameName] || [];
+              const ungroupedQuestions = ungroupedByGame[gameName] || [];
+              const totalItems = passages.reduce((sum, p) => sum + p.questions.length, 0) + ungroupedQuestions.length;
+
+              return (
+                <div key={gameName} className="space-y-4">
+                  {/* Game type header */}
+                  <h4 className="text-md font-semibold flex items-center gap-2 mt-4 border-b pb-2">
+                    <Badge variant="secondary" className="text-sm px-3 py-1">{gameName}</Badge>
+                    <span className="text-sm text-muted-foreground">
+                      ({totalItems} question{totalItems !== 1 ? 's' : ''})
+                    </span>
+                  </h4>
+
+                  {/* Render grouped passage questions for this game */}
+                  {passages.map((passageGroup) => (
+                    <Card key={passageGroup.passage_id} className="border-2 border-primary/20">
+                      <CardHeader className="pb-2">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <CardTitle className="text-lg flex items-center gap-2">
+                              <BookOpen className="h-5 w-5 text-primary" />
+                              {passageGroup.passage_title}
+                            </CardTitle>
+                            <div className="flex flex-wrap items-center gap-2 mt-1">
+                              <Badge variant="outline" className="font-normal">
+                                Unit {passageGroup.unit_number}: {passageGroup.unit_title}
+                              </Badge>
+                              <Badge variant="outline" className="font-normal">
+                                {passageGroup.questions.length} question{passageGroup.questions.length !== 1 ? 's' : ''}
+                              </Badge>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {getStatusBadge(passageGroup.review_status)}
+                          </div>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        {/* Passage-level actions */}
+                        <div className="flex flex-wrap gap-2 p-3 bg-primary/5 rounded-lg border border-primary/20">
+                          <span className="text-sm font-medium text-muted-foreground mr-2 self-center">Passage Actions:</span>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="gap-1"
+                            onClick={() => openPassageActionDialog(passageGroup, "edit")}
+                          >
+                            <Pencil className="h-4 w-4" /> Edit Passage
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="gap-1"
+                            onClick={() => openPassageActionDialog(passageGroup, "approve")}
+                          >
+                            <Check className="h-4 w-4" /> Approve All
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="gap-1"
+                            onClick={() => openPassageActionDialog(passageGroup, "reject")}
+                          >
+                            <X className="h-4 w-4" /> Reject All
+                          </Button>
+                        </div>
+
+                        {/* Passage Content */}
+                        <Collapsible 
+                          open={expandedPassages.has(passageGroup.passage_id)}
+                          onOpenChange={() => togglePassage(passageGroup.passage_id)}
+                        >
+                          <CollapsibleTrigger asChild>
+                            <Button variant="outline" size="sm" className="w-full justify-between gap-2">
+                              <span className="flex items-center gap-2">
+                                <BookOpen className="h-4 w-4" />
+                                {expandedPassages.has(passageGroup.passage_id) ? "Hide Extract" : "Show Extract"}
+                              </span>
+                              {expandedPassages.has(passageGroup.passage_id) ? (
+                                <ChevronUp className="h-4 w-4" />
+                              ) : (
+                                <ChevronDown className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </CollapsibleTrigger>
+                          <CollapsibleContent>
+                            <div className="mt-2 space-y-3 max-h-80 overflow-y-auto">
+                              {(() => {
+                                try {
+                                  const extracts = JSON.parse(passageGroup.passage_content);
+                                  if (Array.isArray(extracts)) {
+                                    return extracts.map((extract: { label?: string; title?: string; content?: string }, idx: number) => (
+                                      <div key={idx} className="p-3 bg-muted rounded-lg border border-border/50">
+                                        <div className="flex items-center gap-2 mb-2">
+                                          {extract.label && (
+                                            <span className="px-2 py-0.5 bg-primary/10 text-primary text-xs font-semibold rounded">
+                                              {extract.label}
+                                            </span>
+                                          )}
+                                          {extract.title && (
+                                            <span className="font-medium text-sm">{extract.title}</span>
+                                          )}
+                                        </div>
+                                        {extract.content && (
+                                          <p className="text-sm text-muted-foreground whitespace-pre-wrap">{extract.content}</p>
+                                        )}
+                                      </div>
+                                    ));
+                                  }
+                                  return <p className="p-4 bg-muted rounded-lg text-sm whitespace-pre-wrap">{passageGroup.passage_content}</p>;
+                                } catch {
+                                  return <p className="p-4 bg-muted rounded-lg text-sm whitespace-pre-wrap">{passageGroup.passage_content}</p>;
+                                }
+                              })()}
+                            </div>
+                          </CollapsibleContent>
+                        </Collapsible>
+
+                        {/* Questions for this passage - only Edit at question level */}
+                        <div className="space-y-3 pl-4 border-l-2 border-muted">
+                          {passageGroup.questions.map((question, qIdx) => (
+                            <div key={question.id} className="p-3 bg-muted/50 rounded-lg">
+                              <div className="flex items-start justify-between mb-2">
+                                <div className="flex-1">
+                                  <p className="font-medium text-sm">
+                                    Q{qIdx + 1}: {question.question_text}
+                                  </p>
+                                </div>
+                                <div className="flex items-center gap-2 ml-2">
+                                  {getStatusBadge(question.review_status)}
+                                </div>
+                              </div>
+
+                              <div className="mb-2">
+                                <p className="text-xs text-muted-foreground mb-1">Options:</p>
+                                <div className="flex flex-wrap gap-1">
+                                  {parseOptions(question.options).map((option: string, idx: number) => (
+                                    <Badge
+                                      key={idx}
+                                      variant="outline"
+                                      className={`text-xs font-normal ${option === question.correct_answer ? "bg-success text-success-foreground border-success" : ""}`}
+                                    >
+                                      {option}
+                                      {option === question.correct_answer && " ✓"}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              </div>
+
+                              {question.rejection_reason && (
+                                <div className="p-2 bg-destructive/10 rounded text-xs text-destructive mb-2">
+                                  Rejection reason: {question.rejection_reason}
+                                </div>
+                              )}
+
+                              {/* Only Edit available at question level */}
+                              <div className="flex gap-2">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="gap-1 h-7 text-xs"
+                                  onClick={() => openActionDialog(question, "edit")}
+                                >
+                                  <Pencil className="h-3 w-3" /> Edit Question
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+
+                  {/* Render ungrouped questions for this game */}
+                  {ungroupedQuestions.map((question) => (
+                    <Card key={question.id}>
+                      <CardHeader className="pb-2">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <CardTitle className="text-lg">{question.question_text}</CardTitle>
+                            <div className="flex flex-wrap items-center gap-2 mt-1">
+                              <Badge variant="outline" className="font-normal">Unit {question.unit_number}: {question.unit_title}</Badge>
+                              {question.word && <Badge variant="outline" className="font-normal">Word: {question.word}</Badge>}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {getStatusBadge(question.review_status)}
+                            {question.review_score !== null && (
+                              <Badge variant="secondary" className="gap-1">
+                                <Star className="h-3 w-3" /> {question.review_score}/10
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-3">
+                          <div>
+                            <p className="text-sm text-muted-foreground mb-1">Options:</p>
+                            <div className="flex flex-wrap gap-2">
+                              {parseOptions(question.options).map((option: string, idx: number) => (
+                                <Badge
+                                  key={idx}
+                                  variant="outline"
+                                  className={`font-normal ${option === question.correct_answer ? "bg-success text-success-foreground border-success" : ""}`}
+                                >
+                                  {option}
+                                  {option === question.correct_answer && " ✓"}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+
+                          {question.rejection_reason && (
+                            <div className="p-2 bg-destructive/10 rounded text-sm text-destructive">
+                              Rejection reason: {question.rejection_reason}
+                            </div>
+                          )}
+
+                          <div className="flex flex-wrap gap-2 pt-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="gap-1"
+                              onClick={() => openActionDialog(question, "edit")}
+                            >
+                              <Pencil className="h-4 w-4" /> Edit
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="gap-1"
+                              onClick={() => openActionDialog(question, "approve")}
+                            >
+                              <Check className="h-4 w-4" /> Approve
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="gap-1"
+                              onClick={() => openActionDialog(question, "reject")}
+                            >
+                              <X className="h-4 w-4" /> Reject
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="gap-1"
+                              onClick={() => openActionDialog(question, "score")}
+                            >
+                              <Star className="h-4 w-4" /> Score
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              );
+            });
           })()}
 
           {/* Pagination */}
