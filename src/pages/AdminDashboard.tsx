@@ -69,7 +69,7 @@ const AdminDashboard = () => {
             </TabsTrigger>
             <TabsTrigger value="stats" className="gap-2">
               <BarChart3 className="h-4 w-4" />
-              Game Management
+              Generate Questions
             </TabsTrigger>
             <TabsTrigger value="questions" className="gap-2">
               <FileQuestion className="h-4 w-4" />
