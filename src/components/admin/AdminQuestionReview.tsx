@@ -208,6 +208,7 @@ export const AdminQuestionReview = () => {
   const [gameTypes, setGameTypes] = useState<{ type: string; name: string }[]>([]);
   const [testTypes, setTestTypes] = useState<TestType[]>([]);
   const [units, setUnits] = useState<Unit[]>([]);
+  const [unitsWithContent, setUnitsWithContent] = useState<string[]>([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
@@ -301,6 +302,9 @@ export const AdminQuestionReview = () => {
       if (data.units) {
         setUnits(data.units);
       }
+      if (data.units_with_content) {
+        setUnitsWithContent(data.units_with_content);
+      }
     } catch (error) {
       console.error('Error fetching questions:', error);
       toast({
@@ -324,10 +328,22 @@ export const AdminQuestionReview = () => {
     setUnitFilter("all");
   }, [testTypeFilter]);
 
-  // Get filtered units based on selected test type
-  const filteredUnits = !testTypeFilter 
-    ? units 
-    : units.filter(u => u.test_type_id === testTypeFilter);
+  // Get filtered units based on selected test type AND which units have content matching current status
+  const filteredUnits = useMemo(() => {
+    // First filter by test type
+    const testTypeFiltered = !testTypeFilter 
+      ? units 
+      : units.filter(u => u.test_type_id === testTypeFilter);
+    
+    // If no units with content data, show all units for the test type
+    if (unitsWithContent.length === 0) {
+      return testTypeFiltered;
+    }
+    
+    // Filter units to only those with content matching current filters
+    const unitsWithContentSet = new Set(unitsWithContent);
+    return testTypeFiltered.filter(u => unitsWithContentSet.has(u.id));
+  }, [units, testTypeFilter, unitsWithContent]);
 
   const handleAction = async () => {
     if (!selectedQuestion && !selectedVocabulary && !selectedPassage) return;
