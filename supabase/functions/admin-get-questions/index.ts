@@ -80,7 +80,8 @@ Deno.serve(async (req) => {
     const gameTypes = gameTypesWithNames.map(g => g.type);
 
     // If filtering on flashcards, return vocabulary items instead of questions
-    if (gameType === 'flashcards') {
+    // Helper function to fetch vocabulary
+    const fetchVocabulary = async () => {
       let vocabQuery = supabase
         .from('vocabulary')
         .select('id, word, definition, synonyms, antonyms, examples, unit_id, created_at, review_status, review_score, reviewed_at, rejection_reason', { count: 'exact' })
@@ -110,10 +111,7 @@ Deno.serve(async (req) => {
 
       if (vocabError) {
         console.error('Error fetching vocabulary:', vocabError);
-        return new Response(
-          JSON.stringify({ error: 'Failed to fetch vocabulary' }),
-          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        return { vocabulary: [], count: 0, error: vocabError };
       }
 
       // Get units for reference
@@ -129,6 +127,20 @@ Deno.serve(async (req) => {
         };
       });
 
+      return { vocabulary: enrichedVocabulary || [], count: count || 0, error: null };
+    };
+
+    // Return ONLY vocabulary for flashcards filter
+    if (gameType === 'flashcards') {
+      const { vocabulary: enrichedVocabulary, count, error: vocabError } = await fetchVocabulary();
+      
+      if (vocabError) {
+        return new Response(
+          JSON.stringify({ error: 'Failed to fetch vocabulary' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
       return new Response(
         JSON.stringify({ 
           vocabulary: enrichedVocabulary,
@@ -136,7 +148,7 @@ Deno.serve(async (req) => {
           total: count,
           page,
           limit,
-          total_pages: Math.ceil((count || 0) / limit),
+          total_pages: Math.ceil(count / limit),
           game_types: gameTypes,
           game_types_with_names: gameTypesWithNames,
           test_types: testTypes || [],
@@ -250,10 +262,17 @@ Deno.serve(async (req) => {
       };
     });
 
+    // When gameType is 'all', also fetch vocabulary to show alongside questions
+    let vocabularyData: unknown[] = [];
+    if (gameType === 'all') {
+      const { vocabulary: fetchedVocab } = await fetchVocabulary();
+      vocabularyData = fetchedVocab;
+    }
+
     return new Response(
       JSON.stringify({ 
         questions: enrichedQuestions,
-        vocabulary: [], // Empty vocabulary for non-flashcard queries
+        vocabulary: vocabularyData,
         total: count,
         page,
         limit,
