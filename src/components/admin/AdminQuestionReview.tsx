@@ -115,12 +115,20 @@ interface PassageGroup {
   game_name: string;
 }
 
-// Group questions by passage for reading game types
+// Sort questions by game type, then group by passage for reading game types
 const groupQuestionsByPassage = (questions: Question[]): { grouped: PassageGroup[]; ungrouped: Question[] } => {
+  // First, sort questions by game_name to group same game types together
+  const sortedQuestions = [...questions].sort((a, b) => {
+    const gameCompare = a.game_name.localeCompare(b.game_name);
+    if (gameCompare !== 0) return gameCompare;
+    // Within same game, sort by unit number
+    return a.unit_number - b.unit_number;
+  });
+
   const passageMap = new Map<string, PassageGroup>();
   const ungrouped: Question[] = [];
 
-  questions.forEach(q => {
+  sortedQuestions.forEach(q => {
     if (q.passage_id && q.passage_content) {
       if (!passageMap.has(q.passage_id)) {
         passageMap.set(q.passage_id, {
@@ -152,9 +160,23 @@ const groupQuestionsByPassage = (questions: Question[]): { grouped: PassageGroup
     }
   });
 
+  // Sort grouped passages by game name, then unit number
+  const sortedGrouped = Array.from(passageMap.values()).sort((a, b) => {
+    const gameCompare = a.game_name.localeCompare(b.game_name);
+    if (gameCompare !== 0) return gameCompare;
+    return a.unit_number - b.unit_number;
+  });
+
+  // Sort ungrouped questions by game name, then unit number
+  const sortedUngrouped = ungrouped.sort((a, b) => {
+    const gameCompare = a.game_name.localeCompare(b.game_name);
+    if (gameCompare !== 0) return gameCompare;
+    return a.unit_number - b.unit_number;
+  });
+
   return {
-    grouped: Array.from(passageMap.values()),
-    ungrouped,
+    grouped: sortedGrouped,
+    ungrouped: sortedUngrouped,
   };
 };
 
@@ -680,7 +702,7 @@ export const AdminQuestionReview = () => {
             ))}
           </div>
         )
-      ) : questions.length === 0 ? (
+      ) : questions.length === 0 && vocabulary.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center text-muted-foreground">
             No questions found with the selected filters
@@ -688,14 +710,164 @@ export const AdminQuestionReview = () => {
         </Card>
       ) : (
         <div className="space-y-4">
+          {/* Show vocabulary section when filter is 'all' and vocabulary exists */}
+          {gameTypeFilter === 'all' && vocabulary.length > 0 && (
+            <>
+              <h3 className="text-lg font-semibold flex items-center gap-2 mt-4">
+                <Badge variant="outline" className="text-base px-3 py-1">Flashcards</Badge>
+                <span className="text-sm text-muted-foreground">({vocabulary.length} items)</span>
+              </h3>
+              <div className="space-y-4">
+                {vocabulary.map((vocab) => (
+                  <Card key={vocab.id}>
+                    <CardHeader className="pb-2">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <CardTitle className="text-xl">{vocab.word}</CardTitle>
+                          <div className="flex flex-wrap items-center gap-2 mt-1">
+                            <Badge variant="outline">Unit {vocab.unit_number}: {vocab.unit_title}</Badge>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {getStatusBadge(vocab.review_status || 'pending')}
+                          {vocab.review_score !== null && (
+                            <Badge variant="secondary" className="gap-1">
+                              <Star className="h-3 w-3" /> {vocab.review_score}/10
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        <div>
+                          <p className="text-sm font-medium text-muted-foreground mb-1">Definition:</p>
+                          <p className="text-base">{vocab.definition}</p>
+                        </div>
+                        
+                        {vocab.synonyms && vocab.synonyms.length > 0 && (
+                          <div>
+                            <p className="text-sm font-medium text-muted-foreground mb-1">Synonyms:</p>
+                            <div className="flex flex-wrap gap-2">
+                              {vocab.synonyms.map((syn, idx) => (
+                                <Badge key={idx} variant="outline">{syn}</Badge>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        
+                        {vocab.antonyms && vocab.antonyms.length > 0 && (
+                          <div>
+                            <p className="text-sm font-medium text-muted-foreground mb-1">Antonyms:</p>
+                            <div className="flex flex-wrap gap-2">
+                              {vocab.antonyms.map((ant, idx) => (
+                                <Badge key={idx} variant="outline">{ant}</Badge>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        
+                        {vocab.examples && vocab.examples.length > 0 && (
+                          <div>
+                            <p className="text-sm font-medium text-muted-foreground mb-1">Examples:</p>
+                            <ul className="list-disc list-inside space-y-1">
+                              {vocab.examples.map((ex, idx) => (
+                                <li key={idx} className="text-sm text-muted-foreground italic">{ex}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
+                        {vocab.rejection_reason && (
+                          <div className="p-2 bg-destructive/10 rounded text-sm text-destructive">
+                            Rejection reason: {vocab.rejection_reason}
+                          </div>
+                        )}
+
+                        <div className="flex flex-wrap gap-2 pt-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="gap-1"
+                            onClick={() => openVocabActionDialog(vocab, "edit")}
+                          >
+                            <Pencil className="h-4 w-4" /> Edit
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="gap-1"
+                            onClick={() => openVocabActionDialog(vocab, "approve")}
+                          >
+                            <Check className="h-4 w-4" /> Approve
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="gap-1"
+                            onClick={() => openVocabActionDialog(vocab, "reject")}
+                          >
+                            <X className="h-4 w-4" /> Reject
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="gap-1"
+                            onClick={() => openVocabActionDialog(vocab, "score")}
+                          >
+                            <Star className="h-4 w-4" /> Score
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </>
+          )}
+
+          {/* Questions section header when showing 'all' */}
+          {gameTypeFilter === 'all' && questions.length > 0 && (
+            <h3 className="text-lg font-semibold flex items-center gap-2 mt-6">
+              <Badge variant="outline" className="text-base px-3 py-1">Questions</Badge>
+              <span className="text-sm text-muted-foreground">({questions.length} items)</span>
+            </h3>
+          )}
+
           {/* Group reading questions by passage */}
-          {(() => {
+          {questions.length > 0 && (() => {
             const { grouped, ungrouped } = groupQuestionsByPassage(questions);
+            
+            // Group by game_name for headers
+            const passagesByGame = grouped.reduce((acc, pg) => {
+              if (!acc[pg.game_name]) acc[pg.game_name] = [];
+              acc[pg.game_name].push(pg);
+              return acc;
+            }, {} as Record<string, PassageGroup[]>);
+
+            const ungroupedByGame = ungrouped.reduce((acc, q) => {
+              if (!acc[q.game_name]) acc[q.game_name] = [];
+              acc[q.game_name].push(q);
+              return acc;
+            }, {} as Record<string, Question[]>);
+
+            // Get sorted game names
+            const allGameNames = [...new Set([...Object.keys(passagesByGame), ...Object.keys(ungroupedByGame)])].sort();
             
             return (
               <>
-                {/* Render grouped passage questions */}
-                {grouped.map((passageGroup) => (
+                {allGameNames.map((gameName) => (
+                  <div key={gameName} className="space-y-4">
+                    {/* Game type header */}
+                    <h4 className="text-md font-semibold flex items-center gap-2 mt-4 border-b pb-2">
+                      <Badge variant="secondary" className="text-sm px-3 py-1">{gameName}</Badge>
+                      <span className="text-sm text-muted-foreground">
+                        ({(passagesByGame[gameName]?.length || 0) + (ungroupedByGame[gameName]?.length || 0)} items)
+                      </span>
+                    </h4>
+
+                    {/* Render grouped passage questions for this game */}
+                    {passagesByGame[gameName]?.map((passageGroup) => (
                   <Card key={passageGroup.passage_id} className="border-2 border-primary/20">
                     <CardHeader className="pb-2">
                       <div className="flex items-start justify-between">
@@ -853,92 +1025,94 @@ export const AdminQuestionReview = () => {
                       </div>
                     </CardContent>
                   </Card>
-                ))}
+                    ))}
 
-                {/* Render ungrouped questions (non-reading) */}
-                {ungrouped.map((question) => (
-                  <Card key={question.id}>
-                    <CardHeader className="pb-2">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <CardTitle className="text-lg">{question.question_text}</CardTitle>
-                          <div className="flex flex-wrap items-center gap-2 mt-1">
-                            <Badge variant="outline" className="font-normal">Unit {question.unit_number}: {question.unit_title}</Badge>
-                            <Badge variant="outline" className="font-normal">{question.game_name}</Badge>
-                            {question.word && <Badge variant="outline" className="font-normal">Word: {question.word}</Badge>}
+                    {/* Render ungrouped questions for this game */}
+                    {ungroupedByGame[gameName]?.map((question) => (
+                      <Card key={question.id}>
+                        <CardHeader className="pb-2">
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <CardTitle className="text-lg">{question.question_text}</CardTitle>
+                              <div className="flex flex-wrap items-center gap-2 mt-1">
+                                <Badge variant="outline" className="font-normal">Unit {question.unit_number}: {question.unit_title}</Badge>
+                                <Badge variant="outline" className="font-normal">{question.game_name}</Badge>
+                                {question.word && <Badge variant="outline" className="font-normal">Word: {question.word}</Badge>}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {getStatusBadge(question.review_status)}
+                              {question.review_score !== null && (
+                                <Badge variant="secondary" className="gap-1">
+                                  <Star className="h-3 w-3" /> {question.review_score}/10
+                                </Badge>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {getStatusBadge(question.review_status)}
-                          {question.review_score !== null && (
-                            <Badge variant="secondary" className="gap-1">
-                              <Star className="h-3 w-3" /> {question.review_score}/10
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-3">
-                        <div>
-                          <p className="text-sm text-muted-foreground mb-1">Options:</p>
-                          <div className="flex flex-wrap gap-2">
-                            {parseOptions(question.options).map((option: string, idx: number) => (
-                              <Badge
-                                key={idx}
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-3">
+                            <div>
+                              <p className="text-sm text-muted-foreground mb-1">Options:</p>
+                              <div className="flex flex-wrap gap-2">
+                                {parseOptions(question.options).map((option: string, idx: number) => (
+                                  <Badge
+                                    key={idx}
+                                    variant="outline"
+                                    className={`font-normal ${option === question.correct_answer ? "bg-success text-success-foreground border-success" : ""}`}
+                                  >
+                                    {option}
+                                    {option === question.correct_answer && " ✓"}
+                                  </Badge>
+                                ))}
+                              </div>
+                            </div>
+
+                            {question.rejection_reason && (
+                              <div className="p-2 bg-destructive/10 rounded text-sm text-destructive">
+                                Rejection reason: {question.rejection_reason}
+                              </div>
+                            )}
+
+                            <div className="flex flex-wrap gap-2 pt-2">
+                              <Button
+                                size="sm"
                                 variant="outline"
-                                className={`font-normal ${option === question.correct_answer ? "bg-success text-success-foreground border-success" : ""}`}
+                                className="gap-1"
+                                onClick={() => openActionDialog(question, "edit")}
                               >
-                                {option}
-                                {option === question.correct_answer && " ✓"}
-                              </Badge>
-                            ))}
+                                <Pencil className="h-4 w-4" /> Edit
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="gap-1"
+                                onClick={() => openActionDialog(question, "approve")}
+                              >
+                                <Check className="h-4 w-4" /> Approve
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="gap-1"
+                                onClick={() => openActionDialog(question, "reject")}
+                              >
+                                <X className="h-4 w-4" /> Reject
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="gap-1"
+                                onClick={() => openActionDialog(question, "score")}
+                              >
+                                <Star className="h-4 w-4" /> Score
+                              </Button>
+                            </div>
                           </div>
-                        </div>
-
-                        {question.rejection_reason && (
-                          <div className="p-2 bg-destructive/10 rounded text-sm text-destructive">
-                            Rejection reason: {question.rejection_reason}
-                          </div>
-                        )}
-
-                        <div className="flex flex-wrap gap-2 pt-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="gap-1"
-                            onClick={() => openActionDialog(question, "edit")}
-                          >
-                            <Pencil className="h-4 w-4" /> Edit
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="gap-1"
-                            onClick={() => openActionDialog(question, "approve")}
-                          >
-                            <Check className="h-4 w-4" /> Approve
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="gap-1"
-                            onClick={() => openActionDialog(question, "reject")}
-                          >
-                            <X className="h-4 w-4" /> Reject
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="gap-1"
-                            onClick={() => openActionDialog(question, "score")}
-                          >
-                            <Star className="h-4 w-4" /> Score
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
                 ))}
               </>
             );
