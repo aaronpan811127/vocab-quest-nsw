@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
   TableBody,
@@ -31,6 +31,8 @@ import {
   Clock,
   Target,
   TrendingUp,
+  AlertTriangle,
+  Volume2,
 } from "lucide-react";
 import { format, subDays, parseISO } from "date-fns";
 
@@ -89,6 +91,13 @@ interface TestType {
   code: string;
 }
 
+interface WordStruggleData {
+  word: string;
+  incorrectCount: number;
+  unitNumber: number;
+  gameTypes: string[];
+}
+
 // Learning games: vocabulary building, practice
 const LEARNING_GAMES = ['flashcards', 'matching', 'oddoneout', 'intuition'];
 // Compete games: active recall, dictation, comprehension
@@ -111,6 +120,8 @@ const ChildProgress = () => {
   const [selectedTestType, setSelectedTestType] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [childEmail, setChildEmail] = useState<string>("");
+  const [wordStruggleData, setWordStruggleData] = useState<WordStruggleData[]>([]);
+  const [wordStruggleLoading, setWordStruggleLoading] = useState(true);
 
   useEffect(() => {
     if (!user || currentRole !== 'parent') {
@@ -249,6 +260,152 @@ const ChildProgress = () => {
   const filteredUnits = useMemo(() => {
     return units.filter(u => u.test_type_id === selectedTestType);
   }, [units, selectedTestType]);
+
+  // Fetch word struggle data when selected test type changes
+  useEffect(() => {
+    if (selectedTestType && childId && filteredUnits.length > 0) {
+      fetchWordStruggleData();
+    }
+  }, [selectedTestType, childId, filteredUnits.length]);
+
+  const fetchWordStruggleData = async () => {
+    if (!childId || !selectedTestType || filteredUnits.length === 0) return;
+    setWordStruggleLoading(true);
+
+    try {
+      const unitIds = filteredUnits.map(u => u.id);
+      const unitMap: Record<string, number> = {};
+      filteredUnits.forEach(u => {
+        unitMap[u.id] = u.unit_number;
+      });
+
+      // Get child's attempts
+      const { data: attempts } = await supabase
+        .from("game_attempts")
+        .select("id, game_id, unit_id")
+        .eq("user_id", childId)
+        .in("unit_id", unitIds);
+
+      if (!attempts || attempts.length === 0) {
+        setWordStruggleData([]);
+        setWordStruggleLoading(false);
+        return;
+      }
+
+      const attemptIds = attempts.map(a => a.id);
+      const attemptUnitMap: Record<string, string> = {};
+      attempts.forEach(a => {
+        attemptUnitMap[a.id] = a.unit_id;
+      });
+
+      // Fetch incorrect answers from both tables
+      const [incorrectAnswersResult, dictationIncorrectResult, gamesResult] = await Promise.all([
+        supabase
+          .from("attempt_incorrect_answers")
+          .select("id, attempt_id, question_id, created_at")
+          .in("attempt_id", attemptIds),
+        supabase
+          .from("attempt_incorrect_answers_dictation")
+          .select("id, attempt_id, incorrect_word, created_at")
+          .in("attempt_id", attemptIds),
+        supabase.from("games").select("id, game_type")
+      ]);
+
+      const incorrectAnswers = incorrectAnswersResult.data || [];
+      const dictationIncorrect = dictationIncorrectResult.data || [];
+
+      // Get question IDs for word lookup
+      const questionIds = [...new Set(incorrectAnswers.map(a => a.question_id))];
+      let questionWordMap: Record<string, { word: string; unitId: string }> = {};
+
+      if (questionIds.length > 0) {
+        const { data: questions } = await supabase
+          .from("question_bank")
+          .select("id, word, unit_id")
+          .in("id", questionIds);
+
+        if (questions) {
+          questions.forEach(q => {
+            if (q.word) {
+              questionWordMap[q.id] = { word: q.word, unitId: q.unit_id };
+            }
+          });
+        }
+      }
+
+      // Build game type map
+      const gameMap: Record<string, string> = {};
+      (gamesResult.data || []).forEach(g => {
+        gameMap[g.id] = g.game_type;
+      });
+
+      const attemptGameMap: Record<string, string> = {};
+      attempts.forEach(a => {
+        attemptGameMap[a.id] = a.game_id;
+      });
+
+      // Aggregate word struggle data
+      const wordIncorrectMap: Record<string, {
+        count: number;
+        gameTypes: Set<string>;
+        unitNumber: number;
+      }> = {};
+
+      // Process quiz-based incorrect answers
+      incorrectAnswers.forEach(ia => {
+        const questionInfo = questionWordMap[ia.question_id];
+        if (questionInfo?.word) {
+          const key = questionInfo.word.toLowerCase();
+          if (!wordIncorrectMap[key]) {
+            wordIncorrectMap[key] = {
+              count: 0,
+              gameTypes: new Set(),
+              unitNumber: unitMap[questionInfo.unitId] || 0
+            };
+          }
+          wordIncorrectMap[key].count++;
+          const gameId = attemptGameMap[ia.attempt_id];
+          if (gameId && gameMap[gameId]) {
+            wordIncorrectMap[key].gameTypes.add(gameMap[gameId]);
+          }
+        }
+      });
+
+      // Process dictation-based incorrect answers
+      dictationIncorrect.forEach(ia => {
+        const attemptUnitId = attemptUnitMap[ia.attempt_id];
+        const key = ia.incorrect_word.toLowerCase();
+        if (!wordIncorrectMap[key]) {
+          wordIncorrectMap[key] = {
+            count: 0,
+            gameTypes: new Set(),
+            unitNumber: unitMap[attemptUnitId] || 0
+          };
+        }
+        wordIncorrectMap[key].count++;
+        const gameId = attemptGameMap[ia.attempt_id];
+        if (gameId && gameMap[gameId]) {
+          wordIncorrectMap[key].gameTypes.add(gameMap[gameId]);
+        }
+      });
+
+      // Convert to array and sort by count
+      const wordDataArray: WordStruggleData[] = Object.entries(wordIncorrectMap)
+        .map(([word, data]) => ({
+          word,
+          incorrectCount: data.count,
+          unitNumber: data.unitNumber,
+          gameTypes: Array.from(data.gameTypes)
+        }))
+        .sort((a, b) => b.incorrectCount - a.incorrectCount);
+
+      setWordStruggleData(wordDataArray);
+    } catch (error) {
+      console.error("Error fetching word struggle data:", error);
+    } finally {
+      setWordStruggleLoading(false);
+    }
+  };
 
   // Get unit IDs for selected test type
   const filteredUnitIds = useMemo(() => {
@@ -459,8 +616,8 @@ const ChildProgress = () => {
                 <div className="grid gap-4 md:grid-cols-4">
                   <Card>
                     <CardContent className="p-4 flex items-center gap-3">
-                      <div className="p-2 bg-yellow-500/10 rounded-lg">
-                        <Trophy className="h-6 w-6 text-yellow-500" />
+                      <div className="p-2 bg-warning/10 rounded-lg">
+                        <Trophy className="h-6 w-6 text-warning" />
                       </div>
                       <div>
                         <p className="text-2xl font-bold">{childStats?.level || 1}</p>
@@ -495,8 +652,8 @@ const ChildProgress = () => {
                   
                   <Card>
                     <CardContent className="p-4 flex items-center gap-3">
-                      <div className="p-2 bg-green-500/10 rounded-lg">
-                        <Target className="h-6 w-6 text-green-500" />
+                      <div className="p-2 bg-success/10 rounded-lg">
+                        <Target className="h-6 w-6 text-success" />
                       </div>
                       <div>
                         <p className="text-2xl font-bold">{averageScore}%</p>
@@ -635,6 +792,84 @@ const ChildProgress = () => {
                             </div>
                           );
                         })}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Words to Practice */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <AlertTriangle className="h-5 w-5 text-warning" />
+                      Words to Practice
+                    </CardTitle>
+                    <CardDescription>Words that need more attention</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {wordStruggleLoading ? (
+                      <div className="flex items-center justify-center py-8">
+                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+                      </div>
+                    ) : wordStruggleData.length === 0 ? (
+                      <div className="text-center py-8">
+                        <Target className="h-8 w-8 mx-auto text-success mb-2" />
+                        <p className="text-muted-foreground">
+                          Great job! No struggled words recorded yet.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {/* Summary stats */}
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="rounded-lg bg-destructive/10 p-3 text-center">
+                            <div className="text-2xl font-bold text-destructive">
+                              {wordStruggleData.reduce((sum, w) => sum + w.incorrectCount, 0)}
+                            </div>
+                            <div className="text-xs text-muted-foreground">Total Mistakes</div>
+                          </div>
+                          <div className="rounded-lg bg-warning/10 p-3 text-center">
+                            <div className="text-2xl font-bold text-warning">
+                              {wordStruggleData.length}
+                            </div>
+                            <div className="text-xs text-muted-foreground">Words to Review</div>
+                          </div>
+                        </div>
+
+                        {/* Word list */}
+                        <div className="space-y-2">
+                          {wordStruggleData.slice(0, 10).map((word, index) => (
+                            <div
+                              key={`${word.word}-${index}`}
+                              className="flex items-center justify-between p-3 rounded-lg bg-muted/50"
+                            >
+                              <div className="flex items-center gap-3">
+                                <span className="font-medium capitalize">{word.word}</span>
+                                <Badge variant="outline" className="text-xs">
+                                  U{word.unitNumber}
+                                </Badge>
+                                {word.gameTypes.includes('listening') && (
+                                  <Volume2 className="h-3.5 w-3.5 text-muted-foreground" />
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Progress 
+                                  value={Math.min((word.incorrectCount / (wordStruggleData[0]?.incorrectCount || 1)) * 100, 100)} 
+                                  className="w-16 h-1.5" 
+                                />
+                                <span className="text-sm text-destructive font-medium w-6 text-right">
+                                  {word.incorrectCount}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+
+                        {wordStruggleData.length > 10 && (
+                          <p className="text-xs text-center text-muted-foreground">
+                            +{wordStruggleData.length - 10} more words
+                          </p>
+                        )}
                       </div>
                     )}
                   </CardContent>
