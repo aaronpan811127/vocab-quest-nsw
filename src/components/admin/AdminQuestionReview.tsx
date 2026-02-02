@@ -762,14 +762,14 @@ export const AdminQuestionReview = () => {
                   </h4>
 
                   {/* Render grouped passage questions for this game */}
-                  {passages.map((passageGroup) => (
+                  {passages.map((passageGroup, pIdx) => (
                     <Card key={passageGroup.passage_id} className="border-2 border-primary/20">
                       <CardHeader className="pb-2">
                         <div className="flex items-start justify-between">
                           <div>
                             <CardTitle className="text-lg flex items-center gap-2">
                               <BookOpen className="h-5 w-5 text-primary" />
-                              {passageGroup.passage_title}
+                              <span className="text-primary font-semibold">P{pIdx + 1}:</span> {passageGroup.passage_title}
                             </CardTitle>
                             <div className="flex flex-wrap items-center gap-2 mt-1">
                               <Badge variant="outline" className="font-normal">
