@@ -244,11 +244,11 @@ IMPORTANT: Write plain sentences without any special formatting or markdown.`;
       word: item.word.toLowerCase(),
       question_text: item.sentence,
       correct_answer: item.correct_answer,
-      options: JSON.stringify({
+      options: {
         word: item.word,
         choices: ["positive", "negative", "neutral"],
         explanation: item.explanation,
-      }),
+      },
     }));
 
     const { data: insertedData, error: insertError } = await supabase
