@@ -602,7 +602,7 @@ export const AdminQuestionReview = () => {
           </div>
           
           {/* Current Vocab Toggle - hide for passage-based games */}
-          {!isPassageBased && gameTypeFilter !== 'reading' && gameTypeFilter !== 'linkedextracts' && (
+          {!isPassageBased && gameTypeFilter !== 'reading' && gameTypeFilter !== 'linked_extracts' && (
             <div className="flex items-center gap-2">
               <Switch
                 id="current-vocab-toggle"
