@@ -91,7 +91,7 @@ interface ContentStat {
 }
 
 // Game types that use passages
-const PASSAGE_GAME_TYPES = ['reading', 'cloze_passage'];
+const PASSAGE_GAME_TYPES = ['reading', 'linked_extracts'];
 
 // Game types that use vocabulary
 const VOCAB_GAME_TYPES = ['flashcards'];
@@ -154,7 +154,7 @@ export const AdminContentStats = () => {
       if (isVocabGame) {
         functionName = 'generate-vocabulary';
         payload = { unit_id: stat.unit_id, words: unit.words };
-      } else if (stat.game_type === 'cloze_passage') {
+      } else if (stat.game_type === 'linked_extracts') {
         functionName = 'generate-cloze-passage';
         payload = { unit_id: stat.unit_id, words: unit.words, test_type_code: testTypeCode, unit_title: unit.title };
       } else if (stat.game_type === 'reading') {
@@ -183,7 +183,7 @@ export const AdminContentStats = () => {
       }
 
       // For passage-based games, loop until we have enough passages
-      const isPassageBasedGame = ['cloze_passage', 'reading'].includes(stat.game_type);
+      const isPassageBasedGame = ['linked_extracts', 'reading'].includes(stat.game_type);
       let totalGenerated = 0;
       const maxIterations = 5; // Safety limit
       
@@ -323,7 +323,7 @@ export const AdminContentStats = () => {
     if (isVocabGame) {
       functionName = 'generate-vocabulary';
       payload = { unit_id: stat.unit_id, words: unit.words };
-    } else if (stat.game_type === 'cloze_passage') {
+    } else if (stat.game_type === 'linked_extracts') {
       functionName = 'generate-cloze-passage';
       payload = { unit_id: stat.unit_id, words: unit.words, test_type_code: testTypeCode, unit_title: unit.title };
     } else if (stat.game_type === 'reading') {
@@ -346,7 +346,7 @@ export const AdminContentStats = () => {
     }
 
     // For passage-based games, loop until we have enough passages
-    const isPassageBasedGame = ['cloze_passage', 'reading'].includes(stat.game_type);
+    const isPassageBasedGame = ['linked_extracts', 'reading'].includes(stat.game_type);
     const maxIterations = 5;
     
     if (isPassageBasedGame) {
@@ -529,7 +529,7 @@ export const AdminContentStats = () => {
             const passagesPerGame = rules.passages_per_game || 3;
             const questionsPerPassage = rules.questions_per_passage || 10;
             
-            const passageFilter = game.game_type === 'cloze_passage' 
+            const passageFilter = game.game_type === 'linked_extracts' 
               ? { ilike: 'Cloze Passage:%' }
               : { notIlike: 'Cloze Passage:%' };
 
@@ -538,7 +538,7 @@ export const AdminContentStats = () => {
               .select('id, review_status')
               .eq('unit_id', unit.id);
             
-            if (game.game_type === 'cloze_passage') {
+            if (game.game_type === 'linked_extracts') {
               passageQuery = passageQuery.ilike('title', 'Cloze Passage:%');
             } else {
               passageQuery = passageQuery.not('title', 'ilike', 'Cloze Passage:%');
