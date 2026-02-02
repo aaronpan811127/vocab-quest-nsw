@@ -51,11 +51,12 @@ Deno.serve(async (req) => {
     const gameType = url.searchParams.get('game_type') || 'all';
     const testTypeId = url.searchParams.get('test_type_id') || 'all';
     const unitId = url.searchParams.get('unit_id') || 'all';
+    const activeVocabOnly = url.searchParams.get('active_vocab_only') === 'true';
     const page = parseInt(url.searchParams.get('page') || '1');
     const limit = parseInt(url.searchParams.get('limit') || '20');
     const offset = (page - 1) * limit;
 
-    console.log(`[v3] Admin ${adminUser.id} fetching: game_type=${gameType}, test_type=${testTypeId}, unit=${unitId}, page=${page}`);
+    console.log(`[v4] Admin ${adminUser.id} fetching: game_type=${gameType}, test_type=${testTypeId}, unit=${unitId}, active_vocab_only=${activeVocabOnly}, page=${page}`);
 
     // Game types to exclude from review (no reviewable questions - either no questions or programmatically generated)
     const excludedGameTypes = ['listening', 'matching', 'speaking', 'writing', 'oddoneout'];
@@ -66,11 +67,45 @@ Deno.serve(async (req) => {
     // Get all test types
     const { data: testTypes } = await supabase.from('test_types').select('id, name, code').order('name');
     
-    // Get all units with test type info + words (needed for "Current vocab only" filtering in admin UI)
+    // Get all units with test type info + words (needed for active vocab filtering)
     const { data: allUnits } = await supabase
       .from('units')
       .select('id, title, unit_number, test_type_id, words')
       .order('unit_number');
+
+    // Helper to normalize words for comparison
+    const normalizeWord = (w: string) => w.trim().toLowerCase();
+
+    // Helper to parse unit words into a Set for fast lookup
+    const getUnitWordsSet = (unitId: string): Set<string> | null => {
+      const unit = allUnits?.find(u => u.id === unitId);
+      if (!unit || !unit.words) return null;
+      
+      let wordsArray: string[] = [];
+      if (Array.isArray(unit.words)) {
+        wordsArray = unit.words.filter((w): w is string => typeof w === 'string');
+      } else if (typeof unit.words === 'string') {
+        try {
+          const parsed = JSON.parse(unit.words);
+          if (Array.isArray(parsed)) {
+            wordsArray = parsed.filter((w): w is string => typeof w === 'string');
+          }
+        } catch {
+          // Not valid JSON
+        }
+      }
+      
+      if (wordsArray.length === 0) return null;
+      return new Set(wordsArray.map(normalizeWord));
+    };
+
+    // Helper to check if a word is in the unit's active vocab
+    const isWordInUnitVocab = (unitId: string, word: string | null | undefined): boolean | null => {
+      if (!word) return null; // Can't determine
+      const wordsSet = getUnitWordsSet(unitId);
+      if (!wordsSet) return null; // No unit words available
+      return wordsSet.has(normalizeWord(word));
+    };
     
     // Get distinct game types for filter options (excluding non-reviewable types)
     // Return as array of { type, name } objects for proper display names
@@ -85,9 +120,11 @@ Deno.serve(async (req) => {
     // If filtering on flashcards, return vocabulary items instead of questions
     // Helper function to fetch vocabulary
     const fetchVocabulary = async () => {
+      // When active_vocab_only is enabled, we need to fetch all matching records first, 
+      // filter in memory, then apply pagination
       let vocabQuery = supabase
         .from('vocabulary')
-        .select('id, word, definition, synonyms, antonyms, examples, unit_id, created_at, review_status, review_score, reviewed_at, rejection_reason', { count: 'exact' })
+        .select('id, word, definition, synonyms, antonyms, examples, unit_id, created_at, review_status, review_score, reviewed_at, rejection_reason')
         .order('created_at', { ascending: false });
 
       // Filter by review status (supports multiple statuses)
@@ -108,9 +145,7 @@ Deno.serve(async (req) => {
         vocabQuery = vocabQuery.eq('unit_id', unitId);
       }
 
-      vocabQuery = vocabQuery.range(offset, offset + limit - 1);
-
-      const { data: vocabulary, count, error: vocabError } = await vocabQuery;
+      const { data: vocabulary, error: vocabError } = await vocabQuery;
 
       if (vocabError) {
         console.error('Error fetching vocabulary:', vocabError);
@@ -121,16 +156,31 @@ Deno.serve(async (req) => {
       const { data: units } = await supabase.from('units').select('id, title, unit_number');
 
       // Enrich vocabulary with unit info
-      const enrichedVocabulary = vocabulary?.map(v => {
+      let enrichedVocabulary = vocabulary?.map(v => {
         const unit = units?.find(u => u.id === v.unit_id);
         return {
           ...v,
           unit_title: unit?.title || 'Unknown',
           unit_number: unit?.unit_number || 0,
         };
-      });
+      }) || [];
 
-      return { vocabulary: enrichedVocabulary || [], count: count || 0, error: null };
+      // Apply active vocab filter if enabled
+      if (activeVocabOnly) {
+        enrichedVocabulary = enrichedVocabulary.filter(v => {
+          const match = isWordInUnitVocab(v.unit_id, v.word);
+          // Fail-open: if we can't determine, include it
+          if (match === null) return true;
+          return match;
+        });
+      }
+
+      const totalCount = enrichedVocabulary.length;
+      
+      // Apply pagination after filtering
+      const paginatedVocabulary = enrichedVocabulary.slice(offset, offset + limit);
+
+      return { vocabulary: paginatedVocabulary, count: totalCount, error: null };
     };
 
     // Return ONLY vocabulary for flashcards filter
@@ -162,6 +212,7 @@ Deno.serve(async (req) => {
     }
 
     // Build query for regular questions (not flashcards)
+    // When active_vocab_only is enabled, we fetch all matching records first, filter in memory, then paginate
     let query = supabase
       .from('question_bank')
       .select(`
@@ -178,7 +229,7 @@ Deno.serve(async (req) => {
         unit_id,
         game_id,
         passage_id
-      `, { count: 'exact' })
+      `)
       .order('created_at', { ascending: false });
 
     // Filter by review status (supports multiple statuses)
@@ -215,9 +266,7 @@ Deno.serve(async (req) => {
       query = query.eq('unit_id', unitId);
     }
 
-    query = query.range(offset, offset + limit - 1);
-
-    const { data: questions, count, error } = await query;
+    const { data: questions, error } = await query;
 
     if (error) {
       console.error('Error fetching questions:', error);
@@ -249,7 +298,7 @@ Deno.serve(async (req) => {
     }
 
     // Enrich questions with unit, game info, and passage content
-    const enrichedQuestions = questions?.map(q => {
+    let enrichedQuestions = questions?.map(q => {
       const unit = units?.find(u => u.id === q.unit_id);
       const game = games?.find(g => g.id === q.game_id);
       const passage = q.passage_id ? passages[q.passage_id] : null;
@@ -263,7 +312,35 @@ Deno.serve(async (req) => {
         passage_title: passage?.title || null,
         passage_content: passage?.content || null,
       };
-    });
+    }) || [];
+
+    // Apply active vocab filter if enabled
+    if (activeVocabOnly) {
+      enrichedQuestions = enrichedQuestions.filter(q => {
+        // Prefer explicit word column, fallback to options.word for games like Word Intuition
+        let wordToCheck = q.word;
+        if (!wordToCheck && q.options) {
+          try {
+            const opts = typeof q.options === 'string' ? JSON.parse(q.options) : q.options;
+            if (opts && typeof opts === 'object' && 'word' in opts) {
+              wordToCheck = opts.word;
+            }
+          } catch {
+            // Ignore parse errors
+          }
+        }
+        
+        const match = isWordInUnitVocab(q.unit_id, wordToCheck);
+        // Fail-open: if we can't determine, include it
+        if (match === null) return true;
+        return match;
+      });
+    }
+
+    const totalCount = enrichedQuestions.length;
+    
+    // Apply pagination after filtering
+    const paginatedQuestions = enrichedQuestions.slice(offset, offset + limit);
 
     // When gameType is 'all', also fetch vocabulary to show alongside questions
     let vocabularyData: unknown[] = [];
@@ -274,12 +351,12 @@ Deno.serve(async (req) => {
 
     return new Response(
       JSON.stringify({ 
-        questions: enrichedQuestions,
+        questions: paginatedQuestions,
         vocabulary: vocabularyData,
-        total: count,
+        total: totalCount,
         page,
         limit,
-        total_pages: Math.ceil((count || 0) / limit),
+        total_pages: Math.ceil(totalCount / limit),
         game_types: gameTypes,
         game_types_with_names: gameTypesWithNames,
         test_types: testTypes || [],
