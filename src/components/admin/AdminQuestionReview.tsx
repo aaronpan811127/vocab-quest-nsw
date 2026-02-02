@@ -12,6 +12,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
 import { Check, X, Star, Loader2, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, BookOpen, Pencil } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 
 interface VocabularyItem {
   id: string;
@@ -191,6 +192,7 @@ interface Unit {
   title: string;
   unit_number: number;
   test_type_id: string | null;
+  words?: string[];
 }
 
 export const AdminQuestionReview = () => {
@@ -228,6 +230,7 @@ export const AdminQuestionReview = () => {
   const [editPassageContent, setEditPassageContent] = useState("");
   const [editLinkedExtracts, setEditLinkedExtracts] = useState<LinkedExtract[]>([]);
   const [isLinkedExtracts, setIsLinkedExtracts] = useState(false);
+  const [showCurrentVocabOnly, setShowCurrentVocabOnly] = useState(true);
   const { toast } = useToast();
 
   const fetchQuestions = async (showLoading = true) => {
@@ -586,6 +589,20 @@ export const AdminQuestionReview = () => {
               </Button>
             ))}
           </div>
+          
+          {/* Current Vocab Toggle - only show for flashcards */}
+          {gameTypeFilter === 'flashcards' && (
+            <div className="flex items-center gap-2">
+              <Switch
+                id="current-vocab-toggle"
+                checked={showCurrentVocabOnly}
+                onCheckedChange={setShowCurrentVocabOnly}
+              />
+              <Label htmlFor="current-vocab-toggle" className="cursor-pointer text-sm font-medium">
+                Current vocab only
+              </Label>
+            </div>
+          )}
         </div>
       </div>
 
@@ -595,16 +612,34 @@ export const AdminQuestionReview = () => {
         </div>
       ) : gameTypeFilter === 'flashcards' ? (
         // Show vocabulary items for flashcards
-        vocabulary.length === 0 ? (
-          <Card>
-            <CardContent className="py-12 text-center text-muted-foreground">
-              No vocabulary found with the selected filters
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="space-y-4">
-            {vocabulary.map((vocab) => (
-              <Card key={vocab.id}>
+        (() => {
+          // Filter vocabulary based on current vocab toggle
+          const filteredVocabulary = showCurrentVocabOnly
+            ? vocabulary.filter(vocab => {
+                const unit = units.find(u => u.id === vocab.unit_id);
+                if (!unit?.words) return false;
+                // Parse words if it's a JSON string, otherwise use as array
+                const unitWords = Array.isArray(unit.words) 
+                  ? unit.words 
+                  : typeof unit.words === 'string' 
+                    ? JSON.parse(unit.words) 
+                    : [];
+                return unitWords.some((w: string) => 
+                  w.toLowerCase() === vocab.word.toLowerCase()
+                );
+              })
+            : vocabulary;
+
+          return filteredVocabulary.length === 0 ? (
+            <Card>
+              <CardContent className="py-12 text-center text-muted-foreground">
+                No vocabulary found with the selected filters
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-4">
+              {filteredVocabulary.map((vocab) => (
+                <Card key={vocab.id}>
                 <CardHeader className="pb-2">
                   <div className="flex items-start justify-between">
                     <div>
@@ -708,7 +743,8 @@ export const AdminQuestionReview = () => {
               </Card>
             ))}
           </div>
-        )
+          );
+        })()
       ) : questions.length === 0 && vocabulary.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center text-muted-foreground">

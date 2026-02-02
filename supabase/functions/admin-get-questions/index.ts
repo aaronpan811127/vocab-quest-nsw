@@ -152,7 +152,7 @@ Deno.serve(async (req) => {
           game_types: gameTypes,
           game_types_with_names: gameTypesWithNames,
           test_types: testTypes || [],
-          units: allUnits?.map(u => ({ id: u.id, title: u.title, unit_number: u.unit_number, test_type_id: u.test_type_id })) || []
+          units: allUnits?.map(u => ({ id: u.id, title: u.title, unit_number: u.unit_number, test_type_id: u.test_type_id, words: u.words })) || []
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
@@ -280,7 +280,7 @@ Deno.serve(async (req) => {
         game_types: gameTypes,
         game_types_with_names: gameTypesWithNames,
         test_types: testTypes || [],
-        units: allUnits?.map(u => ({ id: u.id, title: u.title, unit_number: u.unit_number, test_type_id: u.test_type_id })) || []
+        units: allUnits?.map(u => ({ id: u.id, title: u.title, unit_number: u.unit_number, test_type_id: u.test_type_id, words: u.words })) || []
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
