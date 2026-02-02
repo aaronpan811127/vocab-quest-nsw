@@ -50,11 +50,11 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get the game ID for cloze_passage
+    // Get the game ID for linked_extracts
     const { data: gameData, error: gameError } = await supabase
       .from("games")
       .select("id, rules")
-      .eq("game_type", "cloze_passage")
+      .eq("game_type", "linked_extracts")
       .single();
 
     if (gameError || !gameData) {
