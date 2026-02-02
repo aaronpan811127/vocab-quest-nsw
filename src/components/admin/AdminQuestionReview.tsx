@@ -211,6 +211,8 @@ export const AdminQuestionReview = () => {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
+  const [totalPassages, setTotalPassages] = useState(0);
+  const [isPassageBased, setIsPassageBased] = useState(false);
   const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(null);
   const [selectedVocabulary, setSelectedVocabulary] = useState<VocabularyItem | null>(null);
   const [selectedPassage, setSelectedPassage] = useState<PassageGroup | null>(null);
@@ -274,6 +276,8 @@ export const AdminQuestionReview = () => {
       setVocabulary(data.vocabulary || []);
       setTotalPages(data.total_pages || 1);
       setTotalCount(data.total || 0);
+      setTotalPassages(data.total_passages || 0);
+      setIsPassageBased(data.is_passage_based || false);
       // Always update filter options from the response
       if (data.game_types_with_names) {
         setGameTypes(data.game_types_with_names);
@@ -597,17 +601,19 @@ export const AdminQuestionReview = () => {
             ))}
           </div>
           
-          {/* Current Vocab Toggle - show for word-based games */}
-          <div className="flex items-center gap-2">
-            <Switch
-              id="current-vocab-toggle"
-              checked={showCurrentVocabOnly}
-              onCheckedChange={setShowCurrentVocabOnly}
-            />
-            <Label htmlFor="current-vocab-toggle" className="cursor-pointer text-sm font-medium">
-              Active Vocab in Units Only
-            </Label>
-          </div>
+          {/* Current Vocab Toggle - hide for passage-based games */}
+          {!isPassageBased && (
+            <div className="flex items-center gap-2">
+              <Switch
+                id="current-vocab-toggle"
+                checked={showCurrentVocabOnly}
+                onCheckedChange={setShowCurrentVocabOnly}
+              />
+              <Label htmlFor="current-vocab-toggle" className="cursor-pointer text-sm font-medium">
+                Active Vocab in Units Only
+              </Label>
+            </div>
+          )}
         </div>
       </div>
 
@@ -779,11 +785,19 @@ export const AdminQuestionReview = () => {
               allGameSections.push({ gameName });
             });
 
+            // Calculate page offset for passage numbering across pages
+            const passagePageOffset = (page - 1) * 20; // Approximate based on page
+            let passageSequenceNumber = passagePageOffset;
+
             return (
               <>
                 {/* Total count display */}
                 <div className="text-sm text-muted-foreground mb-4">
-                  Showing {displayedCount} of {totalCount} total questions
+                  {isPassageBased ? (
+                    <>Showing {grouped.length} of {totalPassages} total passages ({displayedCount} questions)</>
+                  ) : (
+                    <>Showing {displayedCount} of {totalCount} total questions</>
+                  )}
                 </div>
                 {allGameSections.map((section) => {
               // Render Questions section for this game type
@@ -800,14 +814,16 @@ export const AdminQuestionReview = () => {
                   </h4>
 
                   {/* Render grouped passage questions for this game */}
-                  {passages.map((passageGroup, pIdx) => (
+                  {passages.map((passageGroup, pIdx) => {
+                    passageSequenceNumber++;
+                    return (
                     <Card key={passageGroup.passage_id} className="border-2 border-primary/20">
                       <CardHeader className="pb-2">
                         <div className="flex items-start justify-between">
                           <div>
                             <CardTitle className="text-lg flex items-center gap-2">
                               <BookOpen className="h-5 w-5 text-primary" />
-                              <span className="text-primary font-semibold">P{pIdx + 1}:</span> {passageGroup.passage_title}
+                              <span className="text-primary font-semibold">P{passageSequenceNumber} of {totalPassages}:</span> {passageGroup.passage_title}
                             </CardTitle>
                             <div className="flex flex-wrap items-center gap-2 mt-1">
                               <Badge variant="outline" className="font-normal">
@@ -957,7 +973,8 @@ export const AdminQuestionReview = () => {
                         </div>
                       </CardContent>
                     </Card>
-                  ))}
+                  );
+                  })}
 
                   {/* Render ungrouped questions for this game */}
                   {ungroupedQuestions.map((question, qIdx) => {
