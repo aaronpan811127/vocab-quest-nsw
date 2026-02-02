@@ -77,7 +77,7 @@ serve(async (req) => {
       .from("reading_passages")
       .select("id, review_status")
       .eq("unit_id", unit_id)
-      .ilike("title", "Cloze Passage:%")
+      .ilike("title", "Linked Extracts:%")
       .or("review_status.is.null,review_status.neq.rejected");
 
     if (passagesError) {
@@ -361,7 +361,7 @@ IMPORTANT:
       .from("reading_passages")
       .insert({
         unit_id,
-        title: `Cloze Passage: ${unit_title}`,
+        title: `Linked Extracts: ${unit_title}`,
         content: JSON.stringify(parsedContent.extracts),
         is_generated: true,
         generated_by: user.id,
