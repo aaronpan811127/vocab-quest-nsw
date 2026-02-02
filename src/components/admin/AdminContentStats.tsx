@@ -31,6 +31,7 @@ interface GameRules {
   questions_per_passage?: number;
   passages_per_game?: number;
   words_per_game?: number;
+  content_type?: 'passage' | 'word' | 'excluded';
 }
 
 interface Game {
@@ -39,6 +40,11 @@ interface Game {
   game_type: string;
   rules: GameRules | null;
 }
+
+// Helper to determine game content type from rules
+const getContentType = (game: Game): 'passage' | 'word' | 'excluded' | null => {
+  return game.rules?.content_type || null;
+};
 
 interface WordQuestionCount {
   word: string;
@@ -90,17 +96,10 @@ interface ContentStat {
   vocabByWord?: WordVocabStatus[];
 }
 
-// Game types that use passages
-const PASSAGE_GAME_TYPES = ['reading', 'linked_extracts', 'gap_fill_passage'];
-
-// Game types that use vocabulary
-const VOCAB_GAME_TYPES = ['flashcards'];
-
-// Game types excluded from stats (no reviewable content)
-const EXCLUDED_GAME_TYPES = ['listening', 'matching', 'speaking', 'writing', 'oddoneout'];
-
-// Word-based game types that should show per-word breakdown
-const WORD_BASED_GAME_TYPES = ['intuition', 'context_master', 'cloze_challenge'];
+// Content types are now database-driven via rules.content_type:
+// - 'passage': passage-based games (reading, linked_extracts, gap_fill_passage)
+// - 'word': word-based games (intuition, context_master, cloze_challenge, flashcards)
+// - 'excluded': games without reviewable content (listening, matching, speaking, writing, oddoneout)
 
 type StatusFilter = 'all' | 'incomplete' | 'complete';
 
@@ -145,8 +144,10 @@ export const AdminContentStats = () => {
 
     try {
       const testTypeCode = getTestTypeCode();
-      const isPassageGame = PASSAGE_GAME_TYPES.includes(stat.game_type);
-      const isVocabGame = VOCAB_GAME_TYPES.includes(stat.game_type);
+      const game = games.find(g => g.id === stat.game_id);
+      const contentType = game ? getContentType(game) : null;
+      const isPassageGame = contentType === 'passage';
+      const isVocabGame = stat.game_type === 'flashcards'; // Flashcards uses vocabulary table
 
       let functionName: string;
       let payload: Record<string, unknown>;
@@ -189,7 +190,7 @@ export const AdminContentStats = () => {
       }
 
       // For passage-based games, loop until we have enough passages
-      const isPassageBasedGame = ['linked_extracts', 'reading', 'gap_fill_passage'].includes(stat.game_type);
+      const isPassageBasedGame = contentType === 'passage';
       let totalGenerated = 0;
       const maxIterations = 5; // Safety limit
       
@@ -318,8 +319,10 @@ export const AdminContentStats = () => {
     if (!unit) throw new Error('Unit not found');
 
     const testTypeCode = getTestTypeCode();
-    const isPassageGame = PASSAGE_GAME_TYPES.includes(stat.game_type);
-    const isVocabGame = VOCAB_GAME_TYPES.includes(stat.game_type);
+    const game = games.find(g => g.id === stat.game_id);
+    const contentType = game ? getContentType(game) : null;
+    const isPassageGame = contentType === 'passage';
+    const isVocabGame = stat.game_type === 'flashcards';
 
     let functionName: string;
     let payload: Record<string, unknown>;
@@ -355,7 +358,7 @@ export const AdminContentStats = () => {
     }
 
     // For passage-based games, loop until we have enough passages
-    const isPassageBasedGame = ['linked_extracts', 'reading', 'gap_fill_passage'].includes(stat.game_type);
+    const isPassageBasedGame = contentType === 'passage';
     const maxIterations = 5;
     
     if (isPassageBasedGame) {
@@ -431,13 +434,14 @@ export const AdminContentStats = () => {
         ? units 
         : units.filter(u => u.id === unitFilter);
 
-      const reviewableGames = games.filter(g => !EXCLUDED_GAME_TYPES.includes(g.game_type));
+      const reviewableGames = games.filter(g => getContentType(g) !== 'excluded');
       
       const statsPromises = filteredUnits.flatMap(unit => 
         reviewableGames.map(async (game) => {
           const rules = game.rules || {};
-          const isPassageGame = PASSAGE_GAME_TYPES.includes(game.game_type);
-          const isVocabGame = VOCAB_GAME_TYPES.includes(game.game_type);
+          const contentType = getContentType(game);
+          const isPassageGame = contentType === 'passage';
+          const isVocabGame = game.game_type === 'flashcards';
           const totalWords = Array.isArray(unit.words) ? unit.words.length : 0;
 
           let stat: ContentStat = {
@@ -665,7 +669,7 @@ export const AdminContentStats = () => {
             // Regular question-based games
             const questionsPerWord = rules.questions_per_word || 3;
             const questionsPerGame = rules.questions_per_game || 10;
-            const isWordBasedGame = WORD_BASED_GAME_TYPES.includes(game.game_type);
+            const isWordBasedGame = contentType === 'word' && !isVocabGame;
 
             const { data: questionData } = await supabase
               .from('question_bank')
@@ -933,9 +937,11 @@ export const AdminContentStats = () => {
               <CardContent>
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                   {unitData.games.map((stat) => {
-                    const isPassageGame = PASSAGE_GAME_TYPES.includes(stat.game_type);
-                    const isVocabGame = VOCAB_GAME_TYPES.includes(stat.game_type);
-                    const isWordBasedGame = WORD_BASED_GAME_TYPES.includes(stat.game_type);
+                    const game = games.find(g => g.id === stat.game_id);
+                    const contentType = game ? getContentType(game) : null;
+                    const isPassageGame = contentType === 'passage';
+                    const isVocabGame = stat.game_type === 'flashcards';
+                    const isWordBasedGame = contentType === 'word' && !isVocabGame;
                     const cardKey = `${stat.unit_id}-${stat.game_id}`;
                     const isExpanded = expandedCards.has(cardKey);
 
