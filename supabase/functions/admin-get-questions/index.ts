@@ -56,7 +56,10 @@ Deno.serve(async (req) => {
     const limit = parseInt(url.searchParams.get('limit') || '20');
     const offset = (page - 1) * limit;
 
-    console.log(`[v4] Admin ${adminUser.id} fetching: game_type=${gameType}, test_type=${testTypeId}, unit=${unitId}, active_vocab_only=${activeVocabOnly}, page=${page}`);
+    console.log(`[v5] Admin ${adminUser.id} fetching: game_type=${gameType}, test_type=${testTypeId}, unit=${unitId}, active_vocab_only=${activeVocabOnly}, page=${page}`);
+    
+    // Passage-based game types (no active vocab filtering applies)
+    const passageBasedGameTypes = ['reading', 'linkedextracts'];
 
     // Game types to exclude from review (no reviewable questions - either no questions or programmatically generated)
     const excludedGameTypes = ['listening', 'matching', 'speaking', 'writing', 'oddoneout'];
@@ -314,8 +317,11 @@ Deno.serve(async (req) => {
       };
     }) || [];
 
-    // Apply active vocab filter if enabled
-    if (activeVocabOnly) {
+    // Check if current game type is passage-based
+    const isPassageBasedGame = passageBasedGameTypes.includes(gameType);
+
+    // Apply active vocab filter if enabled (only for non-passage-based games)
+    if (activeVocabOnly && !isPassageBasedGame) {
       enrichedQuestions = enrichedQuestions.filter(q => {
         // Prefer explicit word column, fallback to options.word for games like Word Intuition
         let wordToCheck = q.word;
@@ -337,6 +343,13 @@ Deno.serve(async (req) => {
       });
     }
 
+    // For passage-based games, calculate total passages count
+    let totalPassagesCount = 0;
+    if (isPassageBasedGame) {
+      const passageIds = new Set(enrichedQuestions.filter(q => q.passage_id).map(q => q.passage_id));
+      totalPassagesCount = passageIds.size;
+    }
+
     const totalCount = enrichedQuestions.length;
     
     // Apply pagination after filtering
@@ -354,6 +367,8 @@ Deno.serve(async (req) => {
         questions: paginatedQuestions,
         vocabulary: vocabularyData,
         total: totalCount,
+        total_passages: totalPassagesCount,
+        is_passage_based: isPassageBasedGame,
         page,
         limit,
         total_pages: Math.ceil(totalCount / limit),
