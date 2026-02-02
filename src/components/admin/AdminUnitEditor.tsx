@@ -58,6 +58,7 @@ export const AdminUnitEditor = () => {
       const { data } = await supabase
         .from('test_types')
         .select('id, name, code')
+        .eq('is_enabled', true)
         .order('name');
       
       if (data) {

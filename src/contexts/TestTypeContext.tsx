@@ -38,6 +38,7 @@ export const TestTypeProvider = ({ children }: { children: ReactNode }) => {
     const { data, error } = await supabase
       .from("test_types")
       .select("*")
+      .eq("is_enabled", true)
       .order("code");
 
     if (error) {

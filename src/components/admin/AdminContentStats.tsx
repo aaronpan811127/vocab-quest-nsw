@@ -375,7 +375,7 @@ export const AdminContentStats = () => {
     const fetchInitialData = async () => {
       try {
         const [testTypesRes, gamesRes] = await Promise.all([
-          supabase.from('test_types').select('id, name, code').order('name'),
+          supabase.from('test_types').select('id, name, code').eq('is_enabled', true).order('name'),
           supabase.from('games').select('id, name, game_type, rules')
         ]);
 
