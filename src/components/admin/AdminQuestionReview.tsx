@@ -690,12 +690,7 @@ export const AdminQuestionReview = () => {
             <div className="space-y-4">
               {/* Total count display */}
               <div className="text-sm text-muted-foreground">
-                Showing {filteredVocabulary.length} of {totalCount} total vocabulary items
-                {showCurrentVocabOnly && vocabulary.length !== filteredVocabulary.length && (
-                  <span className="ml-2 text-warning">
-                    ({vocabulary.length - filteredVocabulary.length} filtered out - not in current unit vocab)
-                  </span>
-                )}
+                Showing {filteredVocabulary.length} of {showCurrentVocabOnly ? filteredVocabulary.length : vocabulary.length} total vocabulary items
               </div>
               {filteredVocabulary.map((vocab, vocabIdx) => {
                 const pageOffset = (page - 1) * 20;
@@ -864,12 +859,7 @@ export const AdminQuestionReview = () => {
               <>
                 {/* Total count display */}
                 <div className="text-sm text-muted-foreground mb-4">
-                  Showing {displayedCount} of {totalCount} total questions
-                  {showCurrentVocabOnly && questions.length !== filteredQuestions.length && (
-                    <span className="ml-2 text-warning">
-                      ({questions.length - filteredQuestions.length} filtered out - not in current unit vocab)
-                    </span>
-                  )}
+                  Showing {displayedCount} of {showCurrentVocabOnly ? displayedCount : questions.length} total questions
                 </div>
                 {allGameSections.map((section) => {
               // Render Questions section for this game type
@@ -883,9 +873,6 @@ export const AdminQuestionReview = () => {
                   {/* Game type header */}
                   <h4 className="text-md font-semibold flex items-center gap-2 mt-4 border-b pb-2">
                     <Badge variant="secondary" className="text-sm px-3 py-1">{gameName}</Badge>
-                    <span className="text-sm text-muted-foreground">
-                      ({totalItems} question{totalItems !== 1 ? 's' : ''})
-                    </span>
                   </h4>
 
                   {/* Render grouped passage questions for this game */}
