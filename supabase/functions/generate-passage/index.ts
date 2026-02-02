@@ -86,35 +86,58 @@ serve(async (req) => {
     const questionsPerPassage = rules.questions_per_passage || 10;
     const passagesPerGame = rules.passages_per_game || 3;
 
-    // Check how many non-rejected Reading Quest passages already exist for this unit
-    // Exclude Cloze Passage entries which belong to a different game
-    const { count: existingPassageCount } = await supabaseAdmin
+    // Check how many VALID Reading Quest passages already exist for this unit
+    // A passage is valid if: non-rejected, not a Linked Extracts passage, AND has enough non-rejected questions
+    // Exclude Cloze Passage and Linked Extracts entries which belong to a different game
+    const { data: existingPassages } = await supabaseAdmin
       .from('reading_passages')
-      .select('id', { count: 'exact', head: true })
+      .select('id, review_status, title')
       .eq('unit_id', unit_id)
-      .neq('review_status', 'rejected')
-      .not('title', 'ilike', 'Cloze Passage:%');
+      .not('title', 'ilike', 'Cloze Passage:%')
+      .not('title', 'ilike', 'Linked Extracts:%');
 
-    const currentCount = existingPassageCount || 0;
+    // Get question counts for each passage
+    let validPassageCount = 0;
+    if (existingPassages && existingPassages.length > 0) {
+      const passageIds = existingPassages.map(p => p.id);
+      const { data: questions } = await supabaseAdmin
+        .from('question_bank')
+        .select('passage_id, review_status')
+        .in('passage_id', passageIds);
 
-    console.log(`Unit ${unit_id}: ${currentCount}/${passagesPerGame} passages exist`);
+      // Count questions per passage
+      const questionCounts: Record<string, number> = {};
+      (questions || []).forEach(q => {
+        if (q.review_status !== 'rejected') {
+          questionCounts[q.passage_id] = (questionCounts[q.passage_id] || 0) + 1;
+        }
+      });
 
-    // If we already have enough passages, return without generating
-    if (currentCount >= passagesPerGame) {
-      console.log('Sufficient passages exist, skipping generation');
+      // A passage is valid if non-rejected AND has enough non-rejected questions
+      validPassageCount = existingPassages.filter(p => 
+        p.review_status !== 'rejected' && 
+        (questionCounts[p.id] || 0) >= questionsPerPassage
+      ).length;
+    }
+
+    console.log(`Unit ${unit_id}: ${validPassageCount}/${passagesPerGame} valid passages exist`);
+
+    // If we already have enough valid passages, return without generating
+    if (validPassageCount >= passagesPerGame) {
+      console.log('Sufficient valid passages exist, skipping generation');
       return new Response(
         JSON.stringify({ 
           success: true, 
           skipped: true,
-          message: `Already have ${currentCount} passages (minimum: ${passagesPerGame})`,
-          existing_count: currentCount,
+          message: `Already have ${validPassageCount} valid passages (minimum: ${passagesPerGame})`,
+          existing_count: validPassageCount,
           required_count: passagesPerGame
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log(`Generating passage ${currentCount + 1}/${passagesPerGame} for unit:`, unitTitleToUse, 'with', vocabularyWords.length, 'vocabulary words', 'questions:', questionsPerPassage);
+    console.log(`Generating passage ${validPassageCount + 1}/${passagesPerGame} for unit:`, unitTitleToUse, 'with', vocabularyWords.length, 'vocabulary words', 'questions:', questionsPerPassage);
 
     // Call Lovable AI Gateway to generate passage with questions
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
