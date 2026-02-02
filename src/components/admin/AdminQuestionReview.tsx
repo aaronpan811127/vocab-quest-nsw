@@ -690,7 +690,7 @@ export const AdminQuestionReview = () => {
             <div className="space-y-4">
               {/* Total count display */}
               <div className="text-sm text-muted-foreground">
-                Showing {filteredVocabulary.length} of {showCurrentVocabOnly ? filteredVocabulary.length : vocabulary.length} total vocabulary items
+                Showing {filteredVocabulary.length} of {totalCount} total vocabulary items
               </div>
               {filteredVocabulary.map((vocab, vocabIdx) => {
                 const pageOffset = (page - 1) * 20;
@@ -859,7 +859,7 @@ export const AdminQuestionReview = () => {
               <>
                 {/* Total count display */}
                 <div className="text-sm text-muted-foreground mb-4">
-                  Showing {displayedCount} of {showCurrentVocabOnly ? displayedCount : questions.length} total questions
+                  Showing {displayedCount} of {totalCount} total questions
                 </div>
                 {allGameSections.map((section) => {
               // Render Questions section for this game type
