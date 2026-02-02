@@ -529,56 +529,124 @@ export const AdminContentStats = () => {
             const passagesPerGame = rules.passages_per_game || 3;
             const questionsPerPassage = rules.questions_per_passage || 10;
             
-            const passageFilter = game.game_type === 'linked_extracts' 
-              ? { ilike: 'Cloze Passage:%' }
-              : { notIlike: 'Cloze Passage:%' };
-
+            // For linked_extracts, match both new "Linked Extracts:" and legacy "Cloze Passage:" titles
+            // For reading, exclude both prefixes
             let passageQuery = supabase
               .from('reading_passages')
               .select('id, review_status')
               .eq('unit_id', unit.id);
             
             if (game.game_type === 'linked_extracts') {
-              passageQuery = passageQuery.ilike('title', 'Cloze Passage:%');
+              // Match either prefix for Linked Extracts
+              passageQuery = passageQuery.or('title.ilike.Linked Extracts:%,title.ilike.Cloze Passage:%');
             } else {
-              passageQuery = passageQuery.not('title', 'ilike', 'Cloze Passage:%');
+              // Reading: exclude both Linked Extracts prefixes
+              passageQuery = passageQuery
+                .not('title', 'ilike', 'Linked Extracts:%')
+                .not('title', 'ilike', 'Cloze Passage:%');
             }
 
             const { data: passageData } = await passageQuery;
-            const passages = passageData || [];
+            const allPassages = passageData || [];
             
-            stat.passage_count = passages.length;
-            stat.approved_passages = passages.filter(p => p.review_status === 'approved').length;
-            stat.pending_passages = passages.filter(p => p.review_status === 'pending').length;
-            stat.rejected_passages = passages.filter(p => p.review_status === 'rejected').length;
-            stat.required_passages = passagesPerGame;
-
-            // Fetch question stats for non-rejected passages
-            const nonRejectedPassageIds = passages
-              .filter(p => p.review_status !== 'rejected')
-              .map(p => p.id);
-
-            if (nonRejectedPassageIds.length > 0) {
+            // For Linked Extracts, a passage only counts as "valid" if it has >= questionsPerPassage non-rejected questions
+            // First fetch all questions for these passages
+            const passageIds = allPassages.map(p => p.id);
+            let questionsByPassage: Record<string, { total: number; nonRejected: number }> = {};
+            
+            if (passageIds.length > 0) {
               const { data: questionData } = await supabase
+                .from('question_bank')
+                .select('id, passage_id, review_status')
+                .eq('game_id', game.id)
+                .eq('unit_id', unit.id)
+                .in('passage_id', passageIds);
+              
+              const questions = questionData || [];
+              
+              // Group questions by passage
+              for (const q of questions) {
+                const pid = q.passage_id;
+                if (!pid) continue;
+                if (!questionsByPassage[pid]) {
+                  questionsByPassage[pid] = { total: 0, nonRejected: 0 };
+                }
+                questionsByPassage[pid].total++;
+                if (q.review_status !== 'rejected') {
+                  questionsByPassage[pid].nonRejected++;
+                }
+              }
+            }
+            
+            // Count passages: a passage is "valid" if it's non-rejected AND has enough non-rejected questions
+            let validPassageCount = 0;
+            let totalPassages = allPassages.length;
+            let approvedPassages = 0;
+            let pendingPassages = 0;
+            let rejectedPassages = 0;
+            let totalQuestions = 0;
+            let approvedQuestions = 0;
+            let pendingQuestions = 0;
+            let rejectedQuestions = 0;
+            
+            for (const p of allPassages) {
+              const qCounts = questionsByPassage[p.id] || { total: 0, nonRejected: 0 };
+              totalQuestions += qCounts.total;
+              
+              if (p.review_status === 'rejected') {
+                rejectedPassages++;
+                rejectedQuestions += qCounts.total; // All questions in rejected passage count as rejected for display
+              } else {
+                // Non-rejected passage - check if it has enough non-rejected questions
+                const nonRejectedQs = qCounts.nonRejected;
+                if (nonRejectedQs >= questionsPerPassage) {
+                  validPassageCount++;
+                }
+                
+                if (p.review_status === 'approved') {
+                  approvedPassages++;
+                } else {
+                  pendingPassages++;
+                }
+              }
+            }
+            
+            // Count questions from non-rejected passages only (for the display)
+            const nonRejectedPassageIds = allPassages.filter(p => p.review_status !== 'rejected').map(p => p.id);
+            if (nonRejectedPassageIds.length > 0) {
+              const { data: nonRejectedQuestionData } = await supabase
                 .from('question_bank')
                 .select('id, review_status')
                 .eq('game_id', game.id)
                 .eq('unit_id', unit.id)
                 .in('passage_id', nonRejectedPassageIds);
-
-              const questions = questionData || [];
-              stat.question_count = questions.length;
-              stat.approved_questions = questions.filter(q => q.review_status === 'approved').length;
-              stat.pending_questions = questions.filter(q => q.review_status === 'pending').length;
-              stat.rejected_questions = questions.filter(q => q.review_status === 'rejected').length;
-              stat.required_questions = passagesPerGame * questionsPerPassage;
+              
+              const nrQuestions = nonRejectedQuestionData || [];
+              approvedQuestions = nrQuestions.filter(q => q.review_status === 'approved').length;
+              pendingQuestions = nrQuestions.filter(q => q.review_status === 'pending' || q.review_status === null).length;
+              rejectedQuestions = nrQuestions.filter(q => q.review_status === 'rejected').length;
+              totalQuestions = nrQuestions.length;
+            } else {
+              totalQuestions = 0;
+              approvedQuestions = 0;
+              pendingQuestions = 0;
+              rejectedQuestions = 0;
             }
+            
+            stat.passage_count = totalPassages;
+            stat.approved_passages = approvedPassages;
+            stat.pending_passages = pendingPassages;
+            stat.rejected_passages = rejectedPassages;
+            stat.required_passages = passagesPerGame;
+            
+            stat.question_count = totalQuestions;
+            stat.approved_questions = approvedQuestions;
+            stat.pending_questions = pendingQuestions;
+            stat.rejected_questions = rejectedQuestions;
+            stat.required_questions = passagesPerGame * questionsPerPassage;
 
-            // Meets requirement if we have enough non-rejected passages AND enough non-rejected questions
-            const nonRejectedPassageCount = stat.passage_count - stat.rejected_passages;
-            const nonRejectedQuestionCount = stat.question_count - stat.rejected_questions;
-            stat.meets_requirement = nonRejectedPassageCount >= stat.required_passages && 
-              nonRejectedQuestionCount >= stat.required_questions;
+            // Meets requirement based on VALID passages (non-rejected with enough non-rejected questions)
+            stat.meets_requirement = validPassageCount >= passagesPerGame;
           } else {
             // Regular question-based games
             const questionsPerWord = rules.questions_per_word || 3;
