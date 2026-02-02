@@ -465,40 +465,64 @@ export const AdminContentStats = () => {
               .eq('unit_id', unit.id);
 
             const vocab = vocabData || [];
-            stat.vocab_count = vocab.length;
-            stat.approved_vocab = vocab.filter(v => v.review_status === 'approved').length;
-            stat.pending_vocab = vocab.filter(v => v.review_status === 'pending').length;
-            stat.rejected_vocab = vocab.filter(v => v.review_status === 'rejected').length;
             stat.required_vocab = totalWords; // One vocab entry per word
-            stat.meets_requirement = (stat.vocab_count - stat.rejected_vocab) >= stat.required_vocab;
 
-            // Build word-level breakdown for flashcards
+            // Build word-level breakdown for flashcards (unique per unit word)
             if (Array.isArray(unit.words)) {
-              const vocabByWord: WordVocabStatus[] = unit.words.map(word => {
-                const vocabEntry = vocab.find(v => v.word?.toLowerCase() === word.toLowerCase());
-                if (!vocabEntry) {
+              const normalizeStatus = (status: unknown): 'approved' | 'pending' | 'rejected' => {
+                // Normalize null/unknown statuses to 'pending' to keep UI + sorting stable
+                if (status === 'approved') return 'approved';
+                if (status === 'rejected') return 'rejected';
+                return 'pending';
+              };
+
+              const vocabByWord: WordVocabStatus[] = unit.words.map((word) => {
+                const lowerWord = word.toLowerCase();
+                const matches = vocab.filter((v) => v.word?.toLowerCase() === lowerWord);
+
+                if (matches.length === 0) {
                   return { word, hasVocab: false, status: 'missing' as const };
                 }
 
-                // Normalize null/unknown statuses to 'pending' to keep UI + sorting stable
-                const normalizedStatus: 'approved' | 'pending' | 'rejected' =
-                  vocabEntry.review_status === 'approved'
-                    ? 'approved'
-                    : vocabEntry.review_status === 'rejected'
-                      ? 'rejected'
-                      : 'pending';
+                // If duplicates exist for the same word, choose the best available status.
+                const normalizedStatuses = matches.map((m) => normalizeStatus(m.review_status));
+                const status: 'approved' | 'pending' | 'rejected' = normalizedStatuses.includes('approved')
+                  ? 'approved'
+                  : normalizedStatuses.includes('pending')
+                    ? 'pending'
+                    : 'rejected';
 
                 return {
                   word,
                   hasVocab: true,
-                  status: normalizedStatus,
+                  status,
                 };
               });
+
+              const uniqueApproved = vocabByWord.filter((w) => w.status === 'approved').length;
+              const uniquePending = vocabByWord.filter((w) => w.status === 'pending').length;
+              const uniqueRejected = vocabByWord.filter((w) => w.status === 'rejected').length;
+              const uniqueNonRejected = uniqueApproved + uniquePending;
+              const uniqueWithAnyEntry = uniqueNonRejected + uniqueRejected;
+
+              stat.vocab_count = uniqueWithAnyEntry;
+              stat.approved_vocab = uniqueApproved;
+              stat.pending_vocab = uniquePending;
+              stat.rejected_vocab = uniqueRejected;
+              stat.meets_requirement = uniqueNonRejected >= stat.required_vocab;
+
               stat.vocabByWord = vocabByWord.sort((a, b) => {
                 // Sort missing first, then by status
                 const statusOrder = { missing: 0, rejected: 1, pending: 2, approved: 3 };
                 return statusOrder[a.status] - statusOrder[b.status];
               });
+            } else {
+              // Fallback (shouldn't happen for real units)
+              stat.vocab_count = vocab.length;
+              stat.approved_vocab = vocab.filter((v) => v.review_status === 'approved').length;
+              stat.pending_vocab = vocab.filter((v) => v.review_status === 'pending').length;
+              stat.rejected_vocab = vocab.filter((v) => v.review_status === 'rejected').length;
+              stat.meets_requirement = (stat.vocab_count - stat.rejected_vocab) >= stat.required_vocab;
             }
           } else if (isPassageGame) {
             // Fetch passage stats
@@ -800,7 +824,9 @@ export const AdminContentStats = () => {
                     let secondaryInfo: { current: number; required: number; label: string } | null = null;
 
                     if (isVocabGame) {
-                      current = stat.vocab_count - stat.rejected_vocab;
+                      current = stat.vocabByWord
+                        ? stat.vocabByWord.filter((w) => w.status !== 'missing' && w.status !== 'rejected').length
+                        : stat.vocab_count - stat.rejected_vocab;
                       required = stat.required_vocab;
                       label = "Vocabulary";
                     } else if (isPassageGame) {
@@ -918,7 +944,7 @@ export const AdminContentStats = () => {
                             </>
                           )}
                           
-                          {!stat.meets_requirement && (
+                          {(!stat.meets_requirement || (isVocabGame && missingOrRejectedVocab.length > 0)) && (
                             <Button
                               size="sm"
                               variant="outline"
@@ -1032,23 +1058,6 @@ export const AdminContentStats = () => {
                                   );
                                 })}
                               </div>
-                              {/* Generate missing vocab button */}
-                              {stat.vocabByWord.some(w => w.status === 'missing' || w.status === 'rejected') && (
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="w-full mt-2 h-7 text-xs gap-1"
-                                  onClick={() => handleGenerate(stat)}
-                                  disabled={generatingFor === `${stat.unit_id}-${stat.game_id}`}
-                                >
-                                  {generatingFor === `${stat.unit_id}-${stat.game_id}` ? (
-                                    <Loader2 className="h-3 w-3 animate-spin" />
-                                  ) : (
-                                    <Wand2 className="h-3 w-3" />
-                                  )}
-                                  Generate Missing Vocabulary
-                                </Button>
-                              )}
                             </CollapsibleContent>
                           </Collapsible>
                         )}
