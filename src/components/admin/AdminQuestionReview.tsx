@@ -61,6 +61,7 @@ interface Question {
   reviewed_at: string | null;
   rejection_reason: string | null;
   created_at: string;
+  unit_id: string;
   unit_title: string;
   unit_number: number;
   game_name: string;
@@ -590,19 +591,17 @@ export const AdminQuestionReview = () => {
             ))}
           </div>
           
-          {/* Current Vocab Toggle - only show for flashcards */}
-          {gameTypeFilter === 'flashcards' && (
-            <div className="flex items-center gap-2">
-              <Switch
-                id="current-vocab-toggle"
-                checked={showCurrentVocabOnly}
-                onCheckedChange={setShowCurrentVocabOnly}
-              />
-              <Label htmlFor="current-vocab-toggle" className="cursor-pointer text-sm font-medium">
-                Current vocab only
-              </Label>
-            </div>
-          )}
+          {/* Current Vocab Toggle - show for word-based games */}
+          <div className="flex items-center gap-2">
+            <Switch
+              id="current-vocab-toggle"
+              checked={showCurrentVocabOnly}
+              onCheckedChange={setShowCurrentVocabOnly}
+            />
+            <Label htmlFor="current-vocab-toggle" className="cursor-pointer text-sm font-medium">
+              Current vocab only
+            </Label>
+          </div>
         </div>
       </div>
 
@@ -755,7 +754,24 @@ export const AdminQuestionReview = () => {
         <div className="space-y-4">
           {/* Group all content by game type for proper ordering */}
           {(() => {
-            const { grouped, ungrouped } = groupQuestionsByPassage(questions);
+            // Filter questions based on current vocab toggle
+            const filteredQuestions = showCurrentVocabOnly
+              ? questions.filter(q => {
+                  if (!q.word) return true; // Keep questions without words
+                  const unit = units.find(u => u.id === q.unit_id);
+                  if (!unit?.words) return true; // Keep if no unit words defined
+                  const unitWords = Array.isArray(unit.words) 
+                    ? unit.words 
+                    : typeof unit.words === 'string' 
+                      ? JSON.parse(unit.words) 
+                      : [];
+                  return unitWords.some((w: string) => 
+                    w.toLowerCase() === q.word!.toLowerCase()
+                  );
+                })
+              : questions;
+
+            const { grouped, ungrouped } = groupQuestionsByPassage(filteredQuestions);
             
             // Group passages by game_name
             const passagesByGame = grouped.reduce((acc, pg) => {
