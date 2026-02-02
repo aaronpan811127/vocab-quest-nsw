@@ -432,11 +432,35 @@ Deno.serve(async (req) => {
     const { data: gameTypesWithContentData } = await gameTypesWithContentQuery;
     const gameIdsWithContent = [...new Set((gameTypesWithContentData || []).map(q => q.game_id))];
     // Map game_ids back to game_types
-    const gameTypesWithContent = [...new Set(
+    let gameTypesWithContent = [...new Set(
       gameIdsWithContent
         .map(gid => games?.find(g => g.id === gid)?.game_type)
         .filter((gt): gt is string => !!gt)
     )];
+
+    // Check if vocabulary exists for the current filters (to include 'flashcards' in game_types_with_content)
+    let vocabQuery = supabase
+      .from('vocabulary')
+      .select('id')
+      .limit(1);
+    
+    if (statusFilters.length > 0 && !statusFilters.includes('all')) {
+      vocabQuery = vocabQuery.in('review_status', statusFilters);
+    }
+    if (testTypeId !== 'all' && allUnits) {
+      const unitIdsForTestType = allUnits.filter(u => u.test_type_id === testTypeId).map(u => u.id);
+      if (unitIdsForTestType.length > 0) {
+        vocabQuery = vocabQuery.in('unit_id', unitIdsForTestType);
+      }
+    }
+    if (unitId !== 'all') {
+      vocabQuery = vocabQuery.eq('unit_id', unitId);
+    }
+    
+    const { data: vocabExists } = await vocabQuery;
+    if (vocabExists && vocabExists.length > 0 && !gameTypesWithContent.includes('flashcards')) {
+      gameTypesWithContent.push('flashcards');
+    }
     
     // Apply pagination after filtering
     const paginatedQuestions = enrichedQuestions.slice(offset, offset + limit);
