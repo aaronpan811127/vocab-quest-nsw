@@ -330,12 +330,18 @@ export const AdminQuestionReview = () => {
   // Reset unit and game type filters when test type changes
   useEffect(() => {
     setUnitFilter("all");
-    setGameTypeFilter("");
+    // Reset to first game type (will be set by fetchQuestions if gameTypes is available)
+    if (gameTypes.length > 0) {
+      setGameTypeFilter(gameTypes[0].type);
+    }
   }, [testTypeFilter]);
 
   // Reset game type filter when unit filter changes
   useEffect(() => {
-    setGameTypeFilter("");
+    // Reset to first game type (will be set by fetchQuestions if gameTypes is available)
+    if (gameTypes.length > 0) {
+      setGameTypeFilter(gameTypes[0].type);
+    }
   }, [unitFilter]);
 
   // Get filtered units based on selected test type AND which units have content matching current status
