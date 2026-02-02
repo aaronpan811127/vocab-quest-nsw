@@ -198,7 +198,7 @@ export const AdminQuestionReview = () => {
   const [vocabulary, setVocabulary] = useState<VocabularyItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string[]>(["pending"]);
-  const [gameTypeFilter, setGameTypeFilter] = useState("all");
+  const [gameTypeFilter, setGameTypeFilter] = useState("");
   const [testTypeFilter, setTestTypeFilter] = useState("");
   const [unitFilter, setUnitFilter] = useState("all");
   const [gameTypes, setGameTypes] = useState<{ type: string; name: string }[]>([]);
@@ -269,6 +269,10 @@ export const AdminQuestionReview = () => {
       // Always update filter options from the response
       if (data.game_types_with_names) {
         setGameTypes(data.game_types_with_names);
+        // Default to first game type if not already set
+        if (!gameTypeFilter && data.game_types_with_names.length > 0) {
+          setGameTypeFilter(data.game_types_with_names[0].type);
+        }
       }
       if (data.test_types) {
         setTestTypes(data.test_types);
@@ -545,17 +549,20 @@ export const AdminQuestionReview = () => {
               ))}
             </SelectContent>
           </Select>
-          <Select value={gameTypeFilter} onValueChange={(value) => { setGameTypeFilter(value); setPage(1); }}>
-            <SelectTrigger className="w-40">
-              <SelectValue placeholder="Game Type" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Types</SelectItem>
-              {gameTypes.map(g => (
-                <SelectItem key={g.type} value={g.type}>{g.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <RadioGroup 
+            value={gameTypeFilter} 
+            onValueChange={(value) => { setGameTypeFilter(value); setPage(1); }}
+            className="flex flex-wrap gap-3"
+          >
+            {gameTypes.map(g => (
+              <div key={g.type} className="flex items-center space-x-2">
+                <RadioGroupItem value={g.type} id={`game-type-${g.type}`} />
+                <Label htmlFor={`game-type-${g.type}`} className="cursor-pointer text-sm font-medium">
+                  {g.name}
+                </Label>
+              </div>
+            ))}
+          </RadioGroup>
           <div className="flex items-center gap-1">
             {["pending", "approved", "rejected"].map((status) => (
               <Button
@@ -728,137 +735,16 @@ export const AdminQuestionReview = () => {
               return acc;
             }, {} as Record<string, Question[]>);
 
-            // Build ordered list of game types (Flashcards first if showing 'all', then alphabetically)
+            // Build ordered list of game types alphabetically
             const questionGameNames = [...new Set([...Object.keys(passagesByGame), ...Object.keys(ungroupedByGame)])].sort();
-            const allGameSections: { type: 'flashcards' | 'questions'; gameName: string }[] = [];
-            
-            // Add Flashcards section first when filter is 'all'
-            if (gameTypeFilter === 'all' && vocabulary.length > 0) {
-              allGameSections.push({ type: 'flashcards', gameName: 'Flashcards' });
-            }
+            const allGameSections: { gameName: string }[] = [];
             
             // Add all question game types
             questionGameNames.forEach(gameName => {
-              allGameSections.push({ type: 'questions', gameName });
+              allGameSections.push({ gameName });
             });
 
             return allGameSections.map((section) => {
-              if (section.type === 'flashcards') {
-                // Render Flashcards section
-                return (
-                  <div key="flashcards" className="space-y-4">
-                    <h4 className="text-md font-semibold flex items-center gap-2 mt-4 border-b pb-2">
-                      <Badge variant="secondary" className="text-sm px-3 py-1">Flashcards</Badge>
-                      <span className="text-sm text-muted-foreground">({vocabulary.length} items)</span>
-                    </h4>
-                    {vocabulary.map((vocab) => (
-                      <Card key={vocab.id}>
-                        <CardHeader className="pb-2">
-                          <div className="flex items-start justify-between">
-                            <div>
-                              <CardTitle className="text-xl">{vocab.word}</CardTitle>
-                              <div className="flex flex-wrap items-center gap-2 mt-1">
-                                <Badge variant="outline">Unit {vocab.unit_number}: {vocab.unit_title}</Badge>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              {getStatusBadge(vocab.review_status || 'pending')}
-                              {vocab.review_score !== null && (
-                                <Badge variant="secondary" className="gap-1">
-                                  <Star className="h-3 w-3" /> {vocab.review_score}/10
-                                </Badge>
-                              )}
-                            </div>
-                          </div>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="space-y-3">
-                            <div>
-                              <p className="text-sm font-medium text-muted-foreground mb-1">Definition:</p>
-                              <p className="text-base">{vocab.definition}</p>
-                            </div>
-                            
-                            {vocab.synonyms && vocab.synonyms.length > 0 && (
-                              <div>
-                                <p className="text-sm font-medium text-muted-foreground mb-1">Synonyms:</p>
-                                <div className="flex flex-wrap gap-2">
-                                  {vocab.synonyms.map((syn, idx) => (
-                                    <Badge key={idx} variant="outline">{syn}</Badge>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-                            
-                            {vocab.antonyms && vocab.antonyms.length > 0 && (
-                              <div>
-                                <p className="text-sm font-medium text-muted-foreground mb-1">Antonyms:</p>
-                                <div className="flex flex-wrap gap-2">
-                                  {vocab.antonyms.map((ant, idx) => (
-                                    <Badge key={idx} variant="outline">{ant}</Badge>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-                            
-                            {vocab.examples && vocab.examples.length > 0 && (
-                              <div>
-                                <p className="text-sm font-medium text-muted-foreground mb-1">Examples:</p>
-                                <ul className="list-disc list-inside space-y-1">
-                                  {vocab.examples.map((ex, idx) => (
-                                    <li key={idx} className="text-sm text-muted-foreground italic">{ex}</li>
-                                  ))}
-                                </ul>
-                              </div>
-                            )}
-
-                            {vocab.rejection_reason && (
-                              <div className="p-2 bg-destructive/10 rounded text-sm text-destructive">
-                                Rejection reason: {vocab.rejection_reason}
-                              </div>
-                            )}
-
-                            <div className="flex flex-wrap gap-2 pt-2">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="gap-1"
-                                onClick={() => openVocabActionDialog(vocab, "edit")}
-                              >
-                                <Pencil className="h-4 w-4" /> Edit
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="gap-1"
-                                onClick={() => openVocabActionDialog(vocab, "approve")}
-                              >
-                                <Check className="h-4 w-4" /> Approve
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="gap-1"
-                                onClick={() => openVocabActionDialog(vocab, "reject")}
-                              >
-                                <X className="h-4 w-4" /> Reject
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="gap-1"
-                                onClick={() => openVocabActionDialog(vocab, "score")}
-                              >
-                                <Star className="h-4 w-4" /> Score
-                              </Button>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                );
-              }
-              
               // Render Questions section for this game type
               const gameName = section.gameName;
               const passages = passagesByGame[gameName] || [];
