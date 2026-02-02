@@ -697,12 +697,15 @@ export const AdminQuestionReview = () => {
                   </span>
                 )}
               </div>
-              {filteredVocabulary.map((vocab) => (
+              {filteredVocabulary.map((vocab, vocabIdx) => {
+                const pageOffset = (page - 1) * 20;
+                const itemNumber = pageOffset + vocabIdx + 1;
+                return (
                 <Card key={vocab.id}>
                 <CardHeader className="pb-2">
                   <div className="flex items-start justify-between">
                     <div>
-                      <CardTitle className="text-xl">{vocab.word}</CardTitle>
+                      <CardTitle className="text-xl">#{itemNumber}: {vocab.word}</CardTitle>
                       <div className="flex flex-wrap items-center gap-2 mt-1">
                         <Badge variant="outline">Unit {vocab.unit_number}: {vocab.unit_title}</Badge>
                       </div>
@@ -800,7 +803,8 @@ export const AdminQuestionReview = () => {
                   </div>
                 </CardContent>
               </Card>
-            ))}
+              );
+              })}
           </div>
           );
         })()
@@ -1045,12 +1049,15 @@ export const AdminQuestionReview = () => {
                   ))}
 
                   {/* Render ungrouped questions for this game */}
-                  {ungroupedQuestions.map((question, qIdx) => (
+                  {ungroupedQuestions.map((question, qIdx) => {
+                    const pageOffset = (page - 1) * 20;
+                    const itemNumber = pageOffset + qIdx + 1;
+                    return (
                     <Card key={question.id}>
                       <CardHeader className="pb-2">
                         <div className="flex items-start justify-between">
                           <div>
-                            <CardTitle className="text-lg">Q{qIdx + 1}: {question.question_text}</CardTitle>
+                            <CardTitle className="text-lg">#{itemNumber}: {question.question_text}</CardTitle>
                             <div className="flex flex-wrap items-center gap-2 mt-1">
                               <Badge variant="outline" className="font-normal">Unit {question.unit_number}: {question.unit_title}</Badge>
                               {question.word && <Badge variant="outline" className="font-normal">Word: {question.word}</Badge>}
@@ -1127,7 +1134,8 @@ export const AdminQuestionReview = () => {
                         </div>
                       </CardContent>
                     </Card>
-                  ))}
+                    );
+                  })}
                 </div>
               );
             })}
