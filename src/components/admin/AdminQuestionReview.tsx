@@ -566,6 +566,9 @@ export const AdminQuestionReview = () => {
                   }
                   return [...prev, status];
                 });
+                // Cascade: reset downstream filters
+                setUnitFilter('all');
+                setGameTypeFilter('all');
                 setPage(1);
               }}
               className="capitalize"
