@@ -344,6 +344,13 @@ export const AdminQuestionReview = () => {
     }
   }, [unitFilter]);
 
+  // Reset game type filter when status filter changes
+  useEffect(() => {
+    if (gameTypes.length > 0) {
+      setGameTypeFilter(gameTypes[0].type);
+    }
+  }, [statusFilter]);
+
   // Get filtered units based on selected test type AND which units have content matching current status
   const filteredUnits = useMemo(() => {
     // First filter by test type
