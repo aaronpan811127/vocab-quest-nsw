@@ -243,6 +243,28 @@ Deno.serve(async (req) => {
         );
       }
 
+      // Also update the passage's review_status (especially important for reject)
+      const passageStatusUpdate: Record<string, unknown> = {
+        review_status: updateData.review_status,
+        reviewed_by: adminUser.id,
+        reviewed_at: new Date().toISOString(),
+      };
+      if (action === 'reject' && rejection_reason) {
+        passageStatusUpdate.rejection_reason = rejection_reason;
+      }
+
+      const { error: passageError } = await supabase
+        .from('reading_passages')
+        .update(passageStatusUpdate)
+        .eq('id', passage_id);
+
+      if (passageError) {
+        console.error('Error updating passage status:', passageError);
+        // Non-fatal: questions were updated, passage status update failed
+      } else {
+        console.log(`Also updated passage ${passage_id} review_status to ${updateData.review_status}`);
+      }
+
       console.log(`Successfully reviewed ${data?.length || 0} questions in passage ${passage_id}`);
 
       return new Response(
