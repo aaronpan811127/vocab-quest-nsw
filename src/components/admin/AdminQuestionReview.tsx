@@ -282,10 +282,23 @@ export const AdminQuestionReview = () => {
       setIsPassageBased(data.is_passage_based || false);
       // Always update filter options from the response
       if (data.game_types_with_names) {
-        setGameTypes(data.game_types_with_names);
-        // Default to first game type if not already set
-        if (!gameTypeFilter && data.game_types_with_names.length > 0) {
-          setGameTypeFilter(data.game_types_with_names[0].type);
+        const nextGameTypes = data.game_types_with_names as { type: string; name: string }[];
+        setGameTypes(nextGameTypes);
+
+        const nextGameTypesWithContent = (data.game_types_with_content || []) as string[];
+        setGameTypesWithContent(nextGameTypesWithContent);
+
+        // Default game type: pick first available (respecting "with_content" when present)
+        const availableGameTypes =
+          nextGameTypesWithContent.length > 0
+            ? nextGameTypes.filter((g) => nextGameTypesWithContent.includes(g.type))
+            : nextGameTypes;
+
+        if (availableGameTypes.length > 0) {
+          const isCurrentValid = availableGameTypes.some((g) => g.type === gameTypeFilter);
+          if (!gameTypeFilter || !isCurrentValid) {
+            setGameTypeFilter(availableGameTypes[0].type);
+          }
         }
       }
       if (data.test_types) {
@@ -306,9 +319,7 @@ export const AdminQuestionReview = () => {
       if (data.units_with_content) {
         setUnitsWithContent(data.units_with_content);
       }
-      if (data.game_types_with_content) {
-        setGameTypesWithContent(data.game_types_with_content);
-      }
+      // game_types_with_content is handled above together with game_types_with_names
     } catch (error) {
       console.error('Error fetching questions:', error);
       toast({
@@ -323,36 +334,23 @@ export const AdminQuestionReview = () => {
     }
   };
 
-  // Only fetch when we have a valid gameTypeFilter (non-empty)
   useEffect(() => {
-    if (gameTypeFilter) {
-      fetchQuestions();
-    }
+    fetchQuestions();
   }, [statusFilter, gameTypeFilter, testTypeFilter, unitFilter, showCurrentVocabOnly, page]);
 
   // Reset unit and game type filters when test type changes
   useEffect(() => {
     setUnitFilter("all");
-    // Reset to first game type (will be set by fetchQuestions if gameTypes is available)
-    if (gameTypes.length > 0) {
-      setGameTypeFilter(gameTypes[0].type);
-    }
+    // Clear so fetch can default to first available game type for new context
+    setGameTypeFilter("");
+    setPage(1);
   }, [testTypeFilter]);
 
   // Reset game type filter when unit filter changes
   useEffect(() => {
-    // Reset to first game type (will be set by fetchQuestions if gameTypes is available)
-    if (gameTypes.length > 0) {
-      setGameTypeFilter(gameTypes[0].type);
-    }
+    // Clear so fetch can default to first available game type for new context
+    setGameTypeFilter("");
   }, [unitFilter]);
-
-  // Reset game type filter when status filter changes
-  useEffect(() => {
-    if (gameTypes.length > 0) {
-      setGameTypeFilter(gameTypes[0].type);
-    }
-  }, [statusFilter]);
 
   // Get filtered units based on selected test type AND which units have content matching current status
   const filteredUnits = useMemo(() => {
@@ -619,7 +617,8 @@ export const AdminQuestionReview = () => {
                 });
                 // Cascade: reset downstream filters
                 setUnitFilter('all');
-                setGameTypeFilter('all');
+                // Clear so fetch can default to first available game type
+                setGameTypeFilter('');
                 setPage(1);
               }}
               className="capitalize"
