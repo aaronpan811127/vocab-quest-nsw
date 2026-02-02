@@ -236,11 +236,14 @@ Respond with ONLY this JSON structure (no markdown, no explanation):
       }
       
       // Clean the JSON string - remove non-ASCII characters that might corrupt parsing
-      // Keep only printable ASCII and common Unicode whitespace/punctuation
       jsonStr = jsonStr
         .trim()
         .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '') // Remove control characters
         .replace(/[^\x20-\x7E\n\r\t\u00A0-\u00FF\u2000-\u206F\u2018-\u201F]/g, ''); // Remove non-standard chars
+      
+      // Fix common AI JSON errors: period instead of comma between array elements
+      // Pattern: }. followed by { (with optional whitespace/newlines)
+      jsonStr = jsonStr.replace(/\}\s*\.\s*(\n\s*)\{/g, '},$1{');
       
       generatedContent = JSON.parse(jsonStr);
     } catch (parseError) {
@@ -254,6 +257,8 @@ Respond with ONLY this JSON structure (no markdown, no explanation):
           .trim();
         // Keep only basic ASCII and essential Unicode
         fallbackStr = fallbackStr.replace(/[^\x20-\x7E\n\r\t]/g, '');
+        // Fix period instead of comma between array elements
+        fallbackStr = fallbackStr.replace(/\}\s*\.\s*\{/g, '},{');
         generatedContent = JSON.parse(fallbackStr);
         console.log('Fallback JSON parsing succeeded');
       } catch (fallbackError) {
