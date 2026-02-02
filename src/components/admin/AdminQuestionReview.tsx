@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -54,7 +54,8 @@ interface Question {
   id: string;
   question_text: string;
   correct_answer: string;
-  options: string[] | string | null;
+  // Can be array, JSON string, or object (e.g. Word Intuition)
+  options: unknown;
   word: string | null;
   review_status: string;
   review_score: number | null;
@@ -520,28 +521,58 @@ export const AdminQuestionReview = () => {
   };
 
   // Helper to parse unit words from various formats (jsonb array, string array, JSON string)
-  const getUnitWords = (unit: Unit): string[] => {
-    if (!unit?.words) return [];
-    const words = unit.words;
-    
-    // Already an array of strings
+  const normalizeWord = (input: unknown): string | null => {
+    if (typeof input !== "string") return null;
+    const normalized = input.trim().toLowerCase();
+    return normalized.length > 0 ? normalized : null;
+  };
+
+  const parseWordsToSet = (words: unknown): Set<string> => {
+    const set = new Set<string>();
+    if (!words) return set;
+
+    // Already an array (jsonb array)
     if (Array.isArray(words)) {
-      return words.map(w => typeof w === 'string' ? w.toLowerCase() : String(w).toLowerCase());
+      for (const w of words) {
+        const n = normalizeWord(w);
+        if (n) set.add(n);
+      }
+      return set;
     }
-    
+
     // JSON string that needs parsing
-    if (typeof words === 'string') {
+    if (typeof words === "string") {
       try {
         const parsed = JSON.parse(words);
         if (Array.isArray(parsed)) {
-          return parsed.map((w: unknown) => typeof w === 'string' ? w.toLowerCase() : String(w).toLowerCase());
+          for (const w of parsed) {
+            const n = normalizeWord(w);
+            if (n) set.add(n);
+          }
         }
       } catch {
-        return [];
+        // ignore
       }
+      return set;
     }
-    
-    return [];
+
+    return set;
+  };
+
+  const unitWordSetByUnitId = useMemo(() => {
+    const map = new Map<string, Set<string>>();
+    for (const unit of units) {
+      map.set(unit.id, parseWordsToSet(unit.words));
+    }
+    return map;
+  }, [units]);
+
+  const isWordInUnitVocab = (unitId: string, word: unknown): boolean | null => {
+    const w = normalizeWord(word);
+    if (!w) return null;
+    const set = unitWordSetByUnitId.get(unitId);
+    if (!set || set.size === 0) return null;
+    return set.has(w);
   };
 
   return (
@@ -642,12 +673,10 @@ export const AdminQuestionReview = () => {
           // Filter vocabulary based on current vocab toggle
           const filteredVocabulary = showCurrentVocabOnly
             ? vocabulary.filter(vocab => {
-                const unit = units.find(u => u.id === vocab.unit_id);
-                const unitWords = getUnitWords(unit!);
-                // If we can't resolve the unit's words (e.g., backend didn't send them yet),
-                // don't hide everything—show the item rather than producing an empty screen.
-                if (unitWords.length === 0) return true;
-                return unitWords.includes(vocab.word.toLowerCase());
+                const match = isWordInUnitVocab(vocab.unit_id, vocab.word);
+                // Fail-open if we can't resolve (prevents empty UI due to missing unit words)
+                if (match === null) return true;
+                return match;
               })
             : vocabulary;
 
@@ -788,11 +817,16 @@ export const AdminQuestionReview = () => {
             // Filter questions based on current vocab toggle
             const filteredQuestions = showCurrentVocabOnly
               ? questions.filter(q => {
-                  if (!q.word) return true; // Keep questions without words
-                  const unit = units.find(u => u.id === q.unit_id);
-                  const unitWords = getUnitWords(unit!);
-                  if (unitWords.length === 0) return true; // Keep if no unit words defined
-                  return unitWords.includes(q.word.toLowerCase());
+                  // Prefer explicit word column, fallback to options.word for games like Word Intuition
+                  const optionsWord =
+                    typeof q.options === "object" && q.options !== null && "word" in (q.options as Record<string, unknown>)
+                      ? (q.options as Record<string, unknown>).word
+                      : null;
+
+                  const match = isWordInUnitVocab(q.unit_id, q.word ?? optionsWord);
+                  // Keep questions we can't confidently match to a word
+                  if (match === null) return true;
+                  return match;
                 })
               : questions;
 
