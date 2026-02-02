@@ -249,6 +249,7 @@ export const AdminQuestionReview = () => {
         game_type: gameTypeFilter,
         test_type_id: testTypeFilter,
         unit_id: unitFilter,
+        active_vocab_only: showCurrentVocabOnly.toString(),
         page: page.toString(),
         limit: '20'
       });
@@ -312,7 +313,7 @@ export const AdminQuestionReview = () => {
 
   useEffect(() => {
     fetchQuestions();
-  }, [statusFilter, gameTypeFilter, testTypeFilter, unitFilter, page]);
+  }, [statusFilter, gameTypeFilter, testTypeFilter, unitFilter, showCurrentVocabOnly, page]);
 
   // Reset unit filter when test type changes
   useEffect(() => {
@@ -520,60 +521,7 @@ export const AdminQuestionReview = () => {
       .join(' ');
   };
 
-  // Helper to parse unit words from various formats (jsonb array, string array, JSON string)
-  const normalizeWord = (input: unknown): string | null => {
-    if (typeof input !== "string") return null;
-    const normalized = input.trim().toLowerCase();
-    return normalized.length > 0 ? normalized : null;
-  };
-
-  const parseWordsToSet = (words: unknown): Set<string> => {
-    const set = new Set<string>();
-    if (!words) return set;
-
-    // Already an array (jsonb array)
-    if (Array.isArray(words)) {
-      for (const w of words) {
-        const n = normalizeWord(w);
-        if (n) set.add(n);
-      }
-      return set;
-    }
-
-    // JSON string that needs parsing
-    if (typeof words === "string") {
-      try {
-        const parsed = JSON.parse(words);
-        if (Array.isArray(parsed)) {
-          for (const w of parsed) {
-            const n = normalizeWord(w);
-            if (n) set.add(n);
-          }
-        }
-      } catch {
-        // ignore
-      }
-      return set;
-    }
-
-    return set;
-  };
-
-  const unitWordSetByUnitId = useMemo(() => {
-    const map = new Map<string, Set<string>>();
-    for (const unit of units) {
-      map.set(unit.id, parseWordsToSet(unit.words));
-    }
-    return map;
-  }, [units]);
-
-  const isWordInUnitVocab = (unitId: string, word: unknown): boolean | null => {
-    const w = normalizeWord(word);
-    if (!w) return null;
-    const set = unitWordSetByUnitId.get(unitId);
-    if (!set || set.size === 0) return null;
-    return set.has(w);
-  };
+  // Active vocab filtering is now done server-side via the active_vocab_only parameter
 
   return (
     <div className="space-y-6">
@@ -670,17 +618,8 @@ export const AdminQuestionReview = () => {
       ) : gameTypeFilter === 'flashcards' ? (
         // Show vocabulary items for flashcards
         (() => {
-          // Filter vocabulary based on current vocab toggle
-          const filteredVocabulary = showCurrentVocabOnly
-            ? vocabulary.filter(vocab => {
-                const match = isWordInUnitVocab(vocab.unit_id, vocab.word);
-                // Fail-open if we can't resolve (prevents empty UI due to missing unit words)
-                if (match === null) return true;
-                return match;
-              })
-            : vocabulary;
-
-          return filteredVocabulary.length === 0 ? (
+          // Vocabulary is already filtered server-side based on active_vocab_only parameter
+          return vocabulary.length === 0 ? (
             <Card>
               <CardContent className="py-12 text-center text-muted-foreground">
                 No vocabulary found with the selected filters
@@ -690,9 +629,9 @@ export const AdminQuestionReview = () => {
             <div className="space-y-4">
               {/* Total count display */}
               <div className="text-sm text-muted-foreground">
-                Showing {filteredVocabulary.length} of {totalCount} total vocabulary items
+                Showing {vocabulary.length} of {totalCount} total vocabulary items
               </div>
-              {filteredVocabulary.map((vocab, vocabIdx) => {
+              {vocabulary.map((vocab, vocabIdx) => {
                 const pageOffset = (page - 1) * 20;
                 const itemNumber = pageOffset + vocabIdx + 1;
                 return (
@@ -813,23 +752,8 @@ export const AdminQuestionReview = () => {
         <div className="space-y-4">
           {/* Group all content by game type for proper ordering */}
           {(() => {
-            // Filter questions based on current vocab toggle
-            const filteredQuestions = showCurrentVocabOnly
-              ? questions.filter(q => {
-                  // Prefer explicit word column, fallback to options.word for games like Word Intuition
-                  const optionsWord =
-                    typeof q.options === "object" && q.options !== null && "word" in (q.options as Record<string, unknown>)
-                      ? (q.options as Record<string, unknown>).word
-                      : null;
-
-                  const match = isWordInUnitVocab(q.unit_id, q.word ?? optionsWord);
-                  // Keep questions we can't confidently match to a word
-                  if (match === null) return true;
-                  return match;
-                })
-              : questions;
-
-            const { grouped, ungrouped } = groupQuestionsByPassage(filteredQuestions);
+            // Questions are already filtered server-side based on active_vocab_only parameter
+            const { grouped, ungrouped } = groupQuestionsByPassage(questions);
             const displayedCount = grouped.reduce((sum, p) => sum + p.questions.length, 0) + ungrouped.length;
             
             // Group passages by game_name
