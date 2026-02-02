@@ -91,7 +91,7 @@ interface ContentStat {
 }
 
 // Game types that use passages
-const PASSAGE_GAME_TYPES = ['reading', 'linked_extracts'];
+const PASSAGE_GAME_TYPES = ['reading', 'linked_extracts', 'gap_fill_passage'];
 
 // Game types that use vocabulary
 const VOCAB_GAME_TYPES = ['flashcards'];
@@ -157,6 +157,9 @@ export const AdminContentStats = () => {
       if (isVocabGame) {
         functionName = 'generate-vocabulary';
         payload = { unit_id: stat.unit_id, words: unit.words };
+      } else if (stat.game_type === 'gap_fill_passage') {
+        functionName = 'generate-gap-fill-passage';
+        payload = { unit_id: stat.unit_id, words: unit.words, test_type_code: testTypeCode, unit_title: unit.title };
       } else if (stat.game_type === 'linked_extracts') {
         functionName = 'generate-cloze-passage';
         payload = { unit_id: stat.unit_id, words: unit.words, test_type_code: testTypeCode, unit_title: unit.title };
@@ -186,7 +189,7 @@ export const AdminContentStats = () => {
       }
 
       // For passage-based games, loop until we have enough passages
-      const isPassageBasedGame = ['linked_extracts', 'reading'].includes(stat.game_type);
+      const isPassageBasedGame = ['linked_extracts', 'reading', 'gap_fill_passage'].includes(stat.game_type);
       let totalGenerated = 0;
       const maxIterations = 5; // Safety limit
       
@@ -326,6 +329,9 @@ export const AdminContentStats = () => {
     if (isVocabGame) {
       functionName = 'generate-vocabulary';
       payload = { unit_id: stat.unit_id, words: unit.words };
+    } else if (stat.game_type === 'gap_fill_passage') {
+      functionName = 'generate-gap-fill-passage';
+      payload = { unit_id: stat.unit_id, words: unit.words, test_type_code: testTypeCode, unit_title: unit.title };
     } else if (stat.game_type === 'linked_extracts') {
       functionName = 'generate-cloze-passage';
       payload = { unit_id: stat.unit_id, words: unit.words, test_type_code: testTypeCode, unit_title: unit.title };
@@ -349,7 +355,7 @@ export const AdminContentStats = () => {
     }
 
     // For passage-based games, loop until we have enough passages
-    const isPassageBasedGame = ['linked_extracts', 'reading'].includes(stat.game_type);
+    const isPassageBasedGame = ['linked_extracts', 'reading', 'gap_fill_passage'].includes(stat.game_type);
     const maxIterations = 5;
     
     if (isPassageBasedGame) {
@@ -542,11 +548,15 @@ export const AdminContentStats = () => {
             if (game.game_type === 'linked_extracts') {
               // Match either prefix for Linked Extracts
               passageQuery = passageQuery.or('title.ilike.Linked Extracts:%,title.ilike.Cloze Passage:%');
+            } else if (game.game_type === 'gap_fill_passage') {
+              // Match Gap Fill Passage prefix
+              passageQuery = passageQuery.ilike('title', 'Gap Fill Passage:%');
             } else {
-              // Reading: exclude both Linked Extracts prefixes
+              // Reading: exclude all other passage types
               passageQuery = passageQuery
                 .not('title', 'ilike', 'Linked Extracts:%')
-                .not('title', 'ilike', 'Cloze Passage:%');
+                .not('title', 'ilike', 'Cloze Passage:%')
+                .not('title', 'ilike', 'Gap Fill Passage:%');
             }
 
             const { data: passageData } = await passageQuery;
