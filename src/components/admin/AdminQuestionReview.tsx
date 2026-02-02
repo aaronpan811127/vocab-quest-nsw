@@ -330,12 +330,12 @@ export const AdminQuestionReview = () => {
   // Reset unit and game type filters when test type changes
   useEffect(() => {
     setUnitFilter("all");
-    setGameTypeFilter("all");
+    setGameTypeFilter("");
   }, [testTypeFilter]);
 
   // Reset game type filter when unit filter changes
   useEffect(() => {
-    setGameTypeFilter("all");
+    setGameTypeFilter("");
   }, [unitFilter]);
 
   // Get filtered units based on selected test type AND which units have content matching current status
@@ -634,12 +634,6 @@ export const AdminQuestionReview = () => {
             onValueChange={(value) => { setGameTypeFilter(value); setPage(1); }}
             className="flex flex-wrap gap-3"
           >
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="all" id="game-type-all" />
-              <Label htmlFor="game-type-all" className="cursor-pointer text-sm font-medium">
-                All Games
-              </Label>
-            </div>
             {filteredGameTypes.map(g => (
               <div key={g.type} className="flex items-center space-x-2">
                 <RadioGroupItem value={g.type} id={`game-type-${g.type}`} />
