@@ -644,7 +644,9 @@ export const AdminQuestionReview = () => {
             ? vocabulary.filter(vocab => {
                 const unit = units.find(u => u.id === vocab.unit_id);
                 const unitWords = getUnitWords(unit!);
-                if (unitWords.length === 0) return false;
+                // If we can't resolve the unit's words (e.g., backend didn't send them yet),
+                // don't hide everything—show the item rather than producing an empty screen.
+                if (unitWords.length === 0) return true;
                 return unitWords.includes(vocab.word.toLowerCase());
               })
             : vocabulary;

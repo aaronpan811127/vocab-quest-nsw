@@ -66,8 +66,11 @@ Deno.serve(async (req) => {
     // Get all test types
     const { data: testTypes } = await supabase.from('test_types').select('id, name, code').order('name');
     
-    // Get all units with test type info
-    const { data: allUnits } = await supabase.from('units').select('id, title, unit_number, test_type_id').order('unit_number');
+    // Get all units with test type info + words (needed for "Current vocab only" filtering in admin UI)
+    const { data: allUnits } = await supabase
+      .from('units')
+      .select('id, title, unit_number, test_type_id, words')
+      .order('unit_number');
     
     // Get distinct game types for filter options (excluding non-reviewable types)
     // Return as array of { type, name } objects for proper display names
