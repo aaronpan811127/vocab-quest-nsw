@@ -550,7 +550,32 @@ export const AdminQuestionReview = () => {
           ))}
         </RadioGroup>
 
-        {/* Other Filters */}
+        {/* Status Filter - cascades down to unit and game type filters */}
+        <div className="flex items-center gap-1">
+          {["pending", "approved", "rejected"].map((status) => (
+            <Button
+              key={status}
+              variant={statusFilter.includes(status) ? "default" : "outline"}
+              size="sm"
+              onClick={() => {
+                setStatusFilter(prev => {
+                  if (prev.includes(status)) {
+                    // Don't allow deselecting all
+                    if (prev.length === 1) return prev;
+                    return prev.filter(s => s !== status);
+                  }
+                  return [...prev, status];
+                });
+                setPage(1);
+              }}
+              className="capitalize"
+            >
+              {status}
+            </Button>
+          ))}
+        </div>
+
+        {/* Unit and Game Type Filters */}
         <div className="flex flex-wrap items-center gap-2">
           <Select value={unitFilter} onValueChange={(value) => { setUnitFilter(value); setPage(1); }}>
             <SelectTrigger className="w-40">
@@ -577,29 +602,6 @@ export const AdminQuestionReview = () => {
               </div>
             ))}
           </RadioGroup>
-          <div className="flex items-center gap-1">
-            {["pending", "approved", "rejected"].map((status) => (
-              <Button
-                key={status}
-                variant={statusFilter.includes(status) ? "default" : "outline"}
-                size="sm"
-                onClick={() => {
-                  setStatusFilter(prev => {
-                    if (prev.includes(status)) {
-                      // Don't allow deselecting all
-                      if (prev.length === 1) return prev;
-                      return prev.filter(s => s !== status);
-                    }
-                    return [...prev, status];
-                  });
-                  setPage(1);
-                }}
-                className="capitalize"
-              >
-                {status}
-              </Button>
-            ))}
-          </div>
           
           {/* Current Vocab Toggle - hide for passage-based games */}
           {!isPassageBased && gameTypeFilter !== 'reading' && gameTypeFilter !== 'linked_extracts' && (
