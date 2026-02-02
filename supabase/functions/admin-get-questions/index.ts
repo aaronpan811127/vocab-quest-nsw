@@ -392,6 +392,41 @@ Deno.serve(async (req) => {
     
     const { data: unitsWithContentData } = await unitsWithContentQuery;
     const questionUnitsWithContent = [...new Set((unitsWithContentData || []).map(q => q.unit_id))];
+
+    // To get game_types_with_content, we need game types WITHOUT the game_type filter applied
+    // Run a separate query to get distinct game_ids matching status, test_type, and unit filters
+    let gameTypesWithContentQuery = supabase
+      .from('question_bank')
+      .select('game_id')
+      .order('created_at', { ascending: false });
+    
+    // Apply same filters EXCEPT game_type
+    if (statusFilters.length > 0 && !statusFilters.includes('all')) {
+      gameTypesWithContentQuery = gameTypesWithContentQuery.in('review_status', statusFilters);
+    }
+    if (testTypeId !== 'all' && allUnits) {
+      const unitIdsForTestType = allUnits.filter(u => u.test_type_id === testTypeId).map(u => u.id);
+      if (unitIdsForTestType.length > 0) {
+        gameTypesWithContentQuery = gameTypesWithContentQuery.in('unit_id', unitIdsForTestType);
+      }
+    }
+    if (unitId !== 'all') {
+      gameTypesWithContentQuery = gameTypesWithContentQuery.eq('unit_id', unitId);
+    }
+    // Exclude non-reviewable game types
+    const allowedGameIdsForQuery = games?.filter(g => !excludedGameTypes.includes(g.game_type)).map(g => g.id) || [];
+    if (allowedGameIdsForQuery.length > 0) {
+      gameTypesWithContentQuery = gameTypesWithContentQuery.in('game_id', allowedGameIdsForQuery);
+    }
+    
+    const { data: gameTypesWithContentData } = await gameTypesWithContentQuery;
+    const gameIdsWithContent = [...new Set((gameTypesWithContentData || []).map(q => q.game_id))];
+    // Map game_ids back to game_types
+    const gameTypesWithContent = [...new Set(
+      gameIdsWithContent
+        .map(gid => games?.find(g => g.id === gid)?.game_type)
+        .filter((gt): gt is string => !!gt)
+    )];
     
     // Apply pagination after filtering
     const paginatedQuestions = enrichedQuestions.slice(offset, offset + limit);
@@ -423,6 +458,7 @@ Deno.serve(async (req) => {
         total_pages: Math.ceil(totalCount / limit),
         game_types: gameTypes,
         game_types_with_names: gameTypesWithNames,
+        game_types_with_content: gameTypesWithContent,
         test_types: testTypes || [],
         units: allUnits?.map(u => ({ id: u.id, title: u.title, unit_number: u.unit_number, test_type_id: u.test_type_id, words: u.words })) || [],
         units_with_content: allUnitsWithContent

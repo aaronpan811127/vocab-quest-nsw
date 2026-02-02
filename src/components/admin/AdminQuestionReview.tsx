@@ -206,6 +206,7 @@ export const AdminQuestionReview = () => {
   const [testTypeFilter, setTestTypeFilter] = useState("");
   const [unitFilter, setUnitFilter] = useState("all");
   const [gameTypes, setGameTypes] = useState<{ type: string; name: string }[]>([]);
+  const [gameTypesWithContent, setGameTypesWithContent] = useState<string[]>([]);
   const [testTypes, setTestTypes] = useState<TestType[]>([]);
   const [units, setUnits] = useState<Unit[]>([]);
   const [unitsWithContent, setUnitsWithContent] = useState<string[]>([]);
@@ -305,6 +306,9 @@ export const AdminQuestionReview = () => {
       if (data.units_with_content) {
         setUnitsWithContent(data.units_with_content);
       }
+      if (data.game_types_with_content) {
+        setGameTypesWithContent(data.game_types_with_content);
+      }
     } catch (error) {
       console.error('Error fetching questions:', error);
       toast({
@@ -323,10 +327,16 @@ export const AdminQuestionReview = () => {
     fetchQuestions();
   }, [statusFilter, gameTypeFilter, testTypeFilter, unitFilter, showCurrentVocabOnly, page]);
 
-  // Reset unit filter when test type changes
+  // Reset unit and game type filters when test type changes
   useEffect(() => {
     setUnitFilter("all");
+    setGameTypeFilter("all");
   }, [testTypeFilter]);
+
+  // Reset game type filter when unit filter changes
+  useEffect(() => {
+    setGameTypeFilter("all");
+  }, [unitFilter]);
 
   // Get filtered units based on selected test type AND which units have content matching current status
   const filteredUnits = useMemo(() => {
@@ -344,6 +354,18 @@ export const AdminQuestionReview = () => {
     const unitsWithContentSet = new Set(unitsWithContent);
     return testTypeFiltered.filter(u => unitsWithContentSet.has(u.id));
   }, [units, testTypeFilter, unitsWithContent]);
+
+  // Get filtered game types based on which game types have content matching current status/unit
+  const filteredGameTypes = useMemo(() => {
+    // If no game types with content data, show all game types
+    if (gameTypesWithContent.length === 0) {
+      return gameTypes;
+    }
+    
+    // Filter game types to only those with content matching current filters
+    const gameTypesWithContentSet = new Set(gameTypesWithContent);
+    return gameTypes.filter(g => gameTypesWithContentSet.has(g.type));
+  }, [gameTypes, gameTypesWithContent]);
 
   const handleAction = async () => {
     if (!selectedQuestion && !selectedVocabulary && !selectedPassage) return;
@@ -612,7 +634,13 @@ export const AdminQuestionReview = () => {
             onValueChange={(value) => { setGameTypeFilter(value); setPage(1); }}
             className="flex flex-wrap gap-3"
           >
-            {gameTypes.map(g => (
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="all" id="game-type-all" />
+              <Label htmlFor="game-type-all" className="cursor-pointer text-sm font-medium">
+                All Games
+              </Label>
+            </div>
+            {filteredGameTypes.map(g => (
               <div key={g.type} className="flex items-center space-x-2">
                 <RadioGroupItem value={g.type} id={`game-type-${g.type}`} />
                 <Label htmlFor={`game-type-${g.type}`} className="cursor-pointer text-sm font-medium">
