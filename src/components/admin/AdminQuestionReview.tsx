@@ -657,7 +657,7 @@ export const AdminQuestionReview = () => {
               onCheckedChange={setShowCurrentVocabOnly}
             />
             <Label htmlFor="current-vocab-toggle" className="cursor-pointer text-sm font-medium">
-              Current vocab only
+              Active Vocab in Units Only
             </Label>
           </div>
         </div>
