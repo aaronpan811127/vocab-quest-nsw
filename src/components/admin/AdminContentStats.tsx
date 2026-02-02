@@ -102,10 +102,13 @@ const EXCLUDED_GAME_TYPES = ['listening', 'matching', 'speaking', 'writing', 'od
 // Word-based game types that should show per-word breakdown
 const WORD_BASED_GAME_TYPES = ['intuition', 'context_master', 'cloze_challenge'];
 
+type StatusFilter = 'all' | 'incomplete' | 'complete';
+
 export const AdminContentStats = () => {
   const [loading, setLoading] = useState(true);
   const [testTypes, setTestTypes] = useState<TestType[]>([]);
   const [testTypeFilter, setTestTypeFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("incomplete");
   const [unitFilter, setUnitFilter] = useState("all");
   const [units, setUnits] = useState<Unit[]>([]);
   const [games, setGames] = useState<Game[]>([]);
@@ -750,7 +753,27 @@ export const AdminContentStats = () => {
     return acc;
   }, {} as Record<string, { unit_title: string; unit_number: number; total_words: number; games: ContentStat[] }>);
 
-  const sortedUnits = Object.entries(statsByUnit).sort((a, b) => a[1].unit_number - b[1].unit_number);
+  // Filter units based on status filter
+  const filteredStatsByUnit = Object.entries(statsByUnit).filter(([unitId, unitData]) => {
+    if (statusFilter === 'all') return true;
+    const allComplete = unitData.games.every(g => g.meets_requirement);
+    if (statusFilter === 'complete') return allComplete;
+    if (statusFilter === 'incomplete') return !allComplete;
+    return true;
+  });
+
+  // Units available for dropdown based on status filter
+  const filteredUnitsForDropdown = units.filter(unit => {
+    if (statusFilter === 'all') return true;
+    const unitStats = statsByUnit[unit.id];
+    if (!unitStats) return statusFilter === 'incomplete'; // No stats = incomplete
+    const allComplete = unitStats.games.every(g => g.meets_requirement);
+    if (statusFilter === 'complete') return allComplete;
+    if (statusFilter === 'incomplete') return !allComplete;
+    return true;
+  });
+
+  const sortedUnits = filteredStatsByUnit.sort((a, b) => a[1].unit_number - b[1].unit_number);
 
   const getProgressColor = (current: number, required: number) => {
     const percentage = required > 0 ? (current / required) * 100 : 100;
@@ -793,7 +816,7 @@ export const AdminContentStats = () => {
         {/* Test Type Radio Buttons */}
         <RadioGroup 
           value={testTypeFilter} 
-          onValueChange={(value) => { setTestTypeFilter(value); setUnitFilter("all"); }}
+          onValueChange={(value) => { setTestTypeFilter(value); setStatusFilter("incomplete"); setUnitFilter("all"); }}
           className="flex flex-wrap gap-4"
         >
           {testTypes.map((tt) => (
@@ -804,6 +827,27 @@ export const AdminContentStats = () => {
           ))}
         </RadioGroup>
 
+        {/* Status Filter */}
+        <div className="flex items-center gap-2">
+          <Label className="text-sm font-medium text-muted-foreground">Status:</Label>
+          <div className="flex gap-1">
+            {[
+              { value: 'all' as StatusFilter, label: 'All' },
+              { value: 'incomplete' as StatusFilter, label: 'Incomplete' },
+              { value: 'complete' as StatusFilter, label: 'Complete' },
+            ].map((option) => (
+              <Button
+                key={option.value}
+                variant={statusFilter === option.value ? "default" : "outline"}
+                size="sm"
+                onClick={() => { setStatusFilter(option.value); setUnitFilter("all"); }}
+              >
+                {option.label}
+              </Button>
+            ))}
+          </div>
+        </div>
+
         {/* Unit Filter */}
         <div className="flex gap-4">
           <Select value={unitFilter} onValueChange={setUnitFilter}>
@@ -812,7 +856,7 @@ export const AdminContentStats = () => {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Units</SelectItem>
-              {units.map((unit) => (
+              {filteredUnitsForDropdown.map((unit) => (
                 <SelectItem key={unit.id} value={unit.id}>
                   Unit {unit.unit_number}: {unit.title}
                 </SelectItem>
