@@ -180,15 +180,18 @@ Deno.serve(async (req) => {
 
       const totalCount = enrichedVocabulary.length;
       
+      // Collect unique unit IDs with content (before pagination)
+      const unitsWithContent = [...new Set(enrichedVocabulary.map(v => v.unit_id))];
+      
       // Apply pagination after filtering
       const paginatedVocabulary = enrichedVocabulary.slice(offset, offset + limit);
 
-      return { vocabulary: paginatedVocabulary, count: totalCount, error: null };
+      return { vocabulary: paginatedVocabulary, count: totalCount, unitsWithContent, error: null };
     };
 
     // Return ONLY vocabulary for flashcards filter
     if (gameType === 'flashcards') {
-      const { vocabulary: enrichedVocabulary, count, error: vocabError } = await fetchVocabulary();
+      const { vocabulary: enrichedVocabulary, count, unitsWithContent, error: vocabError } = await fetchVocabulary();
       
       if (vocabError) {
         return new Response(
@@ -208,7 +211,8 @@ Deno.serve(async (req) => {
           game_types: gameTypes,
           game_types_with_names: gameTypesWithNames,
           test_types: testTypes || [],
-          units: allUnits?.map(u => ({ id: u.id, title: u.title, unit_number: u.unit_number, test_type_id: u.test_type_id, words: u.words })) || []
+          units: allUnits?.map(u => ({ id: u.id, title: u.title, unit_number: u.unit_number, test_type_id: u.test_type_id, words: u.words })) || [],
+          units_with_content: unitsWithContent || []
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
@@ -352,15 +356,25 @@ Deno.serve(async (req) => {
 
     const totalCount = enrichedQuestions.length;
     
+    // Collect unique unit IDs that have content matching the current filters (before unit filter)
+    // This is used by frontend to show only relevant units in the dropdown
+    const unitsWithContent = [...new Set(enrichedQuestions.map(q => q.unit_id))];
+    
     // Apply pagination after filtering
     const paginatedQuestions = enrichedQuestions.slice(offset, offset + limit);
 
     // When gameType is 'all', also fetch vocabulary to show alongside questions
     let vocabularyData: unknown[] = [];
+    let vocabUnitsWithContent: string[] = [];
     if (gameType === 'all') {
       const { vocabulary: fetchedVocab } = await fetchVocabulary();
       vocabularyData = fetchedVocab;
+      // Also collect unit IDs from vocabulary
+      vocabUnitsWithContent = [...new Set((fetchedVocab || []).map((v: { unit_id: string }) => v.unit_id))];
     }
+
+    // Merge units with content from questions and vocabulary
+    const allUnitsWithContent = [...new Set([...unitsWithContent, ...vocabUnitsWithContent])];
 
     return new Response(
       JSON.stringify({ 
@@ -375,7 +389,8 @@ Deno.serve(async (req) => {
         game_types: gameTypes,
         game_types_with_names: gameTypesWithNames,
         test_types: testTypes || [],
-        units: allUnits?.map(u => ({ id: u.id, title: u.title, unit_number: u.unit_number, test_type_id: u.test_type_id, words: u.words })) || []
+        units: allUnits?.map(u => ({ id: u.id, title: u.title, unit_number: u.unit_number, test_type_id: u.test_type_id, words: u.words })) || [],
+        units_with_content: allUnitsWithContent
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
