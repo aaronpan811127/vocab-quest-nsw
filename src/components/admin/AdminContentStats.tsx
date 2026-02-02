@@ -633,7 +633,8 @@ export const AdminContentStats = () => {
               rejectedQuestions = 0;
             }
             
-            stat.passage_count = totalPassages;
+            // Use validPassageCount for the main display (passages with enough non-rejected questions)
+            stat.passage_count = validPassageCount;
             stat.approved_passages = approvedPassages;
             stat.pending_passages = pendingPassages;
             stat.rejected_passages = rejectedPassages;
