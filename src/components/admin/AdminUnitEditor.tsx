@@ -161,7 +161,6 @@ export const AdminUnitEditor = () => {
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4">
-        <h2 className="text-2xl font-bold">Unit Configuration</h2>
         
         {/* Info Banner */}
         <div className="flex items-start gap-3 p-4 rounded-lg bg-muted/50 border">
