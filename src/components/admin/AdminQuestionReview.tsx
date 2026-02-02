@@ -193,7 +193,7 @@ interface Unit {
   title: string;
   unit_number: number;
   test_type_id: string | null;
-  words?: string[];
+  words?: string[] | unknown;
 }
 
 export const AdminQuestionReview = () => {
@@ -209,6 +209,7 @@ export const AdminQuestionReview = () => {
   const [units, setUnits] = useState<Unit[]>([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
   const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(null);
   const [selectedVocabulary, setSelectedVocabulary] = useState<VocabularyItem | null>(null);
   const [selectedPassage, setSelectedPassage] = useState<PassageGroup | null>(null);
@@ -270,6 +271,7 @@ export const AdminQuestionReview = () => {
       setQuestions(data.questions || []);
       setVocabulary(data.vocabulary || []);
       setTotalPages(data.total_pages || 1);
+      setTotalCount(data.total || 0);
       // Always update filter options from the response
       if (data.game_types_with_names) {
         setGameTypes(data.game_types_with_names);
@@ -517,6 +519,31 @@ export const AdminQuestionReview = () => {
       .join(' ');
   };
 
+  // Helper to parse unit words from various formats (jsonb array, string array, JSON string)
+  const getUnitWords = (unit: Unit): string[] => {
+    if (!unit?.words) return [];
+    const words = unit.words;
+    
+    // Already an array of strings
+    if (Array.isArray(words)) {
+      return words.map(w => typeof w === 'string' ? w.toLowerCase() : String(w).toLowerCase());
+    }
+    
+    // JSON string that needs parsing
+    if (typeof words === 'string') {
+      try {
+        const parsed = JSON.parse(words);
+        if (Array.isArray(parsed)) {
+          return parsed.map((w: unknown) => typeof w === 'string' ? w.toLowerCase() : String(w).toLowerCase());
+        }
+      } catch {
+        return [];
+      }
+    }
+    
+    return [];
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4">
@@ -616,16 +643,9 @@ export const AdminQuestionReview = () => {
           const filteredVocabulary = showCurrentVocabOnly
             ? vocabulary.filter(vocab => {
                 const unit = units.find(u => u.id === vocab.unit_id);
-                if (!unit?.words) return false;
-                // Parse words if it's a JSON string, otherwise use as array
-                const unitWords = Array.isArray(unit.words) 
-                  ? unit.words 
-                  : typeof unit.words === 'string' 
-                    ? JSON.parse(unit.words) 
-                    : [];
-                return unitWords.some((w: string) => 
-                  w.toLowerCase() === vocab.word.toLowerCase()
-                );
+                const unitWords = getUnitWords(unit!);
+                if (unitWords.length === 0) return false;
+                return unitWords.includes(vocab.word.toLowerCase());
               })
             : vocabulary;
 
@@ -637,6 +657,15 @@ export const AdminQuestionReview = () => {
             </Card>
           ) : (
             <div className="space-y-4">
+              {/* Total count display */}
+              <div className="text-sm text-muted-foreground">
+                Showing {filteredVocabulary.length} of {totalCount} total vocabulary items
+                {showCurrentVocabOnly && vocabulary.length !== filteredVocabulary.length && (
+                  <span className="ml-2 text-warning">
+                    ({vocabulary.length - filteredVocabulary.length} filtered out - not in current unit vocab)
+                  </span>
+                )}
+              </div>
               {filteredVocabulary.map((vocab) => (
                 <Card key={vocab.id}>
                 <CardHeader className="pb-2">
@@ -759,19 +788,14 @@ export const AdminQuestionReview = () => {
               ? questions.filter(q => {
                   if (!q.word) return true; // Keep questions without words
                   const unit = units.find(u => u.id === q.unit_id);
-                  if (!unit?.words) return true; // Keep if no unit words defined
-                  const unitWords = Array.isArray(unit.words) 
-                    ? unit.words 
-                    : typeof unit.words === 'string' 
-                      ? JSON.parse(unit.words) 
-                      : [];
-                  return unitWords.some((w: string) => 
-                    w.toLowerCase() === q.word!.toLowerCase()
-                  );
+                  const unitWords = getUnitWords(unit!);
+                  if (unitWords.length === 0) return true; // Keep if no unit words defined
+                  return unitWords.includes(q.word.toLowerCase());
                 })
               : questions;
 
             const { grouped, ungrouped } = groupQuestionsByPassage(filteredQuestions);
+            const displayedCount = grouped.reduce((sum, p) => sum + p.questions.length, 0) + ungrouped.length;
             
             // Group passages by game_name
             const passagesByGame = grouped.reduce((acc, pg) => {
@@ -796,7 +820,18 @@ export const AdminQuestionReview = () => {
               allGameSections.push({ gameName });
             });
 
-            return allGameSections.map((section) => {
+            return (
+              <>
+                {/* Total count display */}
+                <div className="text-sm text-muted-foreground mb-4">
+                  Showing {displayedCount} of {totalCount} total questions
+                  {showCurrentVocabOnly && questions.length !== filteredQuestions.length && (
+                    <span className="ml-2 text-warning">
+                      ({questions.length - filteredQuestions.length} filtered out - not in current unit vocab)
+                    </span>
+                  )}
+                </div>
+                {allGameSections.map((section) => {
               // Render Questions section for this game type
               const gameName = section.gameName;
               const passages = passagesByGame[gameName] || [];
@@ -1059,7 +1094,9 @@ export const AdminQuestionReview = () => {
                   ))}
                 </div>
               );
-            });
+            })}
+              </>
+            );
           })()}
 
           {/* Pagination */}
