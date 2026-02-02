@@ -323,8 +323,11 @@ export const AdminQuestionReview = () => {
     }
   };
 
+  // Only fetch when we have a valid gameTypeFilter (non-empty)
   useEffect(() => {
-    fetchQuestions();
+    if (gameTypeFilter) {
+      fetchQuestions();
+    }
   }, [statusFilter, gameTypeFilter, testTypeFilter, unitFilter, showCurrentVocabOnly, page]);
 
   // Reset unit and game type filters when test type changes
