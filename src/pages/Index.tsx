@@ -100,7 +100,7 @@ const Index = () => {
         return <ContextMasterGame {...commonProps} />;
       case "cloze_challenge":
         return <ClozeChallengeGame {...commonProps} />;
-      case "cloze_passage":
+      case "linked_extracts":
         return <ClozePassageGame {...commonProps} />;
       default:
         return <ReadingGame {...commonProps} />;
