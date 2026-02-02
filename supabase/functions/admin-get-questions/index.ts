@@ -67,8 +67,8 @@ Deno.serve(async (req) => {
     // Get all games first to filter by game_type
     const { data: games } = await supabase.from('games').select('id, name, game_type');
     
-    // Get all test types
-    const { data: testTypes } = await supabase.from('test_types').select('id, name, code').order('name');
+    // Get all test types (only enabled ones)
+    const { data: testTypes } = await supabase.from('test_types').select('id, name, code').eq('is_enabled', true).order('name');
     
     // Get all units with test type info + words (needed for active vocab filtering)
     const { data: allUnits } = await supabase

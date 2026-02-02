@@ -197,6 +197,7 @@ const ChildProgress = () => {
         supabase
           .from("test_types")
           .select("id, name, code")
+          .eq("is_enabled", true)
           .order("name", { ascending: true })
       ]);
 
