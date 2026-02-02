@@ -59,3 +59,9 @@ verify_jwt = false
 
 [functions.get-or-create-game-snapshot]
 verify_jwt = false
+
+[functions.generate-gap-fill-passage]
+verify_jwt = false
+
+[functions.complete-expired-sessions]
+verify_jwt = false

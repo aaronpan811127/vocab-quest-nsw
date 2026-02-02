@@ -14,6 +14,7 @@ import { WordIntuitionGame } from "@/components/WordIntuitionGame";
 import { ContextMasterGame } from "@/components/ContextMasterGame";
 import { ClozeChallengeGame } from "@/components/ClozeChallengeGame";
 import { ClozePassageGame } from "@/components/ClozePassageGame";
+import { GapFillPassageGame } from "@/components/GapFillPassageGame";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/useProfile";
 import { useExpiredSessionCheck } from "@/hooks/useExpiredSessionCheck";
@@ -102,6 +103,8 @@ const Index = () => {
         return <ClozeChallengeGame {...commonProps} />;
       case "linked_extracts":
         return <ClozePassageGame {...commonProps} />;
+      case "gap_fill_passage":
+        return <GapFillPassageGame {...commonProps} />;
       default:
         return <ReadingGame {...commonProps} />;
     }
