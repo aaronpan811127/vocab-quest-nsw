@@ -56,16 +56,26 @@ Deno.serve(async (req) => {
     const limit = parseInt(url.searchParams.get('limit') || '20');
     const offset = (page - 1) * limit;
 
-    console.log(`[v5] Admin ${adminUser.id} fetching: game_type=${gameType}, test_type=${testTypeId}, unit=${unitId}, active_vocab_only=${activeVocabOnly}, page=${page}`);
+    console.log(`[v6] Admin ${adminUser.id} fetching: game_type=${gameType}, test_type=${testTypeId}, unit=${unitId}, active_vocab_only=${activeVocabOnly}, page=${page}`);
     
-    // Passage-based game types (no active vocab filtering applies)
-    const passageBasedGameTypes = ['reading', 'linked_extracts'];
+    // Get all games first to use content_type from rules
+    const { data: games } = await supabase.from('games').select('id, name, game_type, rules');
+    
+    // Helper to get content_type from game rules
+    const getContentType = (game: { rules?: { content_type?: string } | null }): string | null => {
+      if (game?.rules && typeof game.rules === 'object' && 'content_type' in game.rules) {
+        return game.rules.content_type as string || null;
+      }
+      return null;
+    };
 
-    // Game types to exclude from review (no reviewable questions - either no questions or programmatically generated)
-    const excludedGameTypes = ['listening', 'matching', 'speaking', 'writing', 'oddoneout'];
+    // Passage-based game types (from rules.content_type = 'passage')
+    const passageBasedGames = (games || []).filter(g => getContentType(g) === 'passage');
+    const passageBasedGameTypes = passageBasedGames.map(g => g.game_type);
 
-    // Get all games first to filter by game_type
-    const { data: games } = await supabase.from('games').select('id, name, game_type');
+    // Game types to exclude from review (from rules.content_type = 'excluded')
+    const excludedGames = (games || []).filter(g => getContentType(g) === 'excluded');
+    const excludedGameTypes = excludedGames.map(g => g.game_type);
     
     // Get all test types (only enabled ones)
     const { data: testTypes } = await supabase.from('test_types').select('id, name, code').eq('is_enabled', true).order('name');
