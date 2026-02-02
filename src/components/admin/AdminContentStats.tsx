@@ -574,8 +574,11 @@ export const AdminContentStats = () => {
               stat.required_questions = passagesPerGame * questionsPerPassage;
             }
 
-            // Meets requirement if we have enough non-rejected passages
-            stat.meets_requirement = (stat.passage_count - stat.rejected_passages) >= stat.required_passages;
+            // Meets requirement if we have enough non-rejected passages AND enough non-rejected questions
+            const nonRejectedPassageCount = stat.passage_count - stat.rejected_passages;
+            const nonRejectedQuestionCount = stat.question_count - stat.rejected_questions;
+            stat.meets_requirement = nonRejectedPassageCount >= stat.required_passages && 
+              nonRejectedQuestionCount >= stat.required_questions;
           } else {
             // Regular question-based games
             const questionsPerWord = rules.questions_per_word || 3;
