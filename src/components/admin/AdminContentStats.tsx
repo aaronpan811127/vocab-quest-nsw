@@ -902,7 +902,8 @@ export const AdminContentStats = () => {
                       required = stat.required_vocab;
                       label = "Vocabulary";
                     } else if (isPassageGame) {
-                      current = stat.passage_count - stat.rejected_passages;
+                      // passage_count already represents valid passages (non-rejected with enough non-rejected questions)
+                      current = stat.passage_count;
                       required = stat.required_passages;
                       label = "Passages";
                       if (stat.required_questions > 0) {
