@@ -122,7 +122,8 @@ Deno.serve(async (req) => {
 
     // If filtering on flashcards, return vocabulary items instead of questions
     // Helper function to fetch vocabulary
-    const fetchVocabulary = async () => {
+    // skipUnitFilter: when true, don't filter by unit_id (used for computing units_with_content)
+    const fetchVocabulary = async (skipUnitFilter = false) => {
       // When active_vocab_only is enabled, we need to fetch all matching records first, 
       // filter in memory, then apply pagination
       let vocabQuery = supabase
@@ -143,8 +144,8 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Filter by unit_id
-      if (unitId !== 'all') {
+      // Filter by unit_id (skip when computing units_with_content)
+      if (!skipUnitFilter && unitId !== 'all') {
         vocabQuery = vocabQuery.eq('unit_id', unitId);
       }
 
@@ -152,7 +153,7 @@ Deno.serve(async (req) => {
 
       if (vocabError) {
         console.error('Error fetching vocabulary:', vocabError);
-        return { vocabulary: [], count: 0, error: vocabError };
+        return { vocabulary: [], count: 0, unitsWithContent: [], error: vocabError };
       }
 
       // Get units for reference
@@ -191,7 +192,11 @@ Deno.serve(async (req) => {
 
     // Return ONLY vocabulary for flashcards filter
     if (gameType === 'flashcards') {
-      const { vocabulary: enrichedVocabulary, count, unitsWithContent, error: vocabError } = await fetchVocabulary();
+      // Fetch vocabulary for display (with unit filter applied)
+      const { vocabulary: enrichedVocabulary, count, error: vocabError } = await fetchVocabulary(false);
+      
+      // Fetch units with content separately (without unit filter) for dropdown
+      const { unitsWithContent } = await fetchVocabulary(true);
       
       if (vocabError) {
         return new Response(
@@ -356,9 +361,37 @@ Deno.serve(async (req) => {
 
     const totalCount = enrichedQuestions.length;
     
-    // Collect unique unit IDs that have content matching the current filters (before unit filter)
-    // This is used by frontend to show only relevant units in the dropdown
-    const unitsWithContent = [...new Set(enrichedQuestions.map(q => q.unit_id))];
+    // To get units_with_content, we need unit IDs WITHOUT the unit filter applied
+    // Run a separate lightweight query to get distinct unit_ids
+    let unitsWithContentQuery = supabase
+      .from('question_bank')
+      .select('unit_id')
+      .order('created_at', { ascending: false });
+    
+    // Apply same filters EXCEPT unit_id
+    if (statusFilters.length > 0 && !statusFilters.includes('all')) {
+      unitsWithContentQuery = unitsWithContentQuery.in('review_status', statusFilters);
+    }
+    if (gameType !== 'all' && games) {
+      const gameIds = games.filter(g => g.game_type === gameType && !excludedGameTypes.includes(g.game_type)).map(g => g.id);
+      if (gameIds.length > 0) {
+        unitsWithContentQuery = unitsWithContentQuery.in('game_id', gameIds);
+      }
+    } else {
+      const allowedGameIds = games?.filter(g => !excludedGameTypes.includes(g.game_type)).map(g => g.id) || [];
+      if (allowedGameIds.length > 0) {
+        unitsWithContentQuery = unitsWithContentQuery.in('game_id', allowedGameIds);
+      }
+    }
+    if (testTypeId !== 'all' && allUnits) {
+      const unitIdsForTestType = allUnits.filter(u => u.test_type_id === testTypeId).map(u => u.id);
+      if (unitIdsForTestType.length > 0) {
+        unitsWithContentQuery = unitsWithContentQuery.in('unit_id', unitIdsForTestType);
+      }
+    }
+    
+    const { data: unitsWithContentData } = await unitsWithContentQuery;
+    const questionUnitsWithContent = [...new Set((unitsWithContentData || []).map(q => q.unit_id))];
     
     // Apply pagination after filtering
     const paginatedQuestions = enrichedQuestions.slice(offset, offset + limit);
@@ -367,14 +400,16 @@ Deno.serve(async (req) => {
     let vocabularyData: unknown[] = [];
     let vocabUnitsWithContent: string[] = [];
     if (gameType === 'all') {
-      const { vocabulary: fetchedVocab } = await fetchVocabulary();
+      // Fetch for display (with unit filter)
+      const { vocabulary: fetchedVocab } = await fetchVocabulary(false);
       vocabularyData = fetchedVocab;
-      // Also collect unit IDs from vocabulary
-      vocabUnitsWithContent = [...new Set((fetchedVocab || []).map((v: { unit_id: string }) => v.unit_id))];
+      // Fetch units with content (without unit filter)
+      const { unitsWithContent: vocabUnits } = await fetchVocabulary(true);
+      vocabUnitsWithContent = vocabUnits;
     }
 
     // Merge units with content from questions and vocabulary
-    const allUnitsWithContent = [...new Set([...unitsWithContent, ...vocabUnitsWithContent])];
+    const allUnitsWithContent = [...new Set([...questionUnitsWithContent, ...vocabUnitsWithContent])];
 
     return new Response(
       JSON.stringify({ 
