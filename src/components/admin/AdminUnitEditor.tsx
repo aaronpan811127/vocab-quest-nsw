@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Pencil, Save, X, AlertTriangle, Info } from "lucide-react";
+import { Loader2, Pencil, Save, X, AlertTriangle, Info, Plus } from "lucide-react";
 
 interface TestType {
   id: string;
@@ -37,11 +37,18 @@ export const AdminUnitEditor = () => {
   const [selectedUnit, setSelectedUnit] = useState<Unit | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [addConfirmDialogOpen, setAddConfirmDialogOpen] = useState(false);
   
   // Edit form state
   const [editTitle, setEditTitle] = useState("");
   const [editDescription, setEditDescription] = useState("");
   const [editWords, setEditWords] = useState("");
+  
+  // Add form state
+  const [addTitle, setAddTitle] = useState("");
+  const [addDescription, setAddDescription] = useState("");
+  const [addWords, setAddWords] = useState("");
   
   const { toast } = useToast();
 
@@ -158,6 +165,77 @@ export const AdminUnitEditor = () => {
     }
   };
 
+  // Add unit handlers
+  const openAddDialog = () => {
+    // Calculate next unit number
+    const maxUnitNumber = units.length > 0 ? Math.max(...units.map(u => u.unit_number)) : 0;
+    setAddTitle("");
+    setAddDescription("");
+    setAddWords("");
+    setAddDialogOpen(true);
+  };
+
+  const closeAddDialog = () => {
+    setAddDialogOpen(false);
+    setAddTitle("");
+    setAddDescription("");
+    setAddWords("");
+  };
+
+  const handleAddClick = () => {
+    setAddConfirmDialogOpen(true);
+  };
+
+  const handleConfirmAdd = async () => {
+    setAddConfirmDialogOpen(false);
+    setSaving(true);
+
+    try {
+      // Calculate next unit number
+      const maxUnitNumber = units.length > 0 ? Math.max(...units.map(u => u.unit_number)) : 0;
+      const newUnitNumber = maxUnitNumber + 1;
+
+      // Parse words from comma-separated string
+      const wordsArray = addWords
+        .split(",")
+        .map(w => w.trim())
+        .filter(w => w.length > 0);
+
+      const { data, error } = await supabase
+        .from('units')
+        .insert({
+          title: addTitle.trim(),
+          description: addDescription.trim() || null,
+          words: wordsArray,
+          unit_number: newUnitNumber,
+          test_type_id: testTypeFilter,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Update local state
+      setUnits(prev => [...prev, data as Unit]);
+
+      toast({
+        title: "Unit Created",
+        description: `Unit ${newUnitNumber}: ${addTitle.trim()} has been created.`,
+      });
+
+      closeAddDialog();
+    } catch (error) {
+      console.error('Error creating unit:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create unit",
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4">
@@ -175,19 +253,26 @@ export const AdminUnitEditor = () => {
           </div>
         </div>
 
-        {/* Test Type Radio Buttons */}
-        <RadioGroup 
-          value={testTypeFilter} 
-          onValueChange={setTestTypeFilter}
-          className="flex flex-wrap gap-4"
-        >
-          {testTypes.map((tt) => (
-            <div key={tt.id} className="flex items-center space-x-2">
-              <RadioGroupItem value={tt.id} id={`unit-tt-${tt.id}`} />
-              <Label htmlFor={`unit-tt-${tt.id}`} className="cursor-pointer">{tt.name}</Label>
-            </div>
-          ))}
-        </RadioGroup>
+        {/* Test Type Radio Buttons + Add Button */}
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <RadioGroup 
+            value={testTypeFilter} 
+            onValueChange={setTestTypeFilter}
+            className="flex flex-wrap gap-4"
+          >
+            {testTypes.map((tt) => (
+              <div key={tt.id} className="flex items-center space-x-2">
+                <RadioGroupItem value={tt.id} id={`unit-tt-${tt.id}`} />
+                <Label htmlFor={`unit-tt-${tt.id}`} className="cursor-pointer">{tt.name}</Label>
+              </div>
+            ))}
+          </RadioGroup>
+          
+          <Button onClick={openAddDialog} disabled={!testTypeFilter}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Unit
+          </Button>
+        </div>
       </div>
 
       {loading ? (
@@ -349,6 +434,103 @@ export const AdminUnitEditor = () => {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleConfirmSave}>
               Yes, Update Unit
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Add Unit Dialog */}
+      <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              Add New Unit
+            </DialogTitle>
+            <DialogDescription>
+              Create a new unit for {testTypes.find(t => t.id === testTypeFilter)?.name || 'the selected test type'}. 
+              The unit will be assigned the next available unit number.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="add-unit-title">Title</Label>
+              <Input
+                id="add-unit-title"
+                value={addTitle}
+                onChange={(e) => setAddTitle(e.target.value)}
+                placeholder="Enter unit title"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="add-unit-description">Description</Label>
+              <Textarea
+                id="add-unit-description"
+                value={addDescription}
+                onChange={(e) => setAddDescription(e.target.value)}
+                placeholder="Enter unit description (optional)"
+                rows={2}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="add-unit-words">
+                Words <span className="text-muted-foreground font-normal">(comma-separated)</span>
+              </Label>
+              <Textarea
+                id="add-unit-words"
+                value={addWords}
+                onChange={(e) => setAddWords(e.target.value)}
+                placeholder="word1, word2, word3, ..."
+                rows={6}
+                className="font-mono text-sm"
+              />
+              <p className="text-xs text-muted-foreground">
+                Current count: {addWords.split(",").map(w => w.trim()).filter(w => w.length > 0).length} words
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={closeAddDialog} disabled={saving}>
+              <X className="h-4 w-4 mr-2" />
+              Cancel
+            </Button>
+            <Button onClick={handleAddClick} disabled={saving || !addTitle.trim()}>
+              {saving ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Plus className="h-4 w-4 mr-2" />
+              )}
+              Create Unit
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Confirmation Dialog */}
+      <AlertDialog open={addConfirmDialogOpen} onOpenChange={setAddConfirmDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Confirm New Unit
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p>
+                  You are about to create a new unit with {addWords.split(",").map(w => w.trim()).filter(w => w.length > 0).length} words.
+                </p>
+                <p className="text-sm">
+                  The unit will be available for content generation and user access immediately.
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmAdd}>
+              Yes, Create Unit
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
