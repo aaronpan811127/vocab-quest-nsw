@@ -274,11 +274,11 @@ IMPORTANT:
       },
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
-        max_tokens: 4096,
+        max_tokens: 8192,
         messages: [
           {
             role: "system",
-            content: "You are an expert educational content creator specializing in reading comprehension and literary analysis for selective school entrance exams. Create challenging but fair questions that test genuine analytical thinking. Return only valid JSON with no markdown formatting or code blocks.",
+            content: "You are an expert educational content creator specializing in reading comprehension and literary analysis for selective school entrance exams. Create challenging but fair questions that test genuine analytical thinking. Return only valid JSON with no markdown formatting or code blocks. Keep responses concise but complete.",
           },
           { role: "user", content: prompt },
         ],
@@ -318,11 +318,19 @@ IMPORTANT:
         .replace(/```\n?/g, "")
         .trim();
       
-      // Check for truncation - if the JSON doesn't end properly, it's likely truncated
+      // Check for truncation - JSON must end with } and have balanced braces
       const trimmed = jsonStr.trim();
-      if (!trimmed.endsWith('}') && !trimmed.endsWith(']')) {
-        console.error("AI response appears truncated, last 100 chars:", trimmed.slice(-100));
+      if (!trimmed.endsWith('}')) {
+        console.error("AI response appears truncated, last 200 chars:", trimmed.slice(-200));
         throw new Error("AI response was truncated - please retry");
+      }
+      
+      // Check for balanced braces as additional truncation detection
+      const openBraces = (jsonStr.match(/{/g) || []).length;
+      const closeBraces = (jsonStr.match(/}/g) || []).length;
+      if (openBraces !== closeBraces) {
+        console.error(`Unbalanced braces: ${openBraces} open vs ${closeBraces} close`);
+        throw new Error("AI response was truncated (unbalanced JSON) - please retry");
       }
       
       // Remove any control characters and problematic unicode that might have slipped in
