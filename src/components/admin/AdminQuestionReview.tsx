@@ -922,12 +922,12 @@ export const AdminQuestionReview = () => {
                   ))}
 
                   {/* Render ungrouped questions for this game */}
-                  {ungroupedQuestions.map((question) => (
+                  {ungroupedQuestions.map((question, qIdx) => (
                     <Card key={question.id}>
                       <CardHeader className="pb-2">
                         <div className="flex items-start justify-between">
                           <div>
-                            <CardTitle className="text-lg">{question.question_text}</CardTitle>
+                            <CardTitle className="text-lg">Q{qIdx + 1}: {question.question_text}</CardTitle>
                             <div className="flex flex-wrap items-center gap-2 mt-1">
                               <Badge variant="outline" className="font-normal">Unit {question.unit_number}: {question.unit_title}</Badge>
                               {question.word && <Badge variant="outline" className="font-normal">Word: {question.word}</Badge>}
