@@ -274,6 +274,7 @@ IMPORTANT:
       },
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
+        max_tokens: 4096,
         messages: [
           {
             role: "system",
@@ -317,6 +318,13 @@ IMPORTANT:
         .replace(/```\n?/g, "")
         .trim();
       
+      // Check for truncation - if the JSON doesn't end properly, it's likely truncated
+      const trimmed = jsonStr.trim();
+      if (!trimmed.endsWith('}') && !trimmed.endsWith(']')) {
+        console.error("AI response appears truncated, last 100 chars:", trimmed.slice(-100));
+        throw new Error("AI response was truncated - please retry");
+      }
+      
       // Remove any control characters and problematic unicode that might have slipped in
       jsonStr = jsonStr
         .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '') // Remove control characters
@@ -336,7 +344,7 @@ IMPORTANT:
       }
     } catch (parseError) {
       console.error("Failed to parse AI response:", content.substring(0, 500));
-      throw new Error("Failed to parse generated content");
+      throw new Error("Failed to parse generated content - please retry");
     }
 
     // Validate the response structure
