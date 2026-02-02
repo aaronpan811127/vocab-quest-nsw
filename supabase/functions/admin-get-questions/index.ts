@@ -59,7 +59,7 @@ Deno.serve(async (req) => {
     console.log(`[v5] Admin ${adminUser.id} fetching: game_type=${gameType}, test_type=${testTypeId}, unit=${unitId}, active_vocab_only=${activeVocabOnly}, page=${page}`);
     
     // Passage-based game types (no active vocab filtering applies)
-    const passageBasedGameTypes = ['reading', 'linkedextracts'];
+    const passageBasedGameTypes = ['reading', 'linked_extracts'];
 
     // Game types to exclude from review (no reviewable questions - either no questions or programmatically generated)
     const excludedGameTypes = ['listening', 'matching', 'speaking', 'writing', 'oddoneout'];
