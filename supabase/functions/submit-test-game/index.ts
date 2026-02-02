@@ -155,14 +155,24 @@ serve(async (req) => {
         options = question.options as string[];
       }
 
-      const userAnswerText = options[answer.answer_index];
+      // Support both answer_index (numeric) and answer (string) formats
+      let userAnswerText: string;
+      if (typeof answer.answer_index === 'number') {
+        // Traditional index-based answer (e.g., for Cloze Challenge, Context Master)
+        userAnswerText = options[answer.answer_index] || '';
+      } else if (typeof answer.answer === 'string') {
+        // Direct answer string (e.g., for Gap Fill Passage where answer is "A", "B", etc.)
+        userAnswerText = answer.answer;
+      } else {
+        userAnswerText = '';
+      }
 
       if (userAnswerText === question.correct_answer) {
         correctCount++;
       } else {
         incorrectAnswers.push({
           question_id: answer.question_id,
-          user_answer: userAnswerText
+          user_answer: userAnswerText || 'No answer'
         });
       }
     }
