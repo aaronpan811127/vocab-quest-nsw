@@ -164,8 +164,84 @@ export default function HowItWorks() {
         </div>
       </nav>
 
-      {/* FOR STUDENTS Section */}
+      {/* FOR PARENTS Section */}
+      <section className="pt-24 sm:pt-32 pb-16 sm:pb-20 px-4 sm:px-6">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-12">
+            <Badge className="bg-secondary/10 text-secondary border-secondary/30 px-4 py-2 text-sm font-medium mb-4">
+              <BookOpen className="h-4 w-4 mr-2" />
+              For Parents
+            </Badge>
+            <h2 className="text-3xl sm:text-4xl font-bold mb-4">Serious Learning, Made Engaging</h2>
+            <p className="text-muted-foreground text-lg">Expert-designed curriculum that delivers real results</p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-6 mb-12">
+            {parentFeatures.map((feature) => (
+              <Card key={feature.title} className="overflow-hidden hover:shadow-card transition-all duration-300">
+                <CardContent className="p-6">
+                  <div className="flex items-start gap-4">
+                    <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${feature.color} flex items-center justify-center flex-shrink-0`}>
+                      <feature.icon className="h-7 w-7 text-primary-foreground" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold mb-2">{feature.title}</h3>
+                      <p className="text-muted-foreground leading-relaxed">{feature.description}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* Parent benefits strip */}
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {parentBenefits.map((item) => (
+              <div key={item.title} className="text-center p-4 rounded-xl bg-muted/50">
+                <item.icon className="h-6 w-6 mx-auto mb-2 text-secondary" />
+                <div className="font-bold text-sm">{item.title}</div>
+                <div className="text-xs text-muted-foreground">{item.desc}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Parent Testimonials */}
       <section className="py-16 sm:py-20 px-4 sm:px-6 bg-muted/30">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-12">
+            <Badge className="bg-secondary/10 text-secondary border-secondary/30 px-4 py-2 text-sm font-medium mb-4">
+              <BookOpen className="h-4 w-4 mr-2" />
+              Parent Stories
+            </Badge>
+            <h2 className="text-3xl sm:text-4xl font-bold mb-4">What Parents Say</h2>
+            <p className="text-muted-foreground text-lg">Real results from real families</p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-6">
+            {parentTestimonials.map((testimonial, index) => (
+              <Card key={index} className="overflow-hidden hover:shadow-card transition-all duration-300 border-2 border-secondary/20">
+                <CardContent className="p-6">
+                  <div className="flex gap-1 mb-4">
+                    {[...Array(5)].map((_, i) => (
+                      <Star key={i} className="h-4 w-4 fill-secondary text-secondary" />
+                    ))}
+                  </div>
+                  <p className="text-foreground mb-4 italic">"{testimonial.quote}"</p>
+                  <div className="border-t pt-4">
+                    <div className="font-bold text-sm">{testimonial.author}</div>
+                    <div className="text-xs text-muted-foreground">{testimonial.role}</div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* FOR STUDENTS Section */}
+      <section className="py-16 sm:py-20 px-4 sm:px-6">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
             <Badge className="bg-primary/10 text-primary border-primary/30 px-4 py-2 text-sm font-medium mb-4">
@@ -210,49 +286,6 @@ export default function HowItWorks() {
         </div>
       </section>
 
-      {/* FOR PARENTS Section */}
-      <section className="py-16 sm:py-20 px-4 sm:px-6">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-12">
-            <Badge className="bg-secondary/10 text-secondary border-secondary/30 px-4 py-2 text-sm font-medium mb-4">
-              <BookOpen className="h-4 w-4 mr-2" />
-              For Parents
-            </Badge>
-            <h2 className="text-3xl sm:text-4xl font-bold mb-4">Serious Learning, Made Engaging</h2>
-            <p className="text-muted-foreground text-lg">Expert-designed curriculum that delivers real results</p>
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-6 mb-12">
-            {parentFeatures.map((feature) => (
-              <Card key={feature.title} className="overflow-hidden hover:shadow-card transition-all duration-300">
-                <CardContent className="p-6">
-                  <div className="flex items-start gap-4">
-                    <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${feature.color} flex items-center justify-center flex-shrink-0`}>
-                      <feature.icon className="h-7 w-7 text-primary-foreground" />
-                    </div>
-                    <div>
-                      <h3 className="text-xl font-bold mb-2">{feature.title}</h3>
-                      <p className="text-muted-foreground leading-relaxed">{feature.description}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-
-          {/* Parent benefits strip */}
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {parentBenefits.map((item) => (
-              <div key={item.title} className="text-center p-4 rounded-xl bg-muted/50">
-                <item.icon className="h-6 w-6 mx-auto mb-2 text-secondary" />
-                <div className="font-bold text-sm">{item.title}</div>
-                <div className="text-xs text-muted-foreground">{item.desc}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* Student Testimonials */}
       <section className="py-16 sm:py-20 px-4 sm:px-6 bg-muted/30">
         <div className="max-w-6xl mx-auto">
@@ -272,39 +305,6 @@ export default function HowItWorks() {
                   <div className="flex gap-1 mb-4">
                     {[...Array(5)].map((_, i) => (
                       <Star key={i} className="h-4 w-4 fill-primary text-primary" />
-                    ))}
-                  </div>
-                  <p className="text-foreground mb-4 italic">"{testimonial.quote}"</p>
-                  <div className="border-t pt-4">
-                    <div className="font-bold text-sm">{testimonial.author}</div>
-                    <div className="text-xs text-muted-foreground">{testimonial.role}</div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Parent Testimonials */}
-      <section className="py-16 sm:py-20 px-4 sm:px-6">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-12">
-            <Badge className="bg-secondary/10 text-secondary border-secondary/30 px-4 py-2 text-sm font-medium mb-4">
-              <BookOpen className="h-4 w-4 mr-2" />
-              Parent Stories
-            </Badge>
-            <h2 className="text-3xl sm:text-4xl font-bold mb-4">What Parents Say</h2>
-            <p className="text-muted-foreground text-lg">Real results from real families</p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-6">
-            {parentTestimonials.map((testimonial, index) => (
-              <Card key={index} className="overflow-hidden hover:shadow-card transition-all duration-300 border-2 border-secondary/20">
-                <CardContent className="p-6">
-                  <div className="flex gap-1 mb-4">
-                    {[...Array(5)].map((_, i) => (
-                      <Star key={i} className="h-4 w-4 fill-secondary text-secondary" />
                     ))}
                   </div>
                   <p className="text-foreground mb-4 italic">"{testimonial.quote}"</p>
