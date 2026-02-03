@@ -111,7 +111,7 @@ const testimonials = [
 ];
 
 const parentBenefits = [
-  { icon: Clock, title: "15 Min/Day", desc: "Fits any schedule" },
+  { icon: Clock, title: "20 Min/Day", desc: "Fits any schedule" },
   { icon: Brain, title: "Proven Methods", desc: "Research-backed learning" },
   { icon: TrendingUp, title: "Real Progress", desc: "Measurable improvement" },
   { icon: Star, title: "Exam Ready", desc: "Selective-level prep" },
@@ -275,33 +275,6 @@ export default function HowItWorks() {
                   </div>
                 </CardContent>
               </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Features List */}
-      <section className="py-16 sm:py-20 px-4 sm:px-6">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl sm:text-4xl font-bold mb-4">Everything You Need</h2>
-          </div>
-
-          <div className="grid sm:grid-cols-2 gap-4">
-            {[
-              "Curated vocabulary for NSW exams",
-              "Progress tracking & analytics",
-              "Parent dashboard for monitoring",
-              "Leaderboards & achievements",
-              "Dark mode support",
-              "Works on all devices",
-              "Regular content updates",
-              "AI-generated practice passages",
-            ].map((feature) => (
-              <div key={feature} className="flex items-center gap-3 p-4 rounded-lg bg-card border">
-                <CheckCircle2 className="h-5 w-5 text-success flex-shrink-0" />
-                <span className="font-medium">{feature}</span>
-              </div>
             ))}
           </div>
         </div>
