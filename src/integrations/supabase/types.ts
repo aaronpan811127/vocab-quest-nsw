@@ -899,6 +899,18 @@ export type Database = {
           username: string
         }[]
       }
+      get_questions_for_game: {
+        Args: { p_game_id: string; p_limit?: number; p_unit_id: string }
+        Returns: {
+          game_id: string
+          id: string
+          options: Json
+          passage_id: string
+          question_text: string
+          unit_id: string
+          word: string
+        }[]
+      }
       get_test_type_games: {
         Args: { p_test_type_id: string }
         Returns: {
