@@ -219,107 +219,131 @@ IMPORTANT:
 
     console.log("Generating Gap Fill passage content with AI...");
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        max_tokens: 8192,
-        messages: [
-          {
-            role: "system",
-            content: "You are an expert educational content creator specializing in NSW Selective High School entrance exam preparation. Create challenging but fair gap-fill exercises that test reading comprehension, logical thinking, and contextual understanding. Return only valid JSON with no markdown formatting or code blocks.",
-          },
-          { role: "user", content: prompt },
-        ],
-      }),
-    });
+    // Retry logic for AI generation
+    const MAX_RETRIES = 3;
+    let parsedContent = null;
+    let lastError = null;
 
-    if (!response.ok) {
-      if (response.status === 429) {
-        return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again later." }), {
-          status: 429,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "AI credits needed. Please add credits to continue." }), {
-          status: 402,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      const errorText = await response.text();
-      console.error("AI gateway error:", response.status, errorText);
-      throw new Error("Failed to generate Gap Fill passage content");
-    }
-
-    const data = await response.json();
-    const content = data.choices?.[0]?.message?.content;
-
-    if (!content) {
-      throw new Error("No content in AI response");
-    }
-
-    let parsedContent;
-    try {
-      let jsonStr = content
-        .replace(/```json\n?/g, "")
-        .replace(/```\n?/g, "")
-        .trim();
-
-      // Check for truncation
-      if (!jsonStr.trim().endsWith('}')) {
-        console.error("AI response appears truncated");
-        throw new Error("AI response was truncated - please retry");
-      }
-
-      const openBraces = (jsonStr.match(/{/g) || []).length;
-      const closeBraces = (jsonStr.match(/}/g) || []).length;
-      if (openBraces !== closeBraces) {
-        throw new Error("AI response was truncated (unbalanced JSON) - please retry");
-      }
-
-      // Clean control characters
-      jsonStr = jsonStr
-        .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
-        .replace(/[^\x20-\x7E\n\r\t\u00A0-\u00FF\u2000-\u206F\u2018-\u201F]/g, '');
-
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
       try {
-        parsedContent = JSON.parse(jsonStr);
-      } catch {
-        console.log("First parse attempt failed, trying aggressive cleanup...");
-        jsonStr = jsonStr
-          .replace(/[^\x20-\x7E\n\r\t]/g, '')
-          .replace(/\s+/g, ' ')
+        console.log(`AI generation attempt ${attempt}/${MAX_RETRIES}`);
+        
+        const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${LOVABLE_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "google/gemini-2.5-flash",
+            max_tokens: 8192,
+            messages: [
+              {
+                role: "system",
+                content: "You are an expert educational content creator specializing in NSW Selective High School entrance exam preparation. Create challenging but fair gap-fill exercises that test reading comprehension, logical thinking, and contextual understanding. Return only valid JSON with no markdown formatting or code blocks.",
+              },
+              { role: "user", content: prompt },
+            ],
+          }),
+        });
+
+        if (!response.ok) {
+          if (response.status === 429) {
+            return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again later." }), {
+              status: 429,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
+          }
+          if (response.status === 402) {
+            return new Response(JSON.stringify({ error: "AI credits needed. Please add credits to continue." }), {
+              status: 402,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
+          }
+          const errorText = await response.text();
+          console.error("AI gateway error:", response.status, errorText);
+          throw new Error("Failed to generate Gap Fill passage content");
+        }
+
+        const data = await response.json();
+        const content = data.choices?.[0]?.message?.content;
+
+        if (!content) {
+          throw new Error("No content in AI response");
+        }
+
+        let jsonStr = content
+          .replace(/```json\n?/g, "")
+          .replace(/```\n?/g, "")
           .trim();
-        parsedContent = JSON.parse(jsonStr);
+
+        // Check for truncation
+        if (!jsonStr.trim().endsWith('}')) {
+          console.error("AI response appears truncated");
+          throw new Error("AI response was truncated - retrying");
+        }
+
+        const openBraces = (jsonStr.match(/{/g) || []).length;
+        const closeBraces = (jsonStr.match(/}/g) || []).length;
+        if (openBraces !== closeBraces) {
+          throw new Error("AI response was truncated (unbalanced JSON) - retrying");
+        }
+
+        // Clean control characters
+        jsonStr = jsonStr
+          .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
+          .replace(/[^\x20-\x7E\n\r\t\u00A0-\u00FF\u2000-\u206F\u2018-\u201F]/g, '');
+
+        let tempContent;
+        try {
+          tempContent = JSON.parse(jsonStr);
+        } catch {
+          console.log("First parse attempt failed, trying aggressive cleanup...");
+          jsonStr = jsonStr
+            .replace(/[^\x20-\x7E\n\r\t]/g, '')
+            .replace(/\s+/g, ' ')
+            .trim();
+          tempContent = JSON.parse(jsonStr);
+        }
+
+        // Validate response structure
+        if (!tempContent.passage || typeof tempContent.passage !== 'string') {
+          throw new Error("Invalid passage content");
+        }
+
+        if (!tempContent.options || !Array.isArray(tempContent.options) || tempContent.options.length !== numOptions) {
+          throw new Error(`Expected ${numOptions} options but got ${tempContent.options?.length || 0}`);
+        }
+
+        if (!tempContent.answers || typeof tempContent.answers !== 'object') {
+          throw new Error("Missing answers mapping");
+        }
+
+        // Verify we have answers for all gaps
+        for (let i = 1; i <= numGaps; i++) {
+          if (!tempContent.answers[String(i)]) {
+            throw new Error(`Missing answer for Gap ${i}`);
+          }
+        }
+
+        // All validations passed
+        parsedContent = tempContent;
+        break; // Success, exit retry loop
+        
+      } catch (parseError) {
+        lastError = parseError;
+        console.error(`Attempt ${attempt} failed:`, parseError instanceof Error ? parseError.message : parseError);
+        
+        if (attempt < MAX_RETRIES) {
+          console.log(`Retrying in 1 second...`);
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
       }
-    } catch (parseError) {
-      console.error("Failed to parse AI response:", content.substring(0, 500));
-      throw new Error("Failed to parse generated content - please retry");
     }
 
-    // Validate response structure
-    if (!parsedContent.passage || typeof parsedContent.passage !== 'string') {
-      throw new Error("Invalid passage content");
-    }
-
-    if (!parsedContent.options || !Array.isArray(parsedContent.options) || parsedContent.options.length !== numOptions) {
-      throw new Error(`Expected ${numOptions} options but got ${parsedContent.options?.length || 0}`);
-    }
-
-    if (!parsedContent.answers || typeof parsedContent.answers !== 'object') {
-      throw new Error("Missing answers mapping");
-    }
-
-    // Verify we have answers for all gaps
-    for (let i = 1; i <= numGaps; i++) {
-      if (!parsedContent.answers[String(i)]) {
-        throw new Error(`Missing answer for Gap ${i}`);
-      }
+    if (!parsedContent) {
+      console.error("All retry attempts failed");
+      throw lastError || new Error("Failed to generate valid content after multiple attempts");
     }
 
     // Store the passage
