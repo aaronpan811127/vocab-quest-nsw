@@ -16,6 +16,7 @@ import ResetPassword from "./pages/ResetPassword";
 import AdminAuth from "./pages/AdminAuth";
 import AdminDashboard from "./pages/AdminDashboard";
 import HowItWorks from "./pages/HowItWorks";
+import Pricing from "./pages/Pricing";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -33,6 +34,7 @@ const App = () => (
                 <Routes>
                   <Route path="/" element={<Index />} />
                   <Route path="/how-it-works" element={<HowItWorks />} />
+                  <Route path="/pricing" element={<Pricing />} />
                   <Route path="/auth" element={<Auth />} />
                   <Route path="/parent-auth" element={<ParentAuth />} />
                   <Route path="/parent-dashboard" element={<ParentDashboard />} />
