@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -334,12 +334,30 @@ export const AdminQuestionReview = () => {
     }
   };
 
+  // Track initial mount to prevent double-fetch from cascading resets
+  const isInitialMount = useRef(true);
+  const isTestTypeInitializing = useRef(true);
+
   useEffect(() => {
+    // Skip fetch if we're still in initial cascade of filter resets
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
     fetchQuestions();
   }, [statusFilter, gameTypeFilter, testTypeFilter, unitFilter, showCurrentVocabOnly, page]);
 
-  // Reset unit and game type filters when test type changes
+  // Initial fetch on mount
   useEffect(() => {
+    fetchQuestions();
+  }, []);
+
+  // Reset unit and game type filters when test type changes (skip on initial set)
+  useEffect(() => {
+    if (isTestTypeInitializing.current) {
+      isTestTypeInitializing.current = false;
+      return;
+    }
     setUnitFilter("all");
     // Clear so fetch can default to first available game type for new context
     setGameTypeFilter("");
@@ -348,6 +366,8 @@ export const AdminQuestionReview = () => {
 
   // Reset game type filter when unit filter changes
   useEffect(() => {
+    // Only reset if unit actually changed by user (not initial "all")
+    if (unitFilter === "all") return;
     // Clear so fetch can default to first available game type for new context
     setGameTypeFilter("");
   }, [unitFilter]);
