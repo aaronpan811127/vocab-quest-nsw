@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Gamepad2, Zap, Trophy, Star, LogIn, GraduationCap, BookOpen, Target, Award, Users } from "lucide-react";
+import { Gamepad2, Zap, Trophy, Star, LogIn, GraduationCap, BookOpen, Target, Award, Users, HelpCircle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTestType, TestType } from "@/contexts/TestTypeContext";
 import { useNavigate } from "react-router-dom";
@@ -97,24 +97,35 @@ export const Hero = ({ onSelectTestType }: HeroProps) => {
         {/* Test Type Selection */}
         <div className="space-y-4">
           {!user ? (
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
+            <div className="flex flex-col items-center gap-4">
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
+                <Button
+                  variant="hero"
+                  size="lg"
+                  className="text-base sm:text-lg px-6 sm:px-8 py-5 sm:py-6 animate-glow-pulse w-full sm:w-auto"
+                  onClick={() => navigate("/auth")}
+                >
+                  <LogIn className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
+                  Student Sign In
+                </Button>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="text-base sm:text-lg px-6 sm:px-8 py-5 sm:py-6 border-secondary text-secondary hover:bg-secondary/10 w-full sm:w-auto"
+                  onClick={() => navigate("/parent-auth")}
+                >
+                  <Users className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
+                  Parent Sign In
+                </Button>
+              </div>
               <Button
-                variant="hero"
+                variant="ghost"
                 size="lg"
-                className="text-base sm:text-lg px-6 sm:px-8 py-5 sm:py-6 animate-glow-pulse w-full sm:w-auto"
-                onClick={() => navigate("/auth")}
+                className="text-muted-foreground hover:text-foreground gap-2"
+                onClick={() => navigate("/how-it-works")}
               >
-                <LogIn className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
-                Student Sign In
-              </Button>
-              <Button
-                variant="outline"
-                size="lg"
-                className="text-base sm:text-lg px-6 sm:px-8 py-5 sm:py-6 border-secondary text-secondary hover:bg-secondary/10 w-full sm:w-auto"
-                onClick={() => navigate("/parent-auth")}
-              >
-                <Users className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
-                Parent Sign In
+                <HelpCircle className="h-4 w-4" />
+                How It Works
               </Button>
             </div>
           ) : loading ? (

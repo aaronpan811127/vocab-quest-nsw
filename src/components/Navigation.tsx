@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Home, LayoutDashboard, Gamepad2, LogOut, LogIn, Sun, Moon } from "lucide-react";
+import { Home, LayoutDashboard, Gamepad2, LogOut, LogIn, Sun, Moon, HelpCircle } from "lucide-react";
 import { ProfileSettings } from "@/components/ProfileSettings";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/useProfile";
@@ -57,6 +57,10 @@ export const Navigation = ({
                 Dashboard
               </Button>
             )}
+            <Button variant="ghost" onClick={() => navigate("/how-it-works")} className="gap-2">
+              <HelpCircle className="h-4 w-4" />
+              How It Works
+            </Button>
             <Button variant="ghost" size="icon" onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
               {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </Button>
