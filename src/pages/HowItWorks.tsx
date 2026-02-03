@@ -25,103 +25,96 @@ import { useNavigate } from "react-router-dom";
 import { useTheme } from "next-themes";
 import { Sun, Moon, Home } from "lucide-react";
 
-const steps = [
+// Student-focused content
+const studentSteps = [
   {
     number: "01",
-    title: "Choose Your Test",
-    description: "Select your target exam - Selective, OC, or NAPLAN. We'll customize your learning path to match the exact vocabulary and format you need.",
+    title: "Choose Your Quest",
+    description: "Pick your adventure - Selective, OC, or NAPLAN. Your personalized learning journey awaits!",
     icon: Target,
     color: "from-primary to-primary/80",
   },
   {
     number: "02", 
-    title: "Pick a Unit",
-    description: "Each unit contains carefully curated vocabulary words. Start from Unit 1 or jump to any unit that matches your current level.",
+    title: "Pick Your Unit",
+    description: "Each unit is packed with exciting words to master. Start fresh or jump to your level!",
     icon: BookOpen,
     color: "from-secondary to-secondary/80",
   },
   {
     number: "03",
-    title: "Play & Learn",
-    description: "Engage with 10+ game modes designed to build deep vocabulary understanding. From flashcards to reading comprehension, there's something for every learning style.",
+    title: "Play & Win",
+    description: "Battle through 10+ fun games! Flashcards, matching, listening challenges - variety keeps it exciting.",
     icon: Gamepad2,
     color: "from-success to-success/80",
   },
   {
     number: "04",
-    title: "Track Progress",
-    description: "Watch your XP grow, maintain streaks, and climb the leaderboard. Parents can monitor progress through the dedicated parent dashboard.",
-    icon: TrendingUp,
+    title: "Level Up",
+    description: "Earn XP, build streaks, unlock achievements, and climb the leaderboard to become the ultimate vocab champion!",
+    icon: Trophy,
     color: "from-accent to-accent/80",
   },
 ];
 
-const gameCategories = [
+const studentGameHighlights = [
+  { icon: Gamepad2, title: "10+ Game Modes", desc: "Never get bored with variety" },
+  { icon: Trophy, title: "Leaderboards", desc: "Compete with other students" },
+  { icon: Zap, title: "Daily Streaks", desc: "Build habits, earn bonuses" },
+  { icon: Star, title: "XP & Levels", desc: "Track your growth journey" },
+];
+
+// Parent-focused content
+const parentFeatures = [
   {
-    title: "Learn",
-    description: "Build your vocabulary foundation",
-    icon: Brain,
-    color: "bg-primary/10 text-primary border-primary/30",
-    games: [
-      { name: "Flashcards", icon: LayoutGrid, desc: "Interactive word cards with definitions" },
-      { name: "Word Intuition", icon: Lightbulb, desc: "Guess meanings from context clues" },
-    ],
+    icon: BookOpen,
+    title: "Curated Vocabulary",
+    description: "Expert-selected words aligned with NSW Selective, OC, and NAPLAN exams. Each unit contains carefully chosen vocabulary that appears in actual tests.",
+    color: "from-primary to-primary/80",
   },
   {
-    title: "Practice",
-    description: "Reinforce what you've learned",
     icon: Target,
-    color: "bg-secondary/10 text-secondary border-secondary/30",
-    games: [
-      { name: "Context Master", icon: BookOpen, desc: "Choose correct word meanings" },
-      { name: "Cloze Challenge", icon: FileText, desc: "Fill in the missing words" },
-      { name: "Matching Game", icon: LayoutGrid, desc: "Match words to definitions" },
-    ],
+    title: "Selective-Level Questions",
+    description: "Practice questions mirror the difficulty and format of real Selective School placement tests. Your child trains with authentic exam-style content.",
+    color: "from-secondary to-secondary/80",
   },
   {
-    title: "Apply",
-    description: "Use vocabulary in real contexts",
-    icon: Sparkles,
-    color: "bg-success/10 text-success border-success/30",
-    games: [
-      { name: "Reading Quest", icon: BookOpen, desc: "Comprehension with vocabulary focus" },
-      { name: "Linked Extracts", icon: FileText, desc: "Connect ideas across passages" },
-      { name: "Gap Fill Passage", icon: PenTool, desc: "Complete passages with context" },
-    ],
+    icon: Brain,
+    title: "Science-Based Repetition",
+    description: "Our spaced repetition system is built on proven memory research. Words are reviewed at optimal intervals to maximize long-term retention.",
+    color: "from-success to-success/80",
   },
   {
-    title: "Master",
-    description: "Multi-sensory deep learning",
-    icon: Trophy,
-    color: "bg-accent/10 text-accent border-accent/30",
-    games: [
-      { name: "Listening", icon: Headphones, desc: "Audio-based word recognition" },
-      { name: "Speaking", icon: Mic, desc: "Pronunciation and recall practice" },
-    ],
+    icon: TrendingUp,
+    title: "Detailed Progress Tracking",
+    description: "Monitor your child's learning with the dedicated parent dashboard. See completed units, struggling words, time spent, and improvement trends.",
+    color: "from-accent to-accent/80",
   },
 ];
 
-const benefits = [
+const testimonials = [
   {
-    icon: Clock,
-    title: "15 Minutes Daily",
-    description: "Short, focused sessions that fit into any schedule",
+    quote: "My daughter improved her vocabulary score by 30% in just 2 months. The practice questions are exactly like the Selective test!",
+    author: "Sarah M.",
+    role: "Parent of Year 5 student",
   },
   {
-    icon: Brain,
-    title: "Science-Backed",
-    description: "Spaced repetition and active recall techniques",
+    quote: "Finally, a learning app my son actually wants to use. He's excited to maintain his streak every day.",
+    author: "David L.",
+    role: "Parent of Year 4 student",
   },
   {
-    icon: Zap,
-    title: "Gamified Learning",
-    description: "XP, streaks, and achievements keep motivation high",
+    quote: "The progress tracking helps me understand exactly where my child needs more support. Invaluable for exam prep.",
+    author: "Michelle K.",
+    role: "Parent of Year 6 student",
   },
-  {
-    icon: Star,
-    title: "Real Results",
-    description: "Vocabulary retention that lasts for exams and beyond",
-  },
+];
+
+const parentBenefits = [
+  { icon: Clock, title: "15 Min/Day", desc: "Fits any schedule" },
+  { icon: Brain, title: "Proven Methods", desc: "Research-backed learning" },
+  { icon: TrendingUp, title: "Real Progress", desc: "Measurable improvement" },
+  { icon: Star, title: "Exam Ready", desc: "Selective-level prep" },
 ];
 
 export default function HowItWorks() {
@@ -169,16 +162,20 @@ export default function HowItWorks() {
         </div>
       </section>
 
-      {/* How It Works Steps */}
+      {/* FOR STUDENTS Section */}
       <section className="py-16 sm:py-20 px-4 sm:px-6 bg-muted/30">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
-            <h2 className="text-3xl sm:text-4xl font-bold mb-4">Your Learning Journey</h2>
-            <p className="text-muted-foreground text-lg">Four simple steps to vocabulary mastery</p>
+            <Badge className="bg-primary/10 text-primary border-primary/30 px-4 py-2 text-sm font-medium mb-4">
+              <Gamepad2 className="h-4 w-4 mr-2" />
+              For Students
+            </Badge>
+            <h2 className="text-3xl sm:text-4xl font-bold mb-4">Your Epic Learning Adventure</h2>
+            <p className="text-muted-foreground text-lg">Level up your vocabulary while having a blast!</p>
           </div>
           
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {steps.map((step, index) => (
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+            {studentSteps.map((step) => (
               <Card key={step.number} className="relative overflow-hidden border-2 hover:border-primary/50 transition-all duration-300 hover:shadow-card group">
                 <CardContent className="p-6 pt-8">
                   <div className="absolute top-0 right-0 text-6xl font-bold text-muted/20 -mt-2 mr-2">
@@ -193,65 +190,91 @@ export default function HowItWorks() {
               </Card>
             ))}
           </div>
-        </div>
-      </section>
 
-      {/* Game Categories */}
-      <section className="py-16 sm:py-20 px-4 sm:px-6">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl sm:text-4xl font-bold mb-4">10+ Engaging Game Modes</h2>
-            <p className="text-muted-foreground text-lg">From learning to mastery, we've got you covered</p>
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-6">
-            {gameCategories.map((category) => (
-              <Card key={category.title} className="overflow-hidden hover:shadow-card transition-all duration-300">
-                <CardContent className="p-6">
-                  <div className="flex items-center gap-3 mb-4">
-                    <Badge className={category.color}>
-                      <category.icon className="h-4 w-4 mr-1" />
-                      {category.title}
-                    </Badge>
-                    <span className="text-sm text-muted-foreground">{category.description}</span>
-                  </div>
-                  <div className="space-y-3">
-                    {category.games.map((game) => (
-                      <div key={game.name} className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
-                        <div className="p-2 rounded-lg bg-background">
-                          <game.icon className="h-4 w-4 text-foreground" />
-                        </div>
-                        <div>
-                          <div className="font-medium text-sm">{game.name}</div>
-                          <div className="text-xs text-muted-foreground">{game.desc}</div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
+          {/* Game highlights */}
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {studentGameHighlights.map((item) => (
+              <div key={item.title} className="flex items-center gap-3 p-4 rounded-xl bg-card border hover:shadow-card transition-all duration-300">
+                <div className="p-2 rounded-lg bg-gradient-primary">
+                  <item.icon className="h-5 w-5 text-primary-foreground" />
+                </div>
+                <div>
+                  <div className="font-bold text-sm">{item.title}</div>
+                  <div className="text-xs text-muted-foreground">{item.desc}</div>
+                </div>
+              </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Benefits */}
+      {/* FOR PARENTS Section */}
+      <section className="py-16 sm:py-20 px-4 sm:px-6">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-12">
+            <Badge className="bg-secondary/10 text-secondary border-secondary/30 px-4 py-2 text-sm font-medium mb-4">
+              <BookOpen className="h-4 w-4 mr-2" />
+              For Parents
+            </Badge>
+            <h2 className="text-3xl sm:text-4xl font-bold mb-4">Serious Learning, Made Engaging</h2>
+            <p className="text-muted-foreground text-lg">Expert-designed curriculum that delivers real results</p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-6 mb-12">
+            {parentFeatures.map((feature) => (
+              <Card key={feature.title} className="overflow-hidden hover:shadow-card transition-all duration-300">
+                <CardContent className="p-6">
+                  <div className="flex items-start gap-4">
+                    <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${feature.color} flex items-center justify-center flex-shrink-0`}>
+                      <feature.icon className="h-7 w-7 text-primary-foreground" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold mb-2">{feature.title}</h3>
+                      <p className="text-muted-foreground leading-relaxed">{feature.description}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* Parent benefits strip */}
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {parentBenefits.map((item) => (
+              <div key={item.title} className="text-center p-4 rounded-xl bg-muted/50">
+                <item.icon className="h-6 w-6 mx-auto mb-2 text-secondary" />
+                <div className="font-bold text-sm">{item.title}</div>
+                <div className="text-xs text-muted-foreground">{item.desc}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials */}
       <section className="py-16 sm:py-20 px-4 sm:px-6 bg-muted/30">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
-            <h2 className="text-3xl sm:text-4xl font-bold mb-4">Why VocabQuest Works</h2>
-            <p className="text-muted-foreground text-lg">Built on proven learning science</p>
+            <h2 className="text-3xl sm:text-4xl font-bold mb-4">What Parents Say</h2>
+            <p className="text-muted-foreground text-lg">Real results from real families</p>
           </div>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {benefits.map((benefit) => (
-              <div key={benefit.title} className="text-center p-6 rounded-xl bg-card border hover:shadow-card transition-all duration-300">
-                <div className="w-12 h-12 rounded-full bg-gradient-primary flex items-center justify-center mx-auto mb-4">
-                  <benefit.icon className="h-6 w-6 text-primary-foreground" />
-                </div>
-                <h3 className="font-bold mb-2">{benefit.title}</h3>
-                <p className="text-sm text-muted-foreground">{benefit.description}</p>
-              </div>
+          <div className="grid md:grid-cols-3 gap-6">
+            {testimonials.map((testimonial, index) => (
+              <Card key={index} className="overflow-hidden hover:shadow-card transition-all duration-300">
+                <CardContent className="p-6">
+                  <div className="flex gap-1 mb-4">
+                    {[...Array(5)].map((_, i) => (
+                      <Star key={i} className="h-4 w-4 fill-accent text-accent" />
+                    ))}
+                  </div>
+                  <p className="text-foreground mb-4 italic">"{testimonial.quote}"</p>
+                  <div className="border-t pt-4">
+                    <div className="font-bold text-sm">{testimonial.author}</div>
+                    <div className="text-xs text-muted-foreground">{testimonial.role}</div>
+                  </div>
+                </CardContent>
+              </Card>
             ))}
           </div>
         </div>
