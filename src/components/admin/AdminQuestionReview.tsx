@@ -201,7 +201,7 @@ export const AdminQuestionReview = () => {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [vocabulary, setVocabulary] = useState<VocabularyItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState<string[]>(["pending"]);
+  const [statusFilter, setStatusFilter] = useState<string>("pending");
   const [gameTypeFilter, setGameTypeFilter] = useState("");
   const [testTypeFilter, setTestTypeFilter] = useState("");
   const [unitFilter, setUnitFilter] = useState("all");
@@ -249,7 +249,7 @@ export const AdminQuestionReview = () => {
       if (!session) return;
 
       const params = new URLSearchParams({
-        status: statusFilter.join(','),
+        status: statusFilter,
         game_type: gameTypeFilter,
         test_type_id: testTypeFilter,
         unit_id: unitFilter,
@@ -619,34 +619,27 @@ export const AdminQuestionReview = () => {
           ))}
         </RadioGroup>
 
-        {/* Status Filter - cascades down to unit and game type filters */}
-        <div className="flex items-center gap-1">
+        {/* Status Filter - single selection radio buttons */}
+        <RadioGroup
+          value={statusFilter}
+          onValueChange={(value) => {
+            setStatusFilter(value);
+            // Cascade: reset downstream filters
+            setUnitFilter('all');
+            setGameTypeFilter('');
+            setPage(1);
+          }}
+          className="flex items-center gap-2"
+        >
           {["pending", "approved", "rejected"].map((status) => (
-            <Button
-              key={status}
-              variant={statusFilter.includes(status) ? "default" : "outline"}
-              size="sm"
-              onClick={() => {
-                setStatusFilter(prev => {
-                  if (prev.includes(status)) {
-                    // Don't allow deselecting all
-                    if (prev.length === 1) return prev;
-                    return prev.filter(s => s !== status);
-                  }
-                  return [...prev, status];
-                });
-                // Cascade: reset downstream filters
-                setUnitFilter('all');
-                // Clear so fetch can default to first available game type
-                setGameTypeFilter('');
-                setPage(1);
-              }}
-              className="capitalize"
-            >
-              {status}
-            </Button>
+            <div key={status} className="flex items-center space-x-1">
+              <RadioGroupItem value={status} id={`status-${status}`} />
+              <Label htmlFor={`status-${status}`} className="capitalize cursor-pointer">
+                {status}
+              </Label>
+            </div>
           ))}
-        </div>
+        </RadioGroup>
 
         {/* Unit and Game Type Filters */}
         <div className="flex flex-wrap items-center gap-2">
