@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface LeaderboardEntry {
-  id: string;
   username: string | null;
   level: number;
   total_xp: number;
