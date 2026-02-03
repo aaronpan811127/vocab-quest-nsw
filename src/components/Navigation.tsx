@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Home, LayoutDashboard, Gamepad2, LogOut, LogIn, Sun, Moon, HelpCircle, Menu } from "lucide-react";
+import { Home, LayoutDashboard, Gamepad2, LogOut, LogIn, Sun, Moon, HelpCircle, Menu, CreditCard } from "lucide-react";
 import { ProfileSettings } from "@/components/ProfileSettings";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/useProfile";
@@ -75,6 +75,10 @@ export const Navigation = ({
               <HelpCircle className="h-4 w-4" />
               How It Works
             </Button>
+            <Button variant="ghost" onClick={() => navigate("/pricing")} className="gap-2">
+              <CreditCard className="h-4 w-4" />
+              Pricing
+            </Button>
             <Button variant="ghost" size="icon" onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
               {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </Button>
@@ -122,6 +126,14 @@ export const Navigation = ({
                   >
                     <HelpCircle className="h-5 w-5" />
                     How It Works
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    onClick={() => handleNavigateTo("/pricing")} 
+                    className="justify-start gap-3 h-12"
+                  >
+                    <CreditCard className="h-5 w-5" />
+                    Pricing
                   </Button>
                   <Button 
                     variant="ghost" 
