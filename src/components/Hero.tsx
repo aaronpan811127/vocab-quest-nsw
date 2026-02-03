@@ -90,42 +90,31 @@ export const Hero = ({ onSelectTestType }: HeroProps) => {
           <p className="text-base sm:text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto leading-relaxed px-2">
             Master words through epic gaming adventures.
             <br />
-            15-minute daily challenges that build your vocabulary with endless fun and real results.
+            20-minute daily challenges that build your vocabulary with endless fun and real results.
           </p>
         </div>
 
         {/* Test Type Selection */}
         <div className="space-y-4">
           {!user ? (
-            <div className="flex flex-col items-center gap-4">
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
-                <Button
-                  variant="hero"
-                  size="lg"
-                  className="text-base sm:text-lg px-6 sm:px-8 py-5 sm:py-6 animate-glow-pulse w-full sm:w-auto"
-                  onClick={() => navigate("/auth")}
-                >
-                  <LogIn className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
-                  Student Sign In
-                </Button>
-                <Button
-                  variant="outline"
-                  size="lg"
-                  className="text-base sm:text-lg px-6 sm:px-8 py-5 sm:py-6 border-secondary text-secondary hover:bg-secondary/10 w-full sm:w-auto"
-                  onClick={() => navigate("/parent-auth")}
-                >
-                  <Users className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
-                  Parent Sign In
-                </Button>
-              </div>
+            <div className="flex flex-col items-center gap-6">
               <Button
-                variant="ghost"
+                variant="hero"
                 size="lg"
-                className="text-muted-foreground hover:text-foreground gap-2"
+                className="text-lg sm:text-xl px-8 sm:px-10 py-6 sm:py-7 animate-glow-pulse w-full sm:w-auto"
+                onClick={() => navigate("/auth")}
+              >
+                <Zap className="h-5 w-5 sm:h-6 sm:w-6 mr-2" />
+                Start 7-Day Free Trial
+              </Button>
+              <Button
+                variant="outline"
+                size="lg"
+                className="text-base sm:text-lg px-6 sm:px-8 py-4 sm:py-5 border-primary/50 text-primary hover:bg-primary/10 font-semibold gap-2"
                 onClick={() => navigate("/how-it-works")}
               >
-                <HelpCircle className="h-4 w-4" />
-                How It Works
+                <HelpCircle className="h-5 w-5" />
+                See How It Works
               </Button>
             </div>
           ) : loading ? (
