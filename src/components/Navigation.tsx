@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Home, LayoutDashboard, Gamepad2, LogOut, LogIn, Sun, Moon, HelpCircle } from "lucide-react";
+import { Home, LayoutDashboard, Gamepad2, LogOut, LogIn, Sun, Moon, HelpCircle, Menu } from "lucide-react";
 import { ProfileSettings } from "@/components/ProfileSettings";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/useProfile";
@@ -7,6 +7,8 @@ import { useTestType } from "@/contexts/TestTypeContext";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "next-themes";
 import { Badge } from "@/components/ui/badge";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { useState } from "react";
 
 interface NavigationProps {
   currentView: "hero" | "dashboard" | "game";
@@ -22,10 +24,22 @@ export const Navigation = ({
   const { selectedTestType } = useTestType();
   const navigate = useNavigate();
   const { theme, setTheme } = useTheme();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleSignOut = async () => {
     await signOut();
     onViewChange("hero");
+    setMobileMenuOpen(false);
+  };
+
+  const handleNavigation = (view: "hero" | "dashboard" | "game") => {
+    onViewChange(view);
+    setMobileMenuOpen(false);
+  };
+
+  const handleNavigateTo = (path: string) => {
+    navigate(path);
+    setMobileMenuOpen(false);
   };
 
   return (
@@ -68,10 +82,90 @@ export const Navigation = ({
 
           {/* User Stats / Auth */}
           <div className="flex items-center gap-2 sm:gap-3">
-            {/* Theme toggle for mobile */}
-            <Button variant="ghost" size="icon" onClick={() => setTheme(theme === "dark" ? "light" : "dark")} className="md:hidden h-8 w-8">
-              {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-            </Button>
+            {/* Mobile Menu */}
+            <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="md:hidden h-8 w-8">
+                  <Menu className="h-5 w-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-[280px] sm:w-[320px]">
+                <SheetHeader>
+                  <SheetTitle className="flex items-center gap-2">
+                    <Gamepad2 className="h-5 w-5 text-primary" />
+                    VocabQuest
+                  </SheetTitle>
+                </SheetHeader>
+                <div className="flex flex-col gap-2 mt-6">
+                  <Button 
+                    variant={currentView === "hero" ? "default" : "ghost"} 
+                    onClick={() => handleNavigation("hero")} 
+                    className="justify-start gap-3 h-12"
+                  >
+                    <Home className="h-5 w-5" />
+                    Home
+                  </Button>
+                  {user && selectedTestType && (
+                    <Button 
+                      variant={currentView === "dashboard" ? "default" : "ghost"} 
+                      onClick={() => handleNavigation("dashboard")} 
+                      className="justify-start gap-3 h-12"
+                    >
+                      <LayoutDashboard className="h-5 w-5" />
+                      Dashboard
+                    </Button>
+                  )}
+                  <Button 
+                    variant="ghost" 
+                    onClick={() => handleNavigateTo("/how-it-works")} 
+                    className="justify-start gap-3 h-12"
+                  >
+                    <HelpCircle className="h-5 w-5" />
+                    How It Works
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    onClick={() => setTheme(theme === "dark" ? "light" : "dark")} 
+                    className="justify-start gap-3 h-12"
+                  >
+                    {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+                    {theme === "dark" ? "Light Mode" : "Dark Mode"}
+                  </Button>
+                  
+                  <div className="border-t border-border my-4" />
+                  
+                  {user ? (
+                    <Button 
+                      variant="ghost" 
+                      onClick={handleSignOut} 
+                      className="justify-start gap-3 h-12 text-destructive hover:text-destructive"
+                    >
+                      <LogOut className="h-5 w-5" />
+                      Sign Out
+                    </Button>
+                  ) : (
+                    <>
+                      <Button 
+                        variant="default" 
+                        onClick={() => handleNavigateTo("/auth")} 
+                        className="justify-start gap-3 h-12"
+                      >
+                        <Gamepad2 className="h-5 w-5" />
+                        Student Sign In
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        onClick={() => handleNavigateTo("/parent-auth")} 
+                        className="justify-start gap-3 h-12"
+                      >
+                        <LogIn className="h-5 w-5" />
+                        Parent Sign In
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </SheetContent>
+            </Sheet>
             
             {user && profile ? (
               <>
@@ -84,21 +178,19 @@ export const Navigation = ({
                     )}
                   </button>
                 } />
-                <Button variant="ghost" size="icon" onClick={handleSignOut} className="h-8 w-8 sm:h-9 sm:w-9">
+                <Button variant="ghost" size="icon" onClick={handleSignOut} className="hidden md:flex h-8 w-8 sm:h-9 sm:w-9">
                   <LogOut className="h-4 w-4" />
                 </Button>
               </>
             ) : (
-              <div className="flex items-center gap-2">
+              <div className="hidden md:flex items-center gap-2">
                 <Button variant="gaming" onClick={() => navigate("/auth")} className="gap-2 text-sm sm:text-base px-3 sm:px-4">
-                  <span className="sm:hidden font-bold">S</span>
-                  <LogIn className="h-4 w-4 hidden sm:block" />
-                  <span className="hidden sm:inline">Student</span>
+                  <LogIn className="h-4 w-4" />
+                  <span>Student</span>
                 </Button>
                 <Button variant="outline" onClick={() => navigate("/parent-auth")} className="gap-2 text-sm sm:text-base px-3 sm:px-4">
-                  <span className="sm:hidden font-bold">P</span>
-                  <LogIn className="h-4 w-4 hidden sm:block" />
-                  <span className="hidden sm:inline">Parent</span>
+                  <LogIn className="h-4 w-4" />
+                  <span>Parent</span>
                 </Button>
               </div>
             )}
