@@ -383,18 +383,16 @@ export const AdminContentStats = () => {
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
-        const [testTypesRes, gamesRes] = await Promise.all([
-          supabase.from('test_types').select('id, name, code').eq('is_enabled', true).order('name'),
-          supabase.from('games').select('id, name, game_type, rules')
-        ]);
+        const { data: testTypesData } = await supabase
+          .from('test_types')
+          .select('id, name, code')
+          .eq('is_enabled', true)
+          .order('name');
 
-        if (testTypesRes.data) {
-          setTestTypes(testTypesRes.data);
-          const selective = testTypesRes.data.find(t => t.code === 'SELECTIVE');
-          setTestTypeFilter(selective?.id || testTypesRes.data[0]?.id || '');
-        }
-        if (gamesRes.data) {
-          setGames(gamesRes.data as Game[]);
+        if (testTypesData) {
+          setTestTypes(testTypesData);
+          const selective = testTypesData.find(t => t.code === 'SELECTIVE');
+          setTestTypeFilter(selective?.id || testTypesData[0]?.id || '');
         }
       } catch (error) {
         console.error('Error fetching initial data:', error);
@@ -402,6 +400,38 @@ export const AdminContentStats = () => {
     };
     fetchInitialData();
   }, []);
+
+  // Fetch enabled games when test type changes
+  useEffect(() => {
+    if (!testTypeFilter) return;
+    
+    const fetchEnabledGames = async () => {
+      try {
+        // Get enabled games for this test type from test_type_games
+        const { data: enabledGameLinks } = await supabase
+          .from('test_type_games')
+          .select('game_id')
+          .eq('test_type_id', testTypeFilter)
+          .eq('is_enabled', true);
+
+        const enabledGameIds = enabledGameLinks?.map(g => g.game_id) || [];
+
+        if (enabledGameIds.length > 0) {
+          const { data: gamesData } = await supabase
+            .from('games')
+            .select('id, name, game_type, rules')
+            .in('id', enabledGameIds);
+
+          setGames((gamesData as Game[]) || []);
+        } else {
+          setGames([]);
+        }
+      } catch (error) {
+        console.error('Error fetching enabled games:', error);
+      }
+    };
+    fetchEnabledGames();
+  }, [testTypeFilter]);
 
   // Fetch units when test type changes
   useEffect(() => {

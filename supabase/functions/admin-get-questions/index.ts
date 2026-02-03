@@ -56,10 +56,26 @@ Deno.serve(async (req) => {
     const limit = parseInt(url.searchParams.get('limit') || '20');
     const offset = (page - 1) * limit;
 
-    console.log(`[v6] Admin ${adminUser.id} fetching: game_type=${gameType}, test_type=${testTypeId}, unit=${unitId}, active_vocab_only=${activeVocabOnly}, page=${page}`);
+    console.log(`[v7] Admin ${adminUser.id} fetching: game_type=${gameType}, test_type=${testTypeId}, unit=${unitId}, active_vocab_only=${activeVocabOnly}, page=${page}`);
     
     // Get all games first to use content_type from rules
-    const { data: games } = await supabase.from('games').select('id, name, game_type, rules');
+    const { data: allGames } = await supabase.from('games').select('id, name, game_type, rules');
+    
+    // Get enabled games for the selected test type
+    let enabledGameIds: string[] = [];
+    if (testTypeId !== 'all') {
+      const { data: enabledGameLinks } = await supabase
+        .from('test_type_games')
+        .select('game_id')
+        .eq('test_type_id', testTypeId)
+        .eq('is_enabled', true);
+      enabledGameIds = enabledGameLinks?.map(g => g.game_id) || [];
+    }
+    
+    // Filter games to only enabled ones for the test type (if test type is selected)
+    const games = testTypeId !== 'all' && enabledGameIds.length > 0
+      ? (allGames || []).filter(g => enabledGameIds.includes(g.id))
+      : allGames || [];
     
     // Helper to get content_type from game rules
     const getContentType = (game: { rules?: { content_type?: string } | null }): string | null => {
@@ -70,11 +86,11 @@ Deno.serve(async (req) => {
     };
 
     // Passage-based game types (from rules.content_type = 'passage')
-    const passageBasedGames = (games || []).filter(g => getContentType(g) === 'passage');
+    const passageBasedGames = games.filter(g => getContentType(g) === 'passage');
     const passageBasedGameTypes = passageBasedGames.map(g => g.game_type);
 
     // Game types to exclude from review (from rules.content_type = 'excluded')
-    const excludedGames = (games || []).filter(g => getContentType(g) === 'excluded');
+    const excludedGames = games.filter(g => getContentType(g) === 'excluded');
     const excludedGameTypes = excludedGames.map(g => g.game_type);
     
     // Get all test types (only enabled ones)
