@@ -8,7 +8,6 @@ import { Trophy, Crown, Medal, Award, Zap, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface LeaderboardEntry {
-  id: string;
   username: string | null;
   level: number;
   total_xp: number;
@@ -22,6 +21,7 @@ export const LeaderboardDialog = () => {
   const [topPlayers, setTopPlayers] = useState<LeaderboardEntry[]>([]);
   const [userContext, setUserContext] = useState<LeaderboardEntry[]>([]);
   const [userRank, setUserRank] = useState<number | null>(null);
+  const [currentUsername, setCurrentUsername] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
 
@@ -30,6 +30,21 @@ export const LeaderboardDialog = () => {
       fetchLeaderboard();
     }
   }, [open, selectedTestType?.id]);
+
+  // Fetch current user's username
+  useEffect(() => {
+    const fetchUsername = async () => {
+      if (user) {
+        const { data } = await supabase
+          .from("profiles")
+          .select("username")
+          .eq("user_id", user.id)
+          .single();
+        setCurrentUsername(data?.username || null);
+      }
+    };
+    fetchUsername();
+  }, [user]);
 
   const fetchLeaderboard = async () => {
     if (!selectedTestType?.id) return;
@@ -50,7 +65,7 @@ export const LeaderboardDialog = () => {
     }
 
     // If user is logged in, find their position and surrounding players
-    if (user) {
+    if (user && currentUsername) {
       // Get full leaderboard to find user position
       const { data: fullBoard, error: fullError } = await supabase
         .rpc("get_leaderboard", { 
@@ -59,7 +74,7 @@ export const LeaderboardDialog = () => {
         });
 
       if (!fullError && fullBoard) {
-        const userIndex = fullBoard.findIndex((p: LeaderboardEntry) => p.id === user.id);
+        const userIndex = fullBoard.findIndex((p: LeaderboardEntry) => p.username === currentUsername);
         
         if (userIndex !== -1) {
           setUserRank(userIndex + 1);
@@ -115,12 +130,12 @@ export const LeaderboardDialog = () => {
     }
   };
 
-  const renderPlayer = (entry: LeaderboardEntry) => {
-    const isCurrentUser = user?.id === entry.id;
+  const renderPlayer = (entry: LeaderboardEntry, index: number) => {
+    const isCurrentUser = currentUsername && entry.username === currentUsername;
     
     return (
       <div
-        key={`${entry.id}-${entry.rank}`}
+        key={`${entry.username}-${entry.rank}-${index}`}
         className={`flex items-center gap-3 p-2.5 rounded-lg border backdrop-blur-sm transition-all ${getRankBg(entry.rank || 0, isCurrentUser)}`}
       >
         <div className="w-6 flex justify-center">
@@ -183,7 +198,7 @@ export const LeaderboardDialog = () => {
               {/* Top 10 */}
               <div className="space-y-2">
                 <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Top 10</h3>
-                {topPlayers.map(renderPlayer)}
+                {topPlayers.map((player, index) => renderPlayer(player, index))}
               </div>
               
               {/* User context if not in top 10 */}
@@ -192,7 +207,7 @@ export const LeaderboardDialog = () => {
                   <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                     Your Position #{userRank}
                   </h3>
-                  {userContext.map(renderPlayer)}
+                  {userContext.map((player, index) => renderPlayer(player, index))}
                 </div>
               )}
               

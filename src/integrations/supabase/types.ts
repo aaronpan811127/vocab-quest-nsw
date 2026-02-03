@@ -893,7 +893,6 @@ export type Database = {
       get_leaderboard: {
         Args: { limit_count?: number; p_test_type_id?: string }
         Returns: {
-          id: string
           level: number
           study_streak: number
           total_xp: number
