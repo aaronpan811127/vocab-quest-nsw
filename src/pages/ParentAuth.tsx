@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, Heart, BarChart3, CreditCard, ArrowLeft } from "lucide-react";
+import { Users, Heart, BarChart3, CreditCard, ArrowLeft, Gamepad2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const ParentAuth = () => {
@@ -131,13 +131,17 @@ const ParentAuth = () => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-secondary/10 via-background to-background flex items-center justify-center p-4">
       <div className="w-full max-w-md space-y-8">
-        {/* Logo */}
-        <div className="text-center space-y-2">
+        {/* Header with Parent Account Badge */}
+        <div className="text-center space-y-3">
           <div className="flex items-center justify-center gap-2">
             <Users className="h-10 w-10 text-secondary" />
             <h1 className="text-3xl font-bold bg-gradient-to-r from-secondary to-secondary/70 bg-clip-text text-transparent">
-              Parent Portal
+              VocabQuest
             </h1>
+          </div>
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-secondary/10 border-2 border-secondary/30">
+            <Users className="h-5 w-5 text-secondary" />
+            <span className="font-bold text-secondary text-lg">Parent Account</span>
           </div>
           <p className="text-muted-foreground">Monitor and support your child's learning journey</p>
         </div>
@@ -307,24 +311,29 @@ const ParentAuth = () => {
           )}
         </Card>
 
-        <div className="text-center space-y-2">
-          <div className="flex flex-col gap-2">
+        {/* Footer Links */}
+        <div className="text-center space-y-3">
+          <Button 
+            variant="ghost" 
+            className="text-muted-foreground"
+            onClick={() => navigate("/")}
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Home
+          </Button>
+          
+          <div className="p-4 rounded-xl bg-primary/10 border-2 border-primary/30">
+            <p className="text-sm text-muted-foreground mb-2">Not a parent?</p>
             <Button 
-              variant="ghost" 
-              className="text-muted-foreground"
-              onClick={() => navigate("/")}
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Home
-            </Button>
-            <Button 
-              variant="link" 
-              className="text-muted-foreground"
+              variant="outline" 
+              className="border-primary text-primary hover:bg-primary/10 gap-2"
               onClick={() => navigate("/auth")}
             >
-              Student Sign In
+              <Gamepad2 className="h-4 w-4" />
+              Go to Student Account
             </Button>
           </div>
+          
           <p className="text-xs text-muted-foreground">
             Supporting your child's vocabulary journey! 📚
           </p>

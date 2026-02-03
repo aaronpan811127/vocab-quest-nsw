@@ -129,13 +129,16 @@ const Auth = () => {
   return (
     <div className="min-h-screen bg-gradient-hero flex items-center justify-center p-4">
       <div className="w-full max-w-md space-y-8">
-        {/* Logo */}
-        <div className="text-center space-y-2">
+        {/* Header with Student Account Badge */}
+        <div className="text-center space-y-3">
           <div className="flex items-center justify-center gap-2">
             <Gamepad2 className="h-10 w-10 text-primary" />
             <h1 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">VocabQuest</h1>
           </div>
-          <Badge className="bg-primary/20 text-primary border-primary/30">Student Portal</Badge>
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border-2 border-primary/30">
+            <Gamepad2 className="h-5 w-5 text-primary" />
+            <span className="font-bold text-primary text-lg">Student Account</span>
+          </div>
           <p className="text-muted-foreground">Master vocabulary through gaming!</p>
         </div>
 
@@ -287,17 +290,25 @@ const Auth = () => {
           )}
         </Card>
 
-        <div className="text-center space-y-2">
-          <div className="flex flex-col gap-1">
-            <Button variant="ghost" className="text-muted-foreground" onClick={() => navigate("/")}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Home
-            </Button>
-            <Button variant="ghost" className="text-muted-foreground" onClick={() => navigate("/parent-auth")}>
-              <Users className="h-4 w-4 mr-2" />
-              Are you a parent? Sign in here
+        {/* Footer Links */}
+        <div className="text-center space-y-3">
+          <Button variant="ghost" className="text-muted-foreground" onClick={() => navigate("/")}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Home
+          </Button>
+          
+          <div className="p-4 rounded-xl bg-secondary/10 border-2 border-secondary/30">
+            <p className="text-sm text-muted-foreground mb-2">Not a student?</p>
+            <Button 
+              variant="outline" 
+              className="border-secondary text-secondary hover:bg-secondary/10 gap-2"
+              onClick={() => navigate("/parent-auth")}
+            >
+              <Users className="h-4 w-4" />
+              Go to Parent Account
             </Button>
           </div>
+          
           <p className="text-xs text-muted-foreground">By continuing, you agree to learn awesome vocabulary! 🎮</p>
         </div>
       </div>
