@@ -54,19 +54,6 @@ const Pricing = () => {
         </div>
       </section>
 
-      {/* Trial Highlight Banner */}
-      <div className="max-w-4xl mx-auto px-4 -mt-4 mb-8">
-        <div className="bg-gradient-to-r from-primary/20 via-primary/10 to-secondary/20 border-2 border-primary/30 rounded-2xl p-6 text-center">
-          <div className="flex items-center justify-center gap-2 mb-2">
-            <Sparkles className="h-6 w-6 text-primary" />
-            <span className="text-2xl font-bold text-primary">7-Day Free Trial</span>
-            <Sparkles className="h-6 w-6 text-primary" />
-          </div>
-          <p className="text-muted-foreground">
-            Students can explore the first 2 units and all games free for 7 days — no payment required!
-          </p>
-        </div>
-      </div>
 
       {/* Billing Toggle */}
       <div className="max-w-5xl mx-auto px-4 pt-12">
