@@ -1,12 +1,13 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "npm:resend@2.0.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 interface ContactFormRequest {
@@ -16,6 +17,81 @@ interface ContactFormRequest {
   message: string;
 }
 
+// Simple in-memory rate limiting (per email, 5 requests per hour)
+const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+const RATE_LIMIT_MAX = 5;
+const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+
+function checkRateLimit(email: string): { allowed: boolean; remaining: number } {
+  const now = Date.now();
+  const key = email.toLowerCase().trim();
+  const entry = rateLimitMap.get(key);
+
+  if (!entry || now > entry.resetTime) {
+    rateLimitMap.set(key, { count: 1, resetTime: now + RATE_LIMIT_WINDOW_MS });
+    return { allowed: true, remaining: RATE_LIMIT_MAX - 1 };
+  }
+
+  if (entry.count >= RATE_LIMIT_MAX) {
+    return { allowed: false, remaining: 0 };
+  }
+
+  entry.count++;
+  return { allowed: true, remaining: RATE_LIMIT_MAX - entry.count };
+}
+
+// Server-side input validation (matches client-side Zod schema)
+function validateInput(data: ContactFormRequest): { valid: boolean; error?: string } {
+  const { name, email, subject, message } = data;
+
+  // Check required fields
+  if (!name || !email || !subject || !message) {
+    return { valid: false, error: "Missing required fields" };
+  }
+
+  // Validate name (1-100 chars)
+  const trimmedName = String(name).trim();
+  if (trimmedName.length < 1 || trimmedName.length > 100) {
+    return { valid: false, error: "Name must be between 1 and 100 characters" };
+  }
+
+  // Validate email format and length (max 255 chars)
+  const trimmedEmail = String(email).trim();
+  if (trimmedEmail.length > 255) {
+    return { valid: false, error: "Email must be less than 255 characters" };
+  }
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(trimmedEmail)) {
+    return { valid: false, error: "Invalid email format" };
+  }
+
+  // Validate subject (1-200 chars)
+  const trimmedSubject = String(subject).trim();
+  if (trimmedSubject.length < 1 || trimmedSubject.length > 200) {
+    return { valid: false, error: "Subject must be between 1 and 200 characters" };
+  }
+
+  // Validate message (10-2000 chars)
+  const trimmedMessage = String(message).trim();
+  if (trimmedMessage.length < 10 || trimmedMessage.length > 2000) {
+    return { valid: false, error: "Message must be between 10 and 2000 characters" };
+  }
+
+  return { valid: true };
+}
+
+// HTML escape function to prevent XSS in email content
+function escapeHtml(text: string): string {
+  const htmlEntities: Record<string, string> = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+  };
+  return String(text).replace(/[&<>"']/g, (char) => htmlEntities[char] || char);
+}
+
 const handler = async (req: Request): Promise<Response> => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -23,13 +99,17 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { name, email, subject, message }: ContactFormRequest = await req.json();
+    const body = await req.json();
+    const { name, email, subject, message } = body as ContactFormRequest;
 
-    console.log(`Sending contact form email from ${email}`);
+    console.log(`Contact form submission from: ${email?.substring(0, 50)}...`);
 
-    if (!name || !email || !subject || !message) {
+    // Server-side validation
+    const validation = validateInput({ name, email, subject, message });
+    if (!validation.valid) {
+      console.log(`Validation failed: ${validation.error}`);
       return new Response(
-        JSON.stringify({ error: "Missing required fields" }),
+        JSON.stringify({ error: validation.error }),
         {
           status: 400,
           headers: { "Content-Type": "application/json", ...corsHeaders },
@@ -37,11 +117,34 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
+    // Rate limiting check
+    const rateLimit = checkRateLimit(email);
+    if (!rateLimit.allowed) {
+      console.log(`Rate limit exceeded for email: ${email?.substring(0, 20)}...`);
+      return new Response(
+        JSON.stringify({ error: "Too many requests. Please try again later." }),
+        {
+          status: 429,
+          headers: { 
+            "Content-Type": "application/json", 
+            "Retry-After": "3600",
+            ...corsHeaders 
+          },
+        }
+      );
+    }
+
+    // Sanitize inputs for HTML email
+    const safeName = escapeHtml(name.trim());
+    const safeEmail = escapeHtml(email.trim());
+    const safeSubject = escapeHtml(subject.trim());
+    const safeMessage = escapeHtml(message.trim());
+
     const emailResponse = await resend.emails.send({
       from: "VocabQuest Contact <onboarding@resend.dev>",
       to: ["aaronpan@gmail.com"],
-      replyTo: email,
-      subject: `[VocabQuest Contact] ${subject}`,
+      replyTo: email.trim(),
+      subject: `[VocabQuest Contact] ${safeSubject}`,
       html: `
         <!DOCTYPE html>
         <html>
@@ -66,21 +169,21 @@ const handler = async (req: Request): Promise<Response> => {
             <div class="content">
               <div class="field">
                 <div class="label">From</div>
-                <div class="value">${name} &lt;${email}&gt;</div>
+                <div class="value">${safeName} &lt;${safeEmail}&gt;</div>
               </div>
               
               <div class="field">
                 <div class="label">Subject</div>
-                <div class="value">${subject}</div>
+                <div class="value">${safeSubject}</div>
               </div>
               
               <div class="field">
                 <div class="label">Message</div>
-                <div class="message-box">${message}</div>
+                <div class="message-box">${safeMessage}</div>
               </div>
               
               <p style="color: #6b7280; font-size: 14px; margin-top: 24px;">
-                You can reply directly to this email to respond to ${name}.
+                You can reply directly to this email to respond to ${safeName}.
               </p>
             </div>
           </div>
@@ -98,7 +201,7 @@ const handler = async (req: Request): Promise<Response> => {
   } catch (error: any) {
     console.error("Error sending contact email:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: "Failed to send message. Please try again." }),
       {
         status: 500,
         headers: { "Content-Type": "application/json", ...corsHeaders },
