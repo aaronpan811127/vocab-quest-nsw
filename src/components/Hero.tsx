@@ -124,7 +124,7 @@ export const Hero = ({ onSelectTestType }: HeroProps) => {
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 max-w-3xl mx-auto">
+            <div className="flex flex-wrap justify-center gap-3 sm:gap-4 max-w-3xl mx-auto">
               {testTypes.map((testType) => {
                 const Icon = testTypeIcons[testType.code] || GraduationCap;
                 const gradient = testTypeColors[testType.code] || "from-primary to-primary/80";
