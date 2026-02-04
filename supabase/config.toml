@@ -65,3 +65,6 @@ verify_jwt = false
 
 [functions.complete-expired-sessions]
 verify_jwt = false
+
+[functions.send-contact-email]
+verify_jwt = false
