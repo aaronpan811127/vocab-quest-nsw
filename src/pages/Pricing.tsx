@@ -44,19 +44,18 @@ const Pricing = () => {
       </nav>
 
       {/* Header */}
-      <section className="pt-24 sm:pt-32 pb-8 px-4 sm:px-6">
+      <section className="pt-24 sm:pt-32 pb-4 px-4 sm:px-6">
         <div className="max-w-4xl mx-auto text-center">
           <Badge className="bg-primary/10 text-primary border-primary/30 px-4 py-2 text-sm font-medium mb-4">
             <Crown className="h-4 w-4 mr-2" />
             Simple Pricing
           </Badge>
-          <h2 className="text-3xl sm:text-4xl font-bold mb-4">Start Learning Today</h2>
+          <h2 className="text-3xl sm:text-4xl font-bold">Start Learning Today</h2>
         </div>
       </section>
 
-
       {/* Billing Toggle */}
-      <div className="max-w-5xl mx-auto px-4 pt-12">
+      <div className="max-w-5xl mx-auto px-4 pt-6">
         <div className="flex items-center justify-center gap-4 mb-8">
           <button
             onClick={() => setBillingCycle('monthly')}
