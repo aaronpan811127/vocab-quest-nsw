@@ -11,6 +11,9 @@ interface SubscriptionState {
   subscriptionEnd: string | null;
   billingInterval: BillingInterval;
   loading: boolean;
+  isTrialActive: boolean;
+  trialDaysRemaining: number;
+  trialExpired: boolean;
 }
 
 interface SubscriptionContextType extends SubscriptionState {
@@ -27,7 +30,7 @@ const SubscriptionContext = createContext<SubscriptionContextType | undefined>(u
 const TIER_LIMITS = {
   free: {
     maxChildren: 1,
-    maxUnitsPerTestType: 2,
+    maxUnitsPerTestType: 2, // Limited to first 2 units during trial
     canViewProgressReports: true, // High-level reports only
     hasFullProgressReports: false,
   },
@@ -47,6 +50,9 @@ export const SubscriptionProvider = ({ children }: { children: ReactNode }) => {
     subscriptionEnd: null,
     billingInterval: null,
     loading: true,
+    isTrialActive: false,
+    trialDaysRemaining: 0,
+    trialExpired: true,
   });
 
   const checkSubscription = async () => {
@@ -57,6 +63,9 @@ export const SubscriptionProvider = ({ children }: { children: ReactNode }) => {
         subscriptionEnd: null,
         billingInterval: null,
         loading: false,
+        isTrialActive: false,
+        trialDaysRemaining: 0,
+        trialExpired: true,
       });
       return;
     }
@@ -73,6 +82,9 @@ export const SubscriptionProvider = ({ children }: { children: ReactNode }) => {
           subscriptionEnd: null,
           billingInterval: null,
           loading: false,
+          isTrialActive: false,
+          trialDaysRemaining: 0,
+          trialExpired: true,
         });
         return;
       }
@@ -83,6 +95,9 @@ export const SubscriptionProvider = ({ children }: { children: ReactNode }) => {
         subscriptionEnd: data?.subscription_end || null,
         billingInterval: data?.billing_interval || null,
         loading: false,
+        isTrialActive: data?.is_trial_active || false,
+        trialDaysRemaining: data?.trial_days_remaining || 0,
+        trialExpired: data?.trial_expired ?? true,
       });
     } catch (err) {
       console.error('Error checking subscription:', err);
@@ -93,6 +108,9 @@ export const SubscriptionProvider = ({ children }: { children: ReactNode }) => {
         subscriptionEnd: null,
         billingInterval: null,
         loading: false,
+        isTrialActive: false,
+        trialDaysRemaining: 0,
+        trialExpired: true,
       });
     }
   };

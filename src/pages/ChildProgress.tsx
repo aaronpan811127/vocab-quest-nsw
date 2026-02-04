@@ -33,6 +33,8 @@ import {
   TrendingUp,
   AlertTriangle,
   Volume2,
+  Crown,
+  Lock,
 } from "lucide-react";
 import { format, subDays, parseISO } from "date-fns";
 
@@ -107,7 +109,7 @@ const ChildProgress = () => {
   const { childId } = useParams<{ childId: string }>();
   const navigate = useNavigate();
   const { user, currentRole } = useAuth();
-  const { canViewProgressReports } = useSubscription();
+  const { canViewProgressReports, hasFullProgressReports, tier, isTrialActive, trialDaysRemaining } = useSubscription();
   
   const [childProfile, setChildProfile] = useState<ChildProfile | null>(null);
   const [allChildStats, setAllChildStats] = useState<ChildStats[]>([]);
@@ -590,6 +592,35 @@ const ChildProgress = () => {
       </header>
 
       <main className="container mx-auto px-4 py-8 space-y-8">
+        {/* Trial/Free tier banner */}
+        {!hasFullProgressReports && (
+          <Card className="border-secondary bg-secondary/5">
+            <CardContent className="flex items-center justify-between p-4">
+              <div className="flex items-center gap-3">
+                <Crown className="h-5 w-5 text-secondary" />
+                <div>
+                  <p className="font-medium">
+                    {isTrialActive 
+                      ? `Trial: ${trialDaysRemaining} day${trialDaysRemaining !== 1 ? 's' : ''} remaining`
+                      : 'Free Plan - High-Level Overview Only'
+                    }
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Upgrade to Premium for detailed progress reports, word insights, and more
+                  </p>
+                </div>
+              </div>
+              <Button 
+                onClick={() => navigate('/parent-dashboard?tab=subscription')}
+                className="bg-secondary hover:bg-secondary/90"
+              >
+                <Crown className="h-4 w-4 mr-2" />
+                Upgrade
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Test Type Tabs */}
         {testTypes.length > 0 && (
           <Tabs value={selectedTestType} onValueChange={setSelectedTestType}>
@@ -712,45 +743,73 @@ const ChildProgress = () => {
                   </Card>
                 </div>
 
-                {/* Daily Time Breakdown Chart */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Clock className="h-5 w-5" />
-                      Daily Time Breakdown
-                    </CardTitle>
-                    <CardDescription>Minutes spent on learning vs. compete games (last 7 days)</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    {last7DaysAttempts.length === 0 ? (
-                      <p className="text-center py-8 text-muted-foreground">
-                        No activity in the last 7 days
-                      </p>
-                    ) : (
-                      <>
-                        <div className="flex flex-wrap items-center gap-4 mb-4">
-                          <div className="flex items-center gap-2">
-                            <div className="w-3 h-3 rounded-sm bg-primary" />
-                            <span className="text-sm text-muted-foreground">Learning</span>
+                {/* Daily Time Breakdown Chart - Premium Only */}
+                {hasFullProgressReports ? (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Clock className="h-5 w-5" />
+                        Daily Time Breakdown
+                      </CardTitle>
+                      <CardDescription>Minutes spent on learning vs. compete games (last 7 days)</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      {last7DaysAttempts.length === 0 ? (
+                        <p className="text-center py-8 text-muted-foreground">
+                          No activity in the last 7 days
+                        </p>
+                      ) : (
+                        <>
+                          <div className="flex flex-wrap items-center gap-4 mb-4">
+                            <div className="flex items-center gap-2">
+                              <div className="w-3 h-3 rounded-sm bg-primary" />
+                              <span className="text-sm text-muted-foreground">Learning</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <div className="w-3 h-3 rounded-sm bg-destructive" />
+                              <span className="text-sm text-muted-foreground">Compete</span>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <div className="w-3 h-3 rounded-sm bg-destructive" />
-                            <span className="text-sm text-muted-foreground">Compete</span>
-                          </div>
-                        </div>
-                        <ChartContainer config={chartConfig} className="h-[200px] w-full">
-                          <BarChart data={dailyTimeData} barGap={2}>
-                            <XAxis dataKey="date" tickLine={false} axisLine={false} />
-                            <YAxis tickLine={false} axisLine={false} />
-                            <ChartTooltip content={<ChartTooltipContent />} />
-                            <Bar dataKey="learning" fill="var(--color-learning)" radius={[4, 4, 0, 0]} />
-                            <Bar dataKey="compete" fill="var(--color-compete)" radius={[4, 4, 0, 0]} />
-                          </BarChart>
-                        </ChartContainer>
-                      </>
-                    )}
-                  </CardContent>
-                </Card>
+                          <ChartContainer config={chartConfig} className="h-[200px] w-full">
+                            <BarChart data={dailyTimeData} barGap={2}>
+                              <XAxis dataKey="date" tickLine={false} axisLine={false} />
+                              <YAxis tickLine={false} axisLine={false} />
+                              <ChartTooltip content={<ChartTooltipContent />} />
+                              <Bar dataKey="learning" fill="var(--color-learning)" radius={[4, 4, 0, 0]} />
+                              <Bar dataKey="compete" fill="var(--color-compete)" radius={[4, 4, 0, 0]} />
+                            </BarChart>
+                          </ChartContainer>
+                        </>
+                      )}
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <Card className="border-dashed border-muted-foreground/30">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2 text-muted-foreground">
+                        <Lock className="h-5 w-5" />
+                        Daily Time Breakdown
+                        <Badge variant="secondary" className="ml-2">Premium</Badge>
+                      </CardTitle>
+                      <CardDescription>Upgrade to see detailed time analytics</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex flex-col items-center justify-center py-6 text-center">
+                        <p className="text-sm text-muted-foreground mb-3">
+                          Track learning vs compete game time with Premium
+                        </p>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => navigate('/parent-dashboard?tab=subscription')}
+                        >
+                          <Crown className="h-4 w-4 mr-2" />
+                          Upgrade to Premium
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
 
                 {/* Unit Progress */}
                 <Card>
@@ -797,83 +856,111 @@ const ChildProgress = () => {
                   </CardContent>
                 </Card>
 
-                {/* Words to Practice */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <AlertTriangle className="h-5 w-5 text-warning" />
-                      Words to Practice
-                    </CardTitle>
-                    <CardDescription>Words that need more attention</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    {wordStruggleLoading ? (
-                      <div className="flex items-center justify-center py-8">
-                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
-                      </div>
-                    ) : wordStruggleData.length === 0 ? (
-                      <div className="text-center py-8">
-                        <Target className="h-8 w-8 mx-auto text-success mb-2" />
-                        <p className="text-muted-foreground">
-                          Great job! No struggled words recorded yet.
-                        </p>
-                      </div>
-                    ) : (
-                      <div className="space-y-4">
-                        {/* Summary stats */}
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="rounded-lg bg-destructive/10 p-3 text-center">
-                            <div className="text-2xl font-bold text-destructive">
-                              {wordStruggleData.reduce((sum, w) => sum + w.incorrectCount, 0)}
-                            </div>
-                            <div className="text-xs text-muted-foreground">Total Mistakes</div>
-                          </div>
-                          <div className="rounded-lg bg-warning/10 p-3 text-center">
-                            <div className="text-2xl font-bold text-warning">
-                              {wordStruggleData.length}
-                            </div>
-                            <div className="text-xs text-muted-foreground">Words to Review</div>
-                          </div>
+                {/* Words to Practice - Premium Only */}
+                {hasFullProgressReports ? (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <AlertTriangle className="h-5 w-5 text-warning" />
+                        Words to Practice
+                      </CardTitle>
+                      <CardDescription>Words that need more attention</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      {wordStruggleLoading ? (
+                        <div className="flex items-center justify-center py-8">
+                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
                         </div>
-
-                        {/* Word list */}
-                        <div className="space-y-2">
-                          {wordStruggleData.slice(0, 10).map((word, index) => (
-                            <div
-                              key={`${word.word}-${index}`}
-                              className="flex items-center justify-between p-3 rounded-lg bg-muted/50"
-                            >
-                              <div className="flex items-center gap-3">
-                                <span className="font-medium capitalize">{word.word}</span>
-                                <Badge variant="outline" className="text-xs">
-                                  U{word.unitNumber}
-                                </Badge>
-                                {word.gameTypes.includes('listening') && (
-                                  <Volume2 className="h-3.5 w-3.5 text-muted-foreground" />
-                                )}
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <Progress 
-                                  value={Math.min((word.incorrectCount / (wordStruggleData[0]?.incorrectCount || 1)) * 100, 100)} 
-                                  className="w-16 h-1.5" 
-                                />
-                                <span className="text-sm text-destructive font-medium w-6 text-right">
-                                  {word.incorrectCount}
-                                </span>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-
-                        {wordStruggleData.length > 10 && (
-                          <p className="text-xs text-center text-muted-foreground">
-                            +{wordStruggleData.length - 10} more words
+                      ) : wordStruggleData.length === 0 ? (
+                        <div className="text-center py-8">
+                          <Target className="h-8 w-8 mx-auto text-success mb-2" />
+                          <p className="text-muted-foreground">
+                            Great job! No struggled words recorded yet.
                           </p>
-                        )}
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          {/* Summary stats */}
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="rounded-lg bg-destructive/10 p-3 text-center">
+                              <div className="text-2xl font-bold text-destructive">
+                                {wordStruggleData.reduce((sum, w) => sum + w.incorrectCount, 0)}
+                              </div>
+                              <div className="text-xs text-muted-foreground">Total Mistakes</div>
+                            </div>
+                            <div className="rounded-lg bg-warning/10 p-3 text-center">
+                              <div className="text-2xl font-bold text-warning">
+                                {wordStruggleData.length}
+                              </div>
+                              <div className="text-xs text-muted-foreground">Words to Review</div>
+                            </div>
+                          </div>
+
+                          {/* Word list */}
+                          <div className="space-y-2">
+                            {wordStruggleData.slice(0, 10).map((word, index) => (
+                              <div
+                                key={`${word.word}-${index}`}
+                                className="flex items-center justify-between p-3 rounded-lg bg-muted/50"
+                              >
+                                <div className="flex items-center gap-3">
+                                  <span className="font-medium capitalize">{word.word}</span>
+                                  <Badge variant="outline" className="text-xs">
+                                    U{word.unitNumber}
+                                  </Badge>
+                                  {word.gameTypes.includes('listening') && (
+                                    <Volume2 className="h-3.5 w-3.5 text-muted-foreground" />
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <Progress 
+                                    value={Math.min((word.incorrectCount / (wordStruggleData[0]?.incorrectCount || 1)) * 100, 100)} 
+                                    className="w-16 h-1.5" 
+                                  />
+                                  <span className="text-sm text-destructive font-medium w-6 text-right">
+                                    {word.incorrectCount}
+                                  </span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+
+                          {wordStruggleData.length > 10 && (
+                            <p className="text-xs text-center text-muted-foreground">
+                              +{wordStruggleData.length - 10} more words
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <Card className="border-dashed border-muted-foreground/30">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2 text-muted-foreground">
+                        <Lock className="h-5 w-5" />
+                        Words to Practice
+                        <Badge variant="secondary" className="ml-2">Premium</Badge>
+                      </CardTitle>
+                      <CardDescription>Upgrade to see which words need attention</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex flex-col items-center justify-center py-6 text-center">
+                        <p className="text-sm text-muted-foreground mb-3">
+                          See detailed word struggle insights with Premium
+                        </p>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => navigate('/parent-dashboard?tab=subscription')}
+                        >
+                          <Crown className="h-4 w-4 mr-2" />
+                          Upgrade to Premium
+                        </Button>
                       </div>
-                    )}
-                  </CardContent>
-                </Card>
+                    </CardContent>
+                  </Card>
+                )}
 
                 {/* Recent Activity */}
                 <Card>
