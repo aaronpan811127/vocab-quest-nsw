@@ -2,13 +2,14 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Check, Sparkles, Gamepad2, Users, Crown, Clock, Trophy, Star, ArrowLeft } from "lucide-react";
+import { Check, Sparkles, Gamepad2, Users, Crown, Clock, Trophy, Star, Home, Sun, Moon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useTheme } from "next-themes";
 import { PRICING, PlanType } from "@/config/pricing";
-import { Navigation } from "@/components/Navigation";
 
 const Pricing = () => {
   const navigate = useNavigate();
+  const { theme, setTheme } = useTheme();
   const [billingCycle, setBillingCycle] = useState<PlanType>('monthly');
 
   const currentPrice = billingCycle === 'annual' 
@@ -19,23 +20,42 @@ const Pricing = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Navigation />
+      {/* Navigation */}
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-card/80 backdrop-blur-md border-b border-border">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="p-1.5 sm:p-2 rounded-lg bg-gradient-primary">
+                <Gamepad2 className="h-5 w-5 sm:h-6 sm:w-6 text-primary-foreground" />
+              </div>
+              <h1 className="font-bold text-lg sm:text-2xl">VocabQuest</h1>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" size="icon" onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
+                {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+              </Button>
+              <Button variant="ghost" onClick={() => navigate("/")} className="gap-2">
+                <Home className="h-4 w-4" />
+                <span className="hidden sm:inline">Home</span>
+              </Button>
+            </div>
+          </div>
+        </div>
+      </nav>
 
       {/* Header */}
-      <div className="bg-gradient-hero py-16 px-4">
+      <section className="pt-24 sm:pt-32 pb-8 px-4 sm:px-6">
         <div className="max-w-4xl mx-auto text-center">
-          <Badge className="mb-4 bg-primary/20 text-primary border-primary/30">
+          <Badge className="bg-primary/10 text-primary border-primary/30 px-4 py-2 text-sm font-medium mb-4">
             <Crown className="h-4 w-4 mr-2" />
             Simple Pricing
           </Badge>
-          <h1 className="text-4xl md:text-5xl font-bold mb-4">
-            Start Learning Today
-          </h1>
+          <h2 className="text-3xl sm:text-4xl font-bold mb-4">Start Learning Today</h2>
         </div>
-      </div>
+      </section>
 
       {/* Trial Highlight Banner */}
-      <div className="max-w-4xl mx-auto px-4 -mt-8">
+      <div className="max-w-4xl mx-auto px-4 -mt-4 mb-8">
         <div className="bg-gradient-to-r from-primary/20 via-primary/10 to-secondary/20 border-2 border-primary/30 rounded-2xl p-6 text-center">
           <div className="flex items-center justify-center gap-2 mb-2">
             <Sparkles className="h-6 w-6 text-primary" />
@@ -328,13 +348,20 @@ const Pricing = () => {
         </div>
       </div>
 
-      {/* Back to Home */}
-      <div className="py-8 text-center">
-        <Button variant="ghost" onClick={() => navigate("/")}>
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Home
-        </Button>
-      </div>
+      {/* Footer */}
+      <footer className="py-8 px-4 sm:px-6 border-t bg-card">
+        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 rounded-lg bg-gradient-primary">
+              <Gamepad2 className="h-4 w-4 text-primary-foreground" />
+            </div>
+            <span className="font-bold">VocabQuest</span>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            © {new Date().getFullYear()} VocabQuest. Making vocabulary learning fun.
+          </p>
+        </div>
+      </footer>
     </div>
   );
 };
