@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Check, Sparkles, Gamepad2, Users, Crown, Clock, Trophy, Star, ArrowLeft } from "lucide-react";
+import { Check, Sparkles, Gamepad2, Users, Crown, Clock, Trophy, Star, ArrowLeft, Home } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { PRICING, PlanType } from "@/config/pricing";
 
@@ -18,6 +18,21 @@ const Pricing = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Navigation Bar */}
+      <div className="bg-background border-b">
+        <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
+          <Button 
+            variant="ghost" 
+            size="sm"
+            onClick={() => navigate("/")}
+            className="flex items-center gap-2"
+          >
+            <Home className="h-4 w-4" />
+            Home
+          </Button>
+        </div>
+      </div>
+
       {/* Header */}
       <div className="bg-gradient-hero py-16 px-4">
         <div className="max-w-4xl mx-auto text-center">
