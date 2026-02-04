@@ -7,6 +7,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const TRIAL_DURATION_DAYS = 7;
+
 const logStep = (step: string, details?: any) => {
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
   console.log(`[CHECK-SUBSCRIPTION] ${step}${detailsStr}`);
@@ -37,7 +39,10 @@ serve(async (req) => {
         subscribed: false,
         tier: 'free',
         product_id: null,
-        subscription_end: null
+        subscription_end: null,
+        is_trial_active: false,
+        trial_days_remaining: 0,
+        trial_expired: true
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
@@ -55,7 +60,10 @@ serve(async (req) => {
         subscribed: false,
         tier: 'free',
         product_id: null,
-        subscription_end: null
+        subscription_end: null,
+        is_trial_active: false,
+        trial_days_remaining: 0,
+        trial_expired: true
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
@@ -64,16 +72,43 @@ serve(async (req) => {
     const user = userData.user;
     logStep("User authenticated", { userId: user.id, email: user.email });
 
+    // Fetch user profile to get trial_started_at
+    const { data: profileData, error: profileError } = await supabaseClient
+      .from('profiles')
+      .select('trial_started_at, created_at')
+      .eq('user_id', user.id)
+      .single();
+
+    let isTrialActive = false;
+    let trialDaysRemaining = 0;
+    let trialExpired = true;
+
+    if (profileData) {
+      const trialStartedAt = profileData.trial_started_at || profileData.created_at;
+      if (trialStartedAt) {
+        const trialStart = new Date(trialStartedAt);
+        const now = new Date();
+        const daysSinceTrialStart = Math.floor((now.getTime() - trialStart.getTime()) / (1000 * 60 * 60 * 24));
+        trialDaysRemaining = Math.max(0, TRIAL_DURATION_DAYS - daysSinceTrialStart);
+        isTrialActive = trialDaysRemaining > 0;
+        trialExpired = trialDaysRemaining <= 0;
+        logStep("Trial status calculated", { trialStartedAt, daysSinceTrialStart, trialDaysRemaining, isTrialActive });
+      }
+    }
+
     const stripe = new Stripe(stripeKey, { apiVersion: "2024-12-18.acacia" });
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
     
     if (customers.data.length === 0) {
-      logStep("No customer found, returning free tier");
+      logStep("No customer found, returning free tier with trial status");
       return new Response(JSON.stringify({ 
         subscribed: false,
         tier: 'free',
         product_id: null,
-        subscription_end: null
+        subscription_end: null,
+        is_trial_active: isTrialActive,
+        trial_days_remaining: trialDaysRemaining,
+        trial_expired: trialExpired
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
@@ -109,6 +144,11 @@ serve(async (req) => {
       productId = priceItem?.product ?? null;
       tier = 'premium';
       
+      // When user has active subscription, trial no longer applies
+      isTrialActive = false;
+      trialExpired = true;
+      trialDaysRemaining = 0;
+      
       // Determine billing interval from the price
       const interval = priceItem?.recurring?.interval;
       if (interval === 'year') {
@@ -119,7 +159,7 @@ serve(async (req) => {
       
       logStep("Determined subscription tier", { productId, tier, billingInterval });
     } else {
-      logStep("No active subscription found, returning free tier");
+      logStep("No active subscription found, returning free tier with trial status");
     }
 
     return new Response(JSON.stringify({
@@ -127,7 +167,10 @@ serve(async (req) => {
       tier,
       product_id: productId,
       subscription_end: subscriptionEnd,
-      billing_interval: billingInterval
+      billing_interval: billingInterval,
+      is_trial_active: isTrialActive,
+      trial_days_remaining: trialDaysRemaining,
+      trial_expired: trialExpired
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,

@@ -356,6 +356,7 @@ export type Database = {
           current_unit_id: string | null
           default_test_type_id: string | null
           id: string
+          trial_started_at: string | null
           updated_at: string
           user_id: string
           username: string | null
@@ -366,6 +367,7 @@ export type Database = {
           current_unit_id?: string | null
           default_test_type_id?: string | null
           id?: string
+          trial_started_at?: string | null
           updated_at?: string
           user_id: string
           username?: string | null
@@ -376,6 +378,7 @@ export type Database = {
           current_unit_id?: string | null
           default_test_type_id?: string | null
           id?: string
+          trial_started_at?: string | null
           updated_at?: string
           user_id?: string
           username?: string | null
