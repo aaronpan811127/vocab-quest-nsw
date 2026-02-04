@@ -3,11 +3,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './AuthContext';
 
 export type SubscriptionTier = 'free' | 'premium';
+export type BillingInterval = 'monthly' | 'annual' | null;
 
 interface SubscriptionState {
   tier: SubscriptionTier;
   subscribed: boolean;
   subscriptionEnd: string | null;
+  billingInterval: BillingInterval;
   loading: boolean;
 }
 
@@ -16,6 +18,7 @@ interface SubscriptionContextType extends SubscriptionState {
   maxChildren: number;
   maxUnitsPerTestType: number;
   canViewProgressReports: boolean;
+  hasFullProgressReports: boolean;
 }
 
 const SubscriptionContext = createContext<SubscriptionContextType | undefined>(undefined);
@@ -25,12 +28,14 @@ const TIER_LIMITS = {
   free: {
     maxChildren: 1,
     maxUnitsPerTestType: 2,
-    canViewProgressReports: false,
+    canViewProgressReports: true, // High-level reports only
+    hasFullProgressReports: false,
   },
   premium: {
     maxChildren: 3,
     maxUnitsPerTestType: Infinity,
     canViewProgressReports: true,
+    hasFullProgressReports: true,
   },
 };
 
@@ -40,6 +45,7 @@ export const SubscriptionProvider = ({ children }: { children: ReactNode }) => {
     tier: 'free',
     subscribed: false,
     subscriptionEnd: null,
+    billingInterval: null,
     loading: true,
   });
 
@@ -49,6 +55,7 @@ export const SubscriptionProvider = ({ children }: { children: ReactNode }) => {
         tier: 'free',
         subscribed: false,
         subscriptionEnd: null,
+        billingInterval: null,
         loading: false,
       });
       return;
@@ -64,6 +71,7 @@ export const SubscriptionProvider = ({ children }: { children: ReactNode }) => {
           tier: 'free',
           subscribed: false,
           subscriptionEnd: null,
+          billingInterval: null,
           loading: false,
         });
         return;
@@ -73,6 +81,7 @@ export const SubscriptionProvider = ({ children }: { children: ReactNode }) => {
         tier: data?.tier || 'free',
         subscribed: data?.subscribed || false,
         subscriptionEnd: data?.subscription_end || null,
+        billingInterval: data?.billing_interval || null,
         loading: false,
       });
     } catch (err) {
@@ -82,6 +91,7 @@ export const SubscriptionProvider = ({ children }: { children: ReactNode }) => {
         tier: 'free',
         subscribed: false,
         subscriptionEnd: null,
+        billingInterval: null,
         loading: false,
       });
     }
@@ -109,6 +119,7 @@ export const SubscriptionProvider = ({ children }: { children: ReactNode }) => {
         maxChildren: limits.maxChildren,
         maxUnitsPerTestType: limits.maxUnitsPerTestType,
         canViewProgressReports: limits.canViewProgressReports,
+        hasFullProgressReports: limits.hasFullProgressReports,
       }}
     >
       {children}

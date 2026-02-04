@@ -1,29 +1,20 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Check, Sparkles, Gamepad2, Users, Crown, Clock, BookOpen, Trophy, Star } from "lucide-react";
+import { Check, Sparkles, Gamepad2, Users, Crown, Clock, Trophy, Star, ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { PRICING, PlanType } from "@/config/pricing";
 
 const Pricing = () => {
   const navigate = useNavigate();
+  const [billingCycle, setBillingCycle] = useState<PlanType>('monthly');
 
-  const freeFeatures = [
-    "Access to all vocabulary games",
-    "NSW Selective & OC curriculum aligned",
-    "Progress tracking dashboard",
-    "Leaderboard access",
-    "7 days full access",
-  ];
-
-  const premiumFeatures = [
-    "Everything in Free Trial",
-    "Unlimited access to all units",
-    "Priority content updates",
-    "Detailed progress analytics",
-    "Parent dashboard access",
-    "Multiple child accounts",
-    "Email support",
-  ];
+  const currentPrice = billingCycle === 'annual' 
+    ? PRICING.premium.annualPrice 
+    : PRICING.premium.monthlyPrice;
+  
+  const priceLabel = billingCycle === 'annual' ? '/year' : '/month';
 
   return (
     <div className="min-h-screen bg-background">
@@ -52,13 +43,42 @@ const Pricing = () => {
             <Sparkles className="h-6 w-6 text-primary" />
           </div>
           <p className="text-muted-foreground">
-            Students can start their learning journey immediately with full access for 7 days — no payment required!
+            Students can explore the first 2 units and all games free for 7 days — no payment required!
           </p>
         </div>
       </div>
 
+      {/* Billing Toggle */}
+      <div className="max-w-5xl mx-auto px-4 pt-12">
+        <div className="flex items-center justify-center gap-4 mb-8">
+          <button
+            onClick={() => setBillingCycle('monthly')}
+            className={`px-6 py-2 rounded-full text-sm font-medium transition-colors ${
+              billingCycle === 'monthly'
+                ? 'bg-primary text-primary-foreground'
+                : 'bg-muted text-muted-foreground hover:bg-muted/80'
+            }`}
+          >
+            Monthly
+          </button>
+          <button
+            onClick={() => setBillingCycle('annual')}
+            className={`px-6 py-2 rounded-full text-sm font-medium transition-colors relative ${
+              billingCycle === 'annual'
+                ? 'bg-primary text-primary-foreground'
+                : 'bg-muted text-muted-foreground hover:bg-muted/80'
+            }`}
+          >
+            Annual
+            <Badge className="absolute -top-2 -right-2 bg-accent text-accent-foreground text-xs px-1.5">
+              Save ${PRICING.premium.annualSavings}
+            </Badge>
+          </button>
+        </div>
+      </div>
+
       {/* Pricing Cards */}
-      <div className="max-w-5xl mx-auto px-4 py-12">
+      <div className="max-w-5xl mx-auto px-4 pb-12">
         <div className="grid md:grid-cols-2 gap-8">
           {/* Free Trial Card */}
           <Card className="relative border-2 border-border hover:border-primary/50 transition-colors">
@@ -68,33 +88,57 @@ const Pricing = () => {
               </div>
               <Badge variant="outline" className="mb-2 bg-primary/10 text-primary border-primary/30">
                 <Clock className="h-3 w-3 mr-1" />
-                For Students
+                7-Day Trial
               </Badge>
-              <CardTitle className="text-2xl">Free Trial</CardTitle>
+              <CardTitle className="text-2xl">{PRICING.free.name}</CardTitle>
               <CardDescription>Perfect to get started</CardDescription>
               <div className="mt-4">
                 <span className="text-4xl font-bold">$0</span>
                 <span className="text-muted-foreground ml-2">for 7 days</span>
               </div>
             </CardHeader>
-            <CardContent className="pt-6">
-              <ul className="space-y-3">
-                {freeFeatures.map((feature, index) => (
-                  <li key={index} className="flex items-start gap-3">
-                    <Check className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                    <span className="text-sm">{feature}</span>
-                  </li>
-                ))}
-              </ul>
+            <CardContent className="pt-6 space-y-6">
+              {/* Student Features */}
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <Gamepad2 className="h-4 w-4 text-primary" />
+                  <span className="font-semibold text-sm">For Students</span>
+                </div>
+                <ul className="space-y-2">
+                  {PRICING.free.student.features.map((feature, index) => (
+                    <li key={index} className="flex items-start gap-3">
+                      <Check className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                      <span className="text-sm">{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              
+              {/* Parent Features */}
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <Users className="h-4 w-4 text-secondary" />
+                  <span className="font-semibold text-sm">For Parents</span>
+                </div>
+                <ul className="space-y-2">
+                  {PRICING.free.parent.features.map((feature, index) => (
+                    <li key={index} className="flex items-start gap-3">
+                      <Check className="h-4 w-4 text-secondary shrink-0 mt-0.5" />
+                      <span className="text-sm">{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
               <Button 
-                className="w-full mt-6" 
+                className="w-full" 
                 variant="outline"
                 onClick={() => navigate("/auth")}
               >
                 <Gamepad2 className="h-4 w-4 mr-2" />
                 Start Free Trial
               </Button>
-              <p className="text-xs text-muted-foreground text-center mt-3">
+              <p className="text-xs text-muted-foreground text-center">
                 Sign up with a student account to begin
               </p>
             </CardContent>
@@ -110,37 +154,66 @@ const Pricing = () => {
             </div>
             <CardHeader className="text-center pb-2 pt-8">
               <div className="mx-auto w-16 h-16 rounded-full bg-secondary/10 flex items-center justify-center mb-4">
-                <Users className="h-8 w-8 text-secondary" />
+                <Crown className="h-8 w-8 text-secondary" />
               </div>
               <Badge variant="outline" className="mb-2 bg-secondary/10 text-secondary border-secondary/30">
                 <Crown className="h-3 w-3 mr-1" />
-                For Parents
+                Full Access
               </Badge>
-              <CardTitle className="text-2xl">Premium</CardTitle>
-              <CardDescription>Full access for your family</CardDescription>
+              <CardTitle className="text-2xl">{PRICING.premium.name}</CardTitle>
+              <CardDescription>Unlimited access for your family</CardDescription>
               <div className="mt-4">
-                <span className="text-4xl font-bold">$9.99</span>
-                <span className="text-muted-foreground ml-2">/month</span>
+                <span className="text-4xl font-bold">${currentPrice}</span>
+                <span className="text-muted-foreground ml-2">{priceLabel}</span>
+                {billingCycle === 'annual' && (
+                  <p className="text-sm text-accent mt-1">
+                    Save ${PRICING.premium.annualSavings} compared to monthly
+                  </p>
+                )}
               </div>
             </CardHeader>
-            <CardContent className="pt-6">
-              <ul className="space-y-3">
-                {premiumFeatures.map((feature, index) => (
-                  <li key={index} className="flex items-start gap-3">
-                    <Check className="h-5 w-5 text-secondary shrink-0 mt-0.5" />
-                    <span className="text-sm">{feature}</span>
-                  </li>
-                ))}
-              </ul>
+            <CardContent className="pt-6 space-y-6">
+              {/* Student Features */}
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <Gamepad2 className="h-4 w-4 text-primary" />
+                  <span className="font-semibold text-sm">For Students</span>
+                </div>
+                <ul className="space-y-2">
+                  {PRICING.premium.student.features.map((feature, index) => (
+                    <li key={index} className="flex items-start gap-3">
+                      <Check className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                      <span className="text-sm">{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              
+              {/* Parent Features */}
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <Users className="h-4 w-4 text-secondary" />
+                  <span className="font-semibold text-sm">For Parents</span>
+                </div>
+                <ul className="space-y-2">
+                  {PRICING.premium.parent.features.map((feature, index) => (
+                    <li key={index} className="flex items-start gap-3">
+                      <Check className="h-4 w-4 text-secondary shrink-0 mt-0.5" />
+                      <span className="text-sm">{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
               <Button 
-                className="w-full mt-6 bg-secondary hover:bg-secondary/90"
+                className="w-full bg-secondary hover:bg-secondary/90"
                 onClick={() => navigate("/parent-auth")}
               >
                 <Users className="h-4 w-4 mr-2" />
                 Subscribe as Parent
               </Button>
-              <p className="text-xs text-muted-foreground text-center mt-3">
-                Cancel anytime • Billed monthly
+              <p className="text-xs text-muted-foreground text-center">
+                Cancel anytime • Billed {billingCycle === 'annual' ? 'annually' : 'monthly'}
               </p>
             </CardContent>
           </Card>
@@ -158,7 +231,7 @@ const Pricing = () => {
               </div>
               <h3 className="font-semibold mb-2">Student Signs Up</h3>
               <p className="text-sm text-muted-foreground">
-                Create a free student account and get instant access to all games for 7 days
+                Create a free student account and get instant access to the first 2 units for 7 days
               </p>
             </div>
             <div className="text-center p-6">
@@ -176,7 +249,7 @@ const Pricing = () => {
               </div>
               <h3 className="font-semibold mb-2">Parent Subscribes</h3>
               <p className="text-sm text-muted-foreground">
-                After the trial, parents can subscribe to continue the learning journey
+                Unlock unlimited units and full progress reports with a Premium subscription
               </p>
             </div>
           </div>
@@ -189,13 +262,12 @@ const Pricing = () => {
         <div className="space-y-4">
           <Card>
             <CardHeader className="py-4">
-              <CardTitle className="text-base">Why do parents need to subscribe?</CardTitle>
+              <CardTitle className="text-base">What's included in the free trial?</CardTitle>
             </CardHeader>
             <CardContent className="pt-0 pb-4">
               <p className="text-sm text-muted-foreground">
-                VocabQuest is designed for families. Parent accounts allow you to manage your child's learning, 
-                track their progress, and ensure a safe learning environment. Subscription revenue helps us 
-                maintain quality content aligned with NSW curriculum.
+                Students get 7 days of access to the first 2 units and all vocabulary games. 
+                Parents can link 1 child and view high-level progress. Perfect for trying before subscribing!
               </p>
             </CardContent>
           </Card>
@@ -205,7 +277,7 @@ const Pricing = () => {
             </CardHeader>
             <CardContent className="pt-0 pb-4">
               <p className="text-sm text-muted-foreground">
-                Yes! Premium parent accounts can link multiple student accounts, making it perfect for families 
+                Yes! Premium parent accounts can link up to 3 student accounts, making it perfect for families 
                 with more than one child preparing for Selective or OC tests.
               </p>
             </CardContent>
@@ -216,8 +288,19 @@ const Pricing = () => {
             </CardHeader>
             <CardContent className="pt-0 pb-4">
               <p className="text-sm text-muted-foreground">
-                After the trial period, students will need a parent to subscribe to continue accessing the platform. 
+                After the trial period, students will need a parent to subscribe to continue accessing all units. 
                 All progress is saved, so nothing is lost when upgrading to Premium.
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="py-4">
+              <CardTitle className="text-base">Should I choose monthly or annual billing?</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0 pb-4">
+              <p className="text-sm text-muted-foreground">
+                Annual billing saves you ${PRICING.premium.annualSavings} per year compared to monthly billing. 
+                If you're committed to long-term preparation, annual is the better value.
               </p>
             </CardContent>
           </Card>
@@ -248,7 +331,8 @@ const Pricing = () => {
       {/* Back to Home */}
       <div className="py-8 text-center">
         <Button variant="ghost" onClick={() => navigate("/")}>
-          ← Back to Home
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back to Home
         </Button>
       </div>
     </div>
