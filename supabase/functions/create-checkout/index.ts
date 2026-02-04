@@ -12,8 +12,11 @@ const logStep = (step: string, details?: any) => {
   console.log(`[CREATE-CHECKOUT] ${step}${detailsStr}`);
 };
 
-// Premium Plan price ID
-const PREMIUM_PRICE_ID = "price_1Slmr21tFo8qYFXsulwceGXH";
+// Price IDs for different plans
+const PRICE_IDS = {
+  monthly: "price_1Sx3Ty1tFo8qYFXsHMJ46ACH", // $19.99/month
+  annual: "price_1Sx3Uy1tFo8qYFXsgzF1KFuT",  // $199/year
+};
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -31,6 +34,18 @@ serve(async (req) => {
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     if (!stripeKey) throw new Error("STRIPE_SECRET_KEY is not set");
 
+    // Parse request body to get plan type
+    let plan: 'monthly' | 'annual' = 'monthly';
+    try {
+      const body = await req.json();
+      if (body.plan === 'annual') {
+        plan = 'annual';
+      }
+    } catch {
+      // Default to monthly if no body provided
+    }
+    logStep("Plan selected", { plan });
+
     const authHeader = req.headers.get("Authorization")!;
     const token = authHeader.replace("Bearer ", "");
     const { data } = await supabaseClient.auth.getUser(token);
@@ -47,13 +62,14 @@ serve(async (req) => {
     }
 
     const origin = req.headers.get("origin") || "http://localhost:3000";
+    const priceId = PRICE_IDS[plan];
     
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       customer_email: customerId ? undefined : user.email,
       line_items: [
         {
-          price: PREMIUM_PRICE_ID,
+          price: priceId,
           quantity: 1,
         },
       ],
@@ -62,7 +78,7 @@ serve(async (req) => {
       cancel_url: `${origin}/parent-dashboard?checkout=cancelled`,
     });
 
-    logStep("Checkout session created", { sessionId: session.id });
+    logStep("Checkout session created", { sessionId: session.id, plan, priceId });
 
     return new Response(JSON.stringify({ url: session.url }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

@@ -95,6 +95,7 @@ serve(async (req) => {
     let productId = null;
     let subscriptionEnd = null;
     let tier = 'free';
+    let billingInterval: 'monthly' | 'annual' | null = null;
 
     if (hasActiveSub) {
       const subscription = subscriptions.data[0];
@@ -103,9 +104,20 @@ serve(async (req) => {
         subscriptionEnd = new Date(periodEnd * 1000).toISOString();
       }
       logStep("Active subscription found", { subscriptionId: subscription.id, endDate: subscriptionEnd });
-      productId = subscription.items.data[0]?.price?.product ?? null;
+      
+      const priceItem = subscription.items.data[0]?.price;
+      productId = priceItem?.product ?? null;
       tier = 'premium';
-      logStep("Determined subscription tier", { productId, tier });
+      
+      // Determine billing interval from the price
+      const interval = priceItem?.recurring?.interval;
+      if (interval === 'year') {
+        billingInterval = 'annual';
+      } else if (interval === 'month') {
+        billingInterval = 'monthly';
+      }
+      
+      logStep("Determined subscription tier", { productId, tier, billingInterval });
     } else {
       logStep("No active subscription found, returning free tier");
     }
@@ -114,7 +126,8 @@ serve(async (req) => {
       subscribed: hasActiveSub,
       tier,
       product_id: productId,
-      subscription_end: subscriptionEnd
+      subscription_end: subscriptionEnd,
+      billing_interval: billingInterval
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,

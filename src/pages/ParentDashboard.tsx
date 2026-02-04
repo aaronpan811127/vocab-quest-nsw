@@ -10,26 +10,24 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Users, 
   CreditCard, 
-  BarChart3, 
   Settings, 
   Plus, 
   LogOut,
   User,
-  Trophy,
-  Flame,
-  BookOpen,
   AlertCircle,
-  ChevronRight,
   Moon,
   Sun,
   Check,
   Crown,
-  Loader2
+  Loader2,
+  Gamepad2,
+  ChevronRight
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useTheme } from "next-themes";
 import { AddChildDialog } from "@/components/parent/AddChildDialog";
 import { ChildProgressCard } from "@/components/parent/ChildProgressCard";
+import { PRICING, PlanType } from "@/config/pricing";
 
 interface ParentProfile {
   id: string;
@@ -56,7 +54,7 @@ interface ChildData {
 
 const ParentDashboard = () => {
   const { user, currentRole, signOut } = useAuth();
-  const { tier, subscribed, subscriptionEnd, loading: subLoading, checkSubscription, maxChildren, canViewProgressReports } = useSubscription();
+  const { tier, subscribed, subscriptionEnd, billingInterval, loading: subLoading, checkSubscription, maxChildren, canViewProgressReports, hasFullProgressReports } = useSubscription();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
@@ -68,6 +66,7 @@ const ParentDashboard = () => {
   const [showAddChild, setShowAddChild] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [portalLoading, setPortalLoading] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<PlanType>('monthly');
 
   // Check for checkout success/cancel
   useEffect(() => {
@@ -188,10 +187,12 @@ const ParentDashboard = () => {
     navigate("/");
   };
 
-  const handleUpgrade = async () => {
+  const handleUpgrade = async (plan: PlanType = 'monthly') => {
     setCheckoutLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('create-checkout');
+      const { data, error } = await supabase.functions.invoke('create-checkout', {
+        body: { plan }
+      });
       if (error) throw error;
       if (data?.url) {
         window.open(data.url, '_blank');
@@ -294,12 +295,12 @@ const ParentDashboard = () => {
                 <p className="text-muted-foreground">
                   {children.length}/{maxChildren} student{maxChildren !== 1 ? 's' : ''} linked
                   {!canAddChild && tier === 'free' && (
-                    <span className="text-yellow-500 ml-2">• Upgrade for more</span>
+                    <span className="text-accent ml-2">• Upgrade for more</span>
                   )}
                 </p>
               </div>
               <Button 
-                onClick={() => canAddChild ? setShowAddChild(true) : handleUpgrade()} 
+                onClick={() => canAddChild ? setShowAddChild(true) : handleUpgrade('monthly')} 
                 className={canAddChild ? "bg-secondary hover:bg-secondary/90" : ""}
                 variant={canAddChild ? "default" : "outline"}
               >
@@ -349,8 +350,37 @@ const ParentDashboard = () => {
           <TabsContent value="subscription" className="space-y-6">
             <div>
               <h2 className="text-2xl font-bold">Subscription & Billing</h2>
-              <p className="text-muted-foreground">Choose the plan that's right for you</p>
+              <p className="text-muted-foreground">Choose the plan that's right for your family</p>
             </div>
+
+            {/* Billing Toggle - Only show if not subscribed */}
+            {!subscribed && (
+              <div className="flex items-center justify-center gap-4">
+                <button
+                  onClick={() => setSelectedPlan('monthly')}
+                  className={`px-6 py-2 rounded-full text-sm font-medium transition-colors ${
+                    selectedPlan === 'monthly'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                  }`}
+                >
+                  Monthly
+                </button>
+                <button
+                  onClick={() => setSelectedPlan('annual')}
+                  className={`px-6 py-2 rounded-full text-sm font-medium transition-colors relative ${
+                    selectedPlan === 'annual'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                  }`}
+                >
+                  Annual
+                  <Badge className="absolute -top-2 -right-2 bg-accent text-accent-foreground text-xs px-1.5">
+                    Save ${PRICING.premium.annualSavings}
+                  </Badge>
+                </button>
+              </div>
+            )}
 
             <div className="grid gap-6 md:grid-cols-2">
               {/* Free Plan */}
@@ -360,26 +390,45 @@ const ParentDashboard = () => {
                 )}
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    Free Tier
+                    {PRICING.free.name}
                   </CardTitle>
-                  <CardDescription>Get started for free</CardDescription>
+                  <CardDescription>7-day trial access</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="text-3xl font-bold">$0<span className="text-lg font-normal text-muted-foreground">/month</span></div>
-                  <ul className="space-y-2 text-sm">
-                    <li className="flex items-center gap-2">
-                      <Check className="h-4 w-4 text-green-500" />
-                      Access to first 2 units per test type
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <Check className="h-4 w-4 text-green-500" />
-                      Link 1 child
-                    </li>
-                    <li className="flex items-center gap-2 text-muted-foreground">
-                      <AlertCircle className="h-4 w-4" />
-                      No progress reports
-                    </li>
-                  </ul>
+                <CardContent className="space-y-6">
+                  <div className="text-3xl font-bold">$0<span className="text-lg font-normal text-muted-foreground"> for 7 days</span></div>
+                  
+                  {/* Student Features */}
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <Gamepad2 className="h-4 w-4 text-primary" />
+                      <span className="font-semibold text-sm">For Students</span>
+                    </div>
+                    <ul className="space-y-1.5 text-sm">
+                      {PRICING.free.student.features.slice(0, 3).map((feature, index) => (
+                        <li key={index} className="flex items-center gap-2">
+                          <Check className="h-4 w-4 text-primary shrink-0" />
+                          {feature}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  {/* Parent Features */}
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <Users className="h-4 w-4 text-secondary" />
+                      <span className="font-semibold text-sm">For Parents</span>
+                    </div>
+                    <ul className="space-y-1.5 text-sm">
+                      {PRICING.free.parent.features.map((feature, index) => (
+                        <li key={index} className="flex items-center gap-2">
+                          <Check className="h-4 w-4 text-secondary shrink-0" />
+                          {feature}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
                   {tier === 'free' && (
                     <Button variant="outline" className="w-full" disabled>
                       Current Plan
@@ -389,35 +438,74 @@ const ParentDashboard = () => {
               </Card>
 
               {/* Premium Plan */}
-              <Card className={`relative ${tier === 'premium' ? 'border-primary ring-2 ring-primary/20' : 'border-yellow-500/50'}`}>
+              <Card className={`relative ${tier === 'premium' ? 'border-primary ring-2 ring-primary/20' : 'border-secondary'}`}>
                 {tier === 'premium' ? (
-                  <Badge className="absolute -top-2 right-4 bg-primary">Current Plan</Badge>
+                  <Badge className="absolute -top-2 right-4 bg-primary">
+                    Current Plan {billingInterval === 'annual' ? '(Annual)' : '(Monthly)'}
+                  </Badge>
                 ) : (
-                  <Badge className="absolute -top-2 right-4 bg-yellow-500">Recommended</Badge>
+                  <Badge className="absolute -top-2 right-4 bg-secondary">Recommended</Badge>
                 )}
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <Crown className="h-5 w-5 text-yellow-500" />
-                    Premium
+                    <Crown className="h-5 w-5 text-secondary" />
+                    {PRICING.premium.name}
                   </CardTitle>
-                  <CardDescription>Full access to all features</CardDescription>
+                  <CardDescription>Full access for your family</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="text-3xl font-bold">$9.99<span className="text-lg font-normal text-muted-foreground">/month</span></div>
-                  <ul className="space-y-2 text-sm">
-                    <li className="flex items-center gap-2">
-                      <Check className="h-4 w-4 text-green-500" />
-                      Access to all units
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <Check className="h-4 w-4 text-green-500" />
-                      Link up to 3 children
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <Check className="h-4 w-4 text-green-500" />
-                      Full progress reports
-                    </li>
-                  </ul>
+                <CardContent className="space-y-6">
+                  <div>
+                    <div className="text-3xl font-bold">
+                      ${subscribed 
+                        ? (billingInterval === 'annual' ? PRICING.premium.annualPrice : PRICING.premium.monthlyPrice)
+                        : (selectedPlan === 'annual' ? PRICING.premium.annualPrice : PRICING.premium.monthlyPrice)
+                      }
+                      <span className="text-lg font-normal text-muted-foreground">
+                        {subscribed 
+                          ? (billingInterval === 'annual' ? '/year' : '/month')
+                          : (selectedPlan === 'annual' ? '/year' : '/month')
+                        }
+                      </span>
+                    </div>
+                    {!subscribed && selectedPlan === 'annual' && (
+                      <p className="text-sm text-accent mt-1">
+                        Save ${PRICING.premium.annualSavings} compared to monthly
+                      </p>
+                    )}
+                  </div>
+                  
+                  {/* Student Features */}
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <Gamepad2 className="h-4 w-4 text-primary" />
+                      <span className="font-semibold text-sm">For Students</span>
+                    </div>
+                    <ul className="space-y-1.5 text-sm">
+                      {PRICING.premium.student.features.slice(0, 3).map((feature, index) => (
+                        <li key={index} className="flex items-center gap-2">
+                          <Check className="h-4 w-4 text-primary shrink-0" />
+                          {feature}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  {/* Parent Features */}
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <Users className="h-4 w-4 text-secondary" />
+                      <span className="font-semibold text-sm">For Parents</span>
+                    </div>
+                    <ul className="space-y-1.5 text-sm">
+                      {PRICING.premium.parent.features.slice(0, 3).map((feature, index) => (
+                        <li key={index} className="flex items-center gap-2">
+                          <Check className="h-4 w-4 text-secondary shrink-0" />
+                          {feature}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
                   {tier === 'premium' ? (
                     <Button 
                       variant="outline" 
@@ -434,8 +522,8 @@ const ParentDashboard = () => {
                     </Button>
                   ) : (
                     <Button 
-                      className="w-full bg-yellow-500 hover:bg-yellow-600 text-black" 
-                      onClick={handleUpgrade}
+                      className="w-full bg-secondary hover:bg-secondary/90" 
+                      onClick={() => handleUpgrade(selectedPlan)}
                       disabled={checkoutLoading}
                     >
                       {checkoutLoading ? (
@@ -457,6 +545,7 @@ const ParentDashboard = () => {
                     <p className="font-medium">Subscription Active</p>
                     <p className="text-sm text-muted-foreground">
                       Next billing date: {new Date(subscriptionEnd).toLocaleDateString()}
+                      {billingInterval && ` • Billed ${billingInterval === 'annual' ? 'annually' : 'monthly'}`}
                     </p>
                   </div>
                   <Button variant="outline" onClick={handleManageSubscription} disabled={portalLoading}>
