@@ -11,12 +11,12 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { useState } from "react";
 
 interface NavigationProps {
-  currentView: "hero" | "dashboard" | "game";
-  onViewChange: (view: "hero" | "dashboard" | "game") => void;
+  currentView?: "hero" | "dashboard" | "game";
+  onViewChange?: (view: "hero" | "dashboard" | "game") => void;
 }
 
 export const Navigation = ({
-  currentView,
+  currentView = "hero",
   onViewChange
 }: NavigationProps) => {
   const { user, signOut } = useAuth();
@@ -28,12 +28,21 @@ export const Navigation = ({
 
   const handleSignOut = async () => {
     await signOut();
-    onViewChange("hero");
+    if (onViewChange) {
+      onViewChange("hero");
+    } else {
+      navigate("/");
+    }
     setMobileMenuOpen(false);
   };
 
   const handleNavigation = (view: "hero" | "dashboard" | "game") => {
-    onViewChange(view);
+    if (onViewChange) {
+      onViewChange(view);
+    } else {
+      // Navigate to home page for standalone pages
+      navigate("/");
+    }
     setMobileMenuOpen(false);
   };
 
