@@ -136,7 +136,7 @@ export const Hero = ({ onSelectTestType }: HeroProps) => {
                     onClick={() => handleSelectTestType(testType)}
                     className={`
                       relative p-4 sm:p-5 rounded-xl border-2 transition-all duration-300
-                      hover:scale-105 hover:shadow-card text-left
+                      hover:scale-105 hover:shadow-card text-left w-36 sm:w-40
                       ${
                         isSelected
                           ? `border-primary bg-primary/10 ring-2 ring-primary/50`
