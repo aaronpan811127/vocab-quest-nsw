@@ -12,3 +12,5 @@ Allow: /
 
 User-agent: *
 Allow: /
+
+Sitemap: https://vocab-quest-nsw.lovable.app/sitemap.xml
