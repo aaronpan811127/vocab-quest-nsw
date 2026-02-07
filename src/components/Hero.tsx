@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useTestType, TestType } from "@/contexts/TestTypeContext";
 import { useNavigate } from "react-router-dom";
 import heroImage from "@/assets/hero-gaming.jpg";
+import catPattern from "@/assets/cat-pattern.png";
 
 interface HeroProps {
   onSelectTestType?: (testType: TestType) => void;
@@ -52,8 +53,18 @@ export const Hero = ({ onSelectTestType }: HeroProps) => {
         <div className="absolute inset-0 bg-background/90 backdrop-blur-sm" />
       </div>
 
+      {/* Cartoon Cat Pattern Overlay */}
+      <div
+        className="absolute inset-0 z-[1] opacity-[0.12] dark:opacity-[0.08] pointer-events-none"
+        style={{
+          backgroundImage: `url(${catPattern})`,
+          backgroundSize: '400px 400px',
+          backgroundRepeat: 'repeat',
+        }}
+      />
+
       {/* Floating Elements - Hidden on mobile */}
-      <div className="absolute inset-0 z-1 hidden sm:block">
+      <div className="absolute inset-0 z-[2] hidden sm:block">
         <div className="absolute top-20 left-10 animate-float">
           <Badge className="bg-primary/20 text-primary border-primary/30">
             <Star className="h-3 w-3 mr-1 fill-current" />
