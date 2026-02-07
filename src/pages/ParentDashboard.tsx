@@ -107,7 +107,7 @@ const ParentDashboard = () => {
       // Fetch parent profile
       let { data: profile, error: profileError } = await supabase
         .from("parent_profiles")
-        .select("*")
+        .select("id, parent_name, subscription_status, subscription_tier")
         .eq("user_id", user.id)
         .maybeSingle();
 
