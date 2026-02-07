@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { toast } from '@/hooks/use-toast';
+import confetti from 'canvas-confetti';
 
 // Generate celebration sound using Web Audio API
 const playSuccessSound = (isPerfect: boolean) => {
@@ -58,6 +59,44 @@ const playSuccessSound = (isPerfect: boolean) => {
   }
 };
 
+// Fire confetti burst for perfect scores
+const fireCelebrationConfetti = () => {
+  const duration = 3000;
+  const end = Date.now() + duration;
+
+  const frame = () => {
+    confetti({
+      particleCount: 3,
+      angle: 60,
+      spread: 55,
+      origin: { x: 0, y: 0.7 },
+      colors: ['#ff6b6b', '#ffd93d', '#6bcb77', '#4d96ff', '#ff6bff'],
+    });
+    confetti({
+      particleCount: 3,
+      angle: 120,
+      spread: 55,
+      origin: { x: 1, y: 0.7 },
+      colors: ['#ff6b6b', '#ffd93d', '#6bcb77', '#4d96ff', '#ff6bff'],
+    });
+
+    if (Date.now() < end) {
+      requestAnimationFrame(frame);
+    }
+  };
+
+  // Initial big burst
+  confetti({
+    particleCount: 100,
+    spread: 100,
+    origin: { y: 0.6 },
+    colors: ['#ff6b6b', '#ffd93d', '#6bcb77', '#4d96ff', '#ff6bff'],
+  });
+
+  // Continuous side streams
+  frame();
+};
+
 interface CelebrationOptions {
   score: number;
   totalQuestions: number;
@@ -73,6 +112,11 @@ export const useCelebration = () => {
 
     // Play celebration sound
     playSuccessSound(isPerfect);
+
+    // Fire confetti for perfect scores
+    if (isPerfect) {
+      fireCelebrationConfetti();
+    }
 
     // Show congratulation toast
     if (isPerfect) {
