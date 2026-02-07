@@ -27,6 +27,8 @@ import {
   CheckCircle2,
   Lock,
   AlertTriangle,
+  Users,
+  Clock,
 } from "lucide-react";
 import { useProfile } from "@/hooks/useProfile";
 import { useAuth } from "@/contexts/AuthContext";
@@ -76,7 +78,7 @@ export const Dashboard = ({ onStartGame, onBack, selectedUnitId, onUnitChange }:
   const { user } = useAuth();
   const { profile, loading } = useProfile();
   const { selectedTestType } = useTestType();
-  const { maxUnitsPerTestType, tier } = useSubscription();
+  const { maxUnitsPerTestType, tier, isTrialActive, trialDaysRemaining, trialExpired, subscribed } = useSubscription();
   
   // Use legacy hook for computing unit unlock status across all units
   const { games: gamesConfigAll, groupedGames: groupedGamesAll, loading: gamesLoadingAll, getSortedSections: getSortedSectionsAll, getRequiredGames: getRequiredGamesAll } = useGamesConfig(selectedTestType?.id || null);
@@ -823,6 +825,46 @@ Game XP = (Avg Score over all attempts × 0.5) + Time Bonus
           <WordStruggleAnalytics />
         </div>
 
+        {/* Trial Expired Banner */}
+        {trialExpired && !subscribed && (
+          <div className="rounded-xl border-2 border-destructive/30 bg-destructive/5 p-4 sm:p-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+              <div className="p-3 rounded-full bg-destructive/10">
+                <Clock className="h-6 w-6 text-destructive" />
+              </div>
+              <div className="flex-1 space-y-1">
+                <h3 className="font-semibold text-lg">Your 7-day free trial has ended</h3>
+                <p className="text-sm text-muted-foreground">
+                  Ask your parent or guardian to subscribe so you can continue learning and unlock all units and games.
+                </p>
+              </div>
+              <Button
+                className="bg-secondary hover:bg-secondary/90 gap-2 shrink-0"
+                onClick={() => window.open("/parent-auth", "_blank")}
+              >
+                <Users className="h-4 w-4" />
+                Parent Sign Up
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Trial Active Reminder */}
+        {isTrialActive && !subscribed && (
+          <div className="rounded-xl border border-primary/30 bg-primary/5 p-3 sm:p-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+              <div className="flex items-center gap-2 text-primary">
+                <Clock className="h-4 w-4" />
+                <span className="text-sm font-medium">
+                  {trialDaysRemaining} day{trialDaysRemaining !== 1 ? 's' : ''} left in your free trial
+                </span>
+              </div>
+              <span className="text-xs text-muted-foreground">
+                Ask a parent to <a href="/parent-auth" target="_blank" className="text-primary hover:underline font-medium">subscribe</a> for unlimited access to all units and games.
+              </span>
+            </div>
+          </div>
+        )}
         {/* Current Unit Progress */}
         {currentUnit && (
           <div className="space-y-6 sm:space-y-8">
