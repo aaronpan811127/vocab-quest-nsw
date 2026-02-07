@@ -2,18 +2,20 @@ import { useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Gamepad2, FileText, Home, Sun, Moon, ScrollText, CreditCard } from "lucide-react";
+import { Gamepad2, FileText, Home, Sun, Moon, ScrollText, CreditCard, Shield } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "next-themes";
 import { SiteFooter } from "@/components/SiteFooter";
 import { WebsiteTerms } from "@/components/terms/WebsiteTerms";
 import { SubscriptionTerms } from "@/components/terms/SubscriptionTerms";
+import { PrivacyPolicy } from "@/components/terms/PrivacyPolicy";
 
 const Terms = () => {
   const navigate = useNavigate();
   const { theme, setTheme } = useTheme();
   const [searchParams, setSearchParams] = useSearchParams();
-  const activeTab = searchParams.get("tab") === "subscription" ? "subscription" : "website";
+  const tabParam = searchParams.get("tab");
+  const activeTab = tabParam === "subscription" ? "subscription" : tabParam === "privacy" ? "privacy" : "website";
 
   const handleTabChange = (value: string) => {
     setSearchParams({ tab: value });
@@ -59,7 +61,7 @@ const Terms = () => {
       {/* Tabs */}
       <section className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
         <Tabs value={activeTab} onValueChange={handleTabChange}>
-          <TabsList className="grid w-full grid-cols-2 mb-8">
+          <TabsList className="grid w-full grid-cols-3 mb-8">
             <TabsTrigger value="website" className="gap-2">
               <ScrollText className="h-4 w-4" />
               Website T&C
@@ -67,6 +69,10 @@ const Terms = () => {
             <TabsTrigger value="subscription" className="gap-2">
               <CreditCard className="h-4 w-4" />
               Subscription T&C
+            </TabsTrigger>
+            <TabsTrigger value="privacy" className="gap-2">
+              <Shield className="h-4 w-4" />
+              Privacy Policy
             </TabsTrigger>
           </TabsList>
 
@@ -76,6 +82,10 @@ const Terms = () => {
 
           <TabsContent value="subscription">
             <SubscriptionTerms />
+          </TabsContent>
+
+          <TabsContent value="privacy">
+            <PrivacyPolicy />
           </TabsContent>
         </Tabs>
       </section>
