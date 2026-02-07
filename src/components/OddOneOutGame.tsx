@@ -10,7 +10,8 @@ import {
   Loader2,
   CircleOff,
   Trophy,
-  Clock
+  Clock,
+  Zap
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -62,11 +63,14 @@ export const OddOneOutGame = ({ unitId, unitTitle, unitWords, gameId, onComplete
   const [showResult, setShowResult] = useState(false);
   const [correctAnswers, setCorrectAnswers] = useState(0);
   const [incorrectAnswers, setIncorrectAnswers] = useState<Array<{ questionId: string; userAnswer: string }>>([]);
+  const [questionResults, setQuestionResults] = useState<Array<{ word: string; isCorrect: boolean; userAnswer: string }>>([]);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [showCompletion, setShowCompletion] = useState(false);
   const [startTime] = useState(Date.now());
   const [saving, setSaving] = useState(false);
+  const [showXpAnimation, setShowXpAnimation] = useState(false);
+  const [earnedXp, setEarnedXp] = useState(0);
   const [resolvedGameId, setResolvedGameId] = useState<string | null>(gameId || ODD_ONE_OUT_GAME_ID);
   const { user } = useAuth();
   const { toast } = useToast();
@@ -96,6 +100,8 @@ export const OddOneOutGame = ({ unitId, unitTitle, unitWords, gameId, onComplete
         totalQuestions: questions.length,
         gameName: 'Odd One Out'
       });
+      // Show XP animation after a short delay
+      setTimeout(() => setShowXpAnimation(true), 300);
     }
   }, [showCompletion, correctAnswers, questions.length, celebrate]);
 
@@ -417,6 +423,11 @@ export const OddOneOutGame = ({ unitId, unitTitle, unitWords, gameId, onComplete
         { questionId: currentQ.id!, userAnswer: selectedAnswer }
       ]);
     }
+    // Track per-question result for the results breakdown
+    setQuestionResults(prev => [
+      ...prev,
+      { word: currentQ.baseWord, isCorrect, userAnswer: selectedAnswer }
+    ]);
     setShowResult(true);
   };
 
@@ -486,6 +497,8 @@ export const OddOneOutGame = ({ unitId, unitTitle, unitWords, gameId, onComplete
         .eq('game_id', resolvedGameId)
         .maybeSingle();
 
+      const previousXp = existingProgress?.total_xp || 0;
+
       if (existingProgress) {
         await supabase
           .from('user_progress')
@@ -510,8 +523,22 @@ export const OddOneOutGame = ({ unitId, unitTitle, unitWords, gameId, onComplete
             best_score: score
           });
       }
+
+      // Read back updated XP to show in animation
+      const { data: updatedProgress } = await supabase
+        .from('user_progress')
+        .select('total_xp')
+        .eq('user_id', user.id)
+        .eq('unit_id', unitId)
+        .eq('game_id', resolvedGameId)
+        .maybeSingle();
+
+      const newXp = updatedProgress?.total_xp || 0;
+      setEarnedXp(Math.max(0, newXp - previousXp));
     } catch (err) {
       console.error('Error saving game attempt:', err);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -553,26 +580,71 @@ export const OddOneOutGame = ({ unitId, unitTitle, unitWords, gameId, onComplete
   }
 
   if (showCompletion) {
+    const isPerfect = correctAnswers === questions.length;
+
     return (
       <div className="min-h-screen bg-gradient-hero p-6">
         <div className="max-w-2xl mx-auto">
           <Card className="p-8 text-center space-y-6 bg-card/50 backdrop-blur-sm border-2 border-border/50">
-            <Trophy className="h-16 w-16 text-yellow-500 mx-auto" />
-            <h2 className="text-3xl font-bold text-primary">Game Complete!</h2>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="p-4 bg-primary/10 rounded-lg">
-                <p className="text-3xl font-bold text-primary">{score}%</p>
-                <p className="text-sm text-muted-foreground">Score</p>
-              </div>
-              <div className="p-4 bg-muted rounded-lg">
-                <p className="text-3xl font-bold">{correctAnswers}/{questions.length}</p>
-                <p className="text-sm text-muted-foreground">Correct</p>
-              </div>
+            {isPerfect ? (
+              <>
+                <div className="text-6xl mb-4">🎉</div>
+                <Trophy className="h-16 w-16 mx-auto text-success" />
+                <h2 className="text-3xl font-bold text-success">Perfect Score!</h2>
+                <p className="text-lg text-muted-foreground">You found every odd one out!</p>
+                <Badge className="bg-gradient-success text-success-foreground text-lg px-6 py-2">Score: {score}%</Badge>
+              </>
+            ) : (
+              <>
+                <div className="text-6xl mb-4">🔍</div>
+                <h2 className="text-3xl font-bold">Good Spotting!</h2>
+                <p className="text-lg text-muted-foreground">
+                  You got {correctAnswers} out of {questions.length} correct.
+                </p>
+                <Badge variant="outline" className="text-lg px-6 py-2">
+                  Score: {score}%
+                </Badge>
+              </>
+            )}
+
+            {/* Results breakdown */}
+            <div className="max-h-48 overflow-y-auto space-y-2">
+              {questionResults.map((q, i) => (
+                <div
+                  key={i}
+                  className={`flex items-center justify-between p-3 rounded-lg ${
+                    q.isCorrect
+                      ? "bg-success/10 border border-success/30"
+                      : "bg-destructive/10 border border-destructive/30"
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    {q.isCorrect ? (
+                      <Check className="h-5 w-5 text-success" />
+                    ) : (
+                      <X className="h-5 w-5 text-destructive" />
+                    )}
+                    <span className="font-medium">{q.word}</span>
+                  </div>
+                  {!q.isCorrect && <span className="text-sm text-muted-foreground">You picked: "{q.userAnswer}"</span>}
+                </div>
+              ))}
             </div>
-            <div className="flex items-center justify-center gap-2 text-muted-foreground">
-              <Clock className="h-4 w-4" />
-              <span>Time: {Math.floor(timeSpent / 60)}:{(timeSpent % 60).toString().padStart(2, '0')}</span>
+
+            {/* XP Animation */}
+            <div
+              className={`
+                flex items-center justify-center gap-2 py-3 px-6 rounded-full 
+                bg-gradient-to-r from-primary/20 to-primary/10 border border-primary/30
+                transition-all duration-500 ease-out
+                ${showXpAnimation ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-4 scale-95"}
+              `}
+            >
+              <Zap className={`h-6 w-6 text-primary ${showXpAnimation ? "animate-pulse" : ""}`} />
+              <span className="text-xl font-bold text-primary">+{earnedXp} XP</span>
+              {saving && <span className="text-sm text-muted-foreground">(saving...)</span>}
             </div>
+
             <GameResultActions 
               onPlayAgain={() => {
                 setCurrentQuestion(0);
@@ -580,12 +652,15 @@ export const OddOneOutGame = ({ unitId, unitTitle, unitWords, gameId, onComplete
                 setShowResult(false);
                 setCorrectAnswers(0);
                 setIncorrectAnswers([]);
+                setQuestionResults([]);
                 setShowCompletion(false);
+                setShowXpAnimation(false);
+                setEarnedXp(0);
                 hasCelebrated.current = false;
                 loadOrGenerateQuestions(words);
               }}
               onBack={onComplete} 
-              hasMistakes={correctAnswers < questions.length}
+              hasMistakes={!isPerfect}
             />
           </Card>
         </div>
