@@ -3,11 +3,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, XCircle, Loader2, ThumbsUp, ThumbsDown, Minus, Lightbulb } from "lucide-react";
+import { CheckCircle2, XCircle, Loader2, ThumbsUp, ThumbsDown, Minus, Lightbulb, RotateCcw, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { GameResultActions } from "./GameResultActions";
 import { useCelebration } from "@/hooks/useCelebration";
 import { selectBalancedQuestions, shuffleArray } from "@/utils/questionSelection";
 
@@ -367,38 +366,32 @@ export const WordIntuitionGame = ({ unitId, unitTitle, unitWords, onComplete, on
   }
 
   if (gameComplete) {
-    const finalScore = Math.round((score / questions.length) * 100);
-
     return (
-      <div className="min-h-screen bg-gradient-hero flex items-center justify-center p-4">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <CardTitle className="text-2xl">Game Complete! 🎉</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="text-center">
-              <div className="text-5xl font-bold text-primary mb-2">{finalScore}%</div>
-              <p className="text-muted-foreground">
-                {score} out of {questions.length} correct
-              </p>
+      <div className="min-h-screen bg-gradient-hero p-6">
+        <div className="max-w-2xl mx-auto">
+          <Card className="p-8 text-center space-y-6 bg-card/50 backdrop-blur-sm border-2 border-border/50">
+            <div className="text-6xl mb-4">🎉</div>
+            <h2 className="text-3xl font-bold text-primary">
+              {score === questions.length ? "Perfect Score!" : "Game Complete!"}
+            </h2>
+            <p className="text-lg text-muted-foreground">
+              You got {score} out of {questions.length} correct in {unitTitle}!
+            </p>
+            <Badge className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground text-lg px-6 py-2">
+              {score} / {questions.length} Complete
+            </Badge>
+            <div className="flex justify-center gap-4 pt-4">
+              <Button variant="outline" onClick={handleTryAgain} size="lg">
+                <RotateCcw className="h-5 w-5 mr-2" />
+                Play Again
+              </Button>
+              <Button variant="hero" onClick={onComplete} size="lg">
+                <Check className="h-5 w-5 mr-2" />
+                Complete
+              </Button>
             </div>
-
-            <div className="flex justify-center gap-2">
-              {finalScore >= 80 ? (
-                <span className="text-4xl">🌟</span>
-              ) : finalScore >= 60 ? (
-                <span className="text-4xl">👍</span>
-              ) : (
-                <span className="text-4xl">💪</span>
-              )}
-            </div>
-
-            <GameResultActions
-              onBack={onComplete}
-              onPlayAgain={handleTryAgain}
-            />
-          </CardContent>
-        </Card>
+          </Card>
+        </div>
       </div>
     );
   }
