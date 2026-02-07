@@ -11,12 +11,12 @@ import {
   CircleOff,
   Trophy,
   Clock,
-  Zap
+  Zap,
+  RotateCcw
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { GameResultActions } from "./GameResultActions";
 import { useCelebration } from "@/hooks/useCelebration";
 
 interface Word {
@@ -586,26 +586,16 @@ export const OddOneOutGame = ({ unitId, unitTitle, unitWords, gameId, onComplete
       <div className="min-h-screen bg-gradient-hero p-6">
         <div className="max-w-2xl mx-auto">
           <Card className="p-8 text-center space-y-6 bg-card/50 backdrop-blur-sm border-2 border-border/50">
-            {isPerfect ? (
-              <>
-                <div className="text-6xl mb-4">🎉</div>
-                <Trophy className="h-16 w-16 mx-auto text-success" />
-                <h2 className="text-3xl font-bold text-success">Perfect Score!</h2>
-                <p className="text-lg text-muted-foreground">You found every odd one out!</p>
-                <Badge className="bg-gradient-success text-success-foreground text-lg px-6 py-2">Score: {score}%</Badge>
-              </>
-            ) : (
-              <>
-                <div className="text-6xl mb-4">🔍</div>
-                <h2 className="text-3xl font-bold">Good Spotting!</h2>
-                <p className="text-lg text-muted-foreground">
-                  You got {correctAnswers} out of {questions.length} correct.
-                </p>
-                <Badge variant="outline" className="text-lg px-6 py-2">
-                  Score: {score}%
-                </Badge>
-              </>
-            )}
+            <div className="text-6xl mb-4">🎉</div>
+            <h2 className="text-3xl font-bold text-primary">
+              {isPerfect ? "Perfect Score!" : "Game Complete!"}
+            </h2>
+            <p className="text-lg text-muted-foreground">
+              You got {correctAnswers} out of {questions.length} correct in {unitTitle}!
+            </p>
+            <Badge className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground text-lg px-6 py-2">
+              {correctAnswers} / {questions.length} Complete
+            </Badge>
 
             {/* Results breakdown */}
             <div className="max-h-48 overflow-y-auto space-y-2">
@@ -645,8 +635,8 @@ export const OddOneOutGame = ({ unitId, unitTitle, unitWords, gameId, onComplete
               {saving && <span className="text-sm text-muted-foreground">(saving...)</span>}
             </div>
 
-            <GameResultActions 
-              onPlayAgain={() => {
+            <div className="flex justify-center gap-4 pt-4">
+              <Button variant="outline" onClick={() => {
                 setCurrentQuestion(0);
                 setSelectedAnswer(null);
                 setShowResult(false);
@@ -658,10 +648,15 @@ export const OddOneOutGame = ({ unitId, unitTitle, unitWords, gameId, onComplete
                 setEarnedXp(0);
                 hasCelebrated.current = false;
                 loadOrGenerateQuestions(words);
-              }}
-              onBack={onComplete} 
-              hasMistakes={!isPerfect}
-            />
+              }} size="lg">
+                <RotateCcw className="h-5 w-5 mr-2" />
+                Play Again
+              </Button>
+              <Button variant="hero" onClick={onComplete} size="lg">
+                <Check className="h-5 w-5 mr-2" />
+                Complete
+              </Button>
+            </div>
           </Card>
         </div>
       </div>
