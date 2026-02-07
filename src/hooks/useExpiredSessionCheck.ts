@@ -16,14 +16,10 @@ export const useExpiredSessionCheck = () => {
       try {
         const { data, error } = await supabase.functions.invoke('complete-expired-sessions');
 
-        // Handle auth errors silently - user session may have just expired
+        // Handle any errors silently - this is a background check
+        // FunctionsHttpError (401/403) means session expired, other errors are non-critical
         if (error) {
-          const errorMessage = error.message?.toLowerCase() || '';
-          if (errorMessage.includes('401') || errorMessage.includes('unauthorized') || errorMessage.includes('invalid')) {
-            console.log('Session expired, skipping expired session check');
-            return;
-          }
-          console.error('Error checking expired sessions:', error);
+          console.log('Expired session check skipped due to error:', error.name || error.message);
           return;
         }
 
