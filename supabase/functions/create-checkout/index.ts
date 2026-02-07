@@ -14,8 +14,8 @@ const logStep = (step: string, details?: any) => {
 
 // Price IDs for different plans
 const PRICE_IDS = {
-  monthly: "price_1Sx3Ty1tFo8qYFXsHMJ46ACH", // $19.99/month
-  annual: "price_1Sx3Uy1tFo8qYFXsgzF1KFuT",  // $199/year
+  monthly: "price_1Sy5k35JXcebRmQfb6oKsCrO", // $19.99/month
+  annual: "price_1Sy5k35JXcebRmQfgyPP1HhF",  // $199/year
 };
 
 serve(async (req) => {
