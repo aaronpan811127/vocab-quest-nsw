@@ -14,6 +14,92 @@ const logStep = (step: string, details?: any) => {
   console.log(`[CHECK-SUBSCRIPTION] ${step}${detailsStr}`);
 };
 
+async function checkParentSubscription(
+  supabaseClient: any,
+  stripe: any,
+  studentUserId: string
+): Promise<{ productId: string | null; subscriptionEnd: string | null; billingInterval: 'monthly' | 'annual' | null } | null> {
+  try {
+    // Find if this student has a linked parent with an active relationship
+    const { data: parentLinks, error: parentError } = await supabaseClient
+      .from('parent_children')
+      .select('parent_id')
+      .eq('student_user_id', studentUserId)
+      .eq('relationship_status', 'active');
+
+    if (parentError || !parentLinks || parentLinks.length === 0) {
+      logStep("No active parent links found for student", { studentUserId });
+      return null;
+    }
+
+    // For each linked parent, check if they have an active Stripe subscription
+    for (const link of parentLinks) {
+      const { data: parentProfile, error: ppError } = await supabaseClient
+        .from('parent_profiles')
+        .select('user_id')
+        .eq('id', link.parent_id)
+        .single();
+
+      if (ppError || !parentProfile) continue;
+
+      // Get parent's email from auth.users
+      const { data: parentUser, error: puError } = await supabaseClient
+        .auth.admin.getUserById(parentProfile.user_id);
+
+      if (puError || !parentUser?.user?.email) continue;
+
+      const parentEmail = parentUser.user.email;
+      logStep("Checking parent Stripe subscription", { parentEmail });
+
+      const parentCustomers = await stripe.customers.list({ email: parentEmail, limit: 1 });
+      if (parentCustomers.data.length === 0) continue;
+
+      const parentCustomerId = parentCustomers.data[0].id;
+      const parentSubscriptions = await stripe.subscriptions.list({
+        customer: parentCustomerId,
+        status: "active",
+        limit: 1,
+      });
+
+      if (parentSubscriptions.data.length > 0) {
+        const sub = parentSubscriptions.data[0];
+        const priceItem = sub.items.data[0]?.price;
+        const periodEnd = sub.current_period_end;
+        let subscriptionEnd = null;
+        if (periodEnd && typeof periodEnd === 'number') {
+          subscriptionEnd = new Date(periodEnd * 1000).toISOString();
+        }
+        
+        let billingInterval: 'monthly' | 'annual' | null = null;
+        const interval = priceItem?.recurring?.interval;
+        if (interval === 'year') billingInterval = 'annual';
+        else if (interval === 'month') billingInterval = 'monthly';
+
+        // Also update the parent_profiles subscription status
+        await supabaseClient
+          .from('parent_profiles')
+          .update({ 
+            subscription_status: 'active', 
+            subscription_tier: 'premium',
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', link.parent_id);
+
+        return {
+          productId: priceItem?.product ?? null,
+          subscriptionEnd,
+          billingInterval,
+        };
+      }
+    }
+
+    return null;
+  } catch (err) {
+    logStep("Error checking parent subscription", { error: String(err) });
+    return null;
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -106,7 +192,29 @@ serve(async (req) => {
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
     
     if (customers.data.length === 0) {
-      logStep("No customer found, returning free tier with trial status");
+      logStep("No Stripe customer found for user, checking parent subscription");
+      
+      // Check if this student has a linked parent with an active subscription
+      const parentSub = await checkParentSubscription(supabaseClient, stripe, user.id);
+      if (parentSub) {
+        logStep("Parent has active subscription, granting premium to student", parentSub);
+        return new Response(JSON.stringify({ 
+          subscribed: true,
+          tier: 'premium',
+          product_id: parentSub.productId,
+          subscription_end: parentSub.subscriptionEnd,
+          billing_interval: parentSub.billingInterval,
+          is_trial_active: false,
+          trial_days_remaining: 0,
+          trial_expired: true,
+          via_parent: true
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        });
+      }
+      
+      logStep("No parent subscription found either, returning free tier with trial status");
       return new Response(JSON.stringify({ 
         subscribed: false,
         tier: 'free',
@@ -165,7 +273,29 @@ serve(async (req) => {
       
       logStep("Determined subscription tier", { productId, tier, billingInterval });
     } else {
-      logStep("No active subscription found, returning free tier with trial status");
+      logStep("No active subscription for user, checking parent subscription");
+      
+      // Check if this student has a linked parent with an active subscription
+      const parentSub = await checkParentSubscription(supabaseClient, stripe, user.id);
+      if (parentSub) {
+        logStep("Parent has active subscription, granting premium to student", parentSub);
+        return new Response(JSON.stringify({ 
+          subscribed: true,
+          tier: 'premium',
+          product_id: parentSub.productId,
+          subscription_end: parentSub.subscriptionEnd,
+          billing_interval: parentSub.billingInterval,
+          is_trial_active: false,
+          trial_days_remaining: 0,
+          trial_expired: true,
+          via_parent: true
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        });
+      }
+      
+      logStep("No parent subscription found, returning free tier with trial status");
     }
 
     return new Response(JSON.stringify({
