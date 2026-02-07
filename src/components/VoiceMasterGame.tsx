@@ -4,8 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Mic, Volume2, Trophy, Zap, Check, X, Loader2, MicOff, ArrowRight } from "lucide-react";
-import { GameResultActions } from "./GameResultActions";
+import { Mic, Volume2, Zap, Check, X, Loader2, MicOff, ArrowRight, RotateCcw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -532,26 +531,16 @@ export const VoiceMasterGame = ({
       <div className="min-h-screen bg-gradient-hero p-6">
         <div className="max-w-2xl mx-auto">
           <Card className="p-8 text-center space-y-6 bg-card/50 backdrop-blur-sm border-2 border-border/50">
-            {isPerfect ? (
-              <>
-                <div className="text-6xl mb-4">🎉</div>
-                <Trophy className="h-16 w-16 mx-auto text-success" />
-                <h2 className="text-3xl font-bold text-success">Perfect Pronunciation!</h2>
-                <p className="text-lg text-muted-foreground">You said every word correctly!</p>
-                <Badge className="bg-gradient-success text-success-foreground text-lg px-6 py-2">Score: {score}%</Badge>
-              </>
-            ) : (
-              <>
-                <div className="text-6xl mb-4">🎤</div>
-                <h2 className="text-3xl font-bold">Great Speaking!</h2>
-                <p className="text-lg text-muted-foreground">
-                  You got {questions.filter((q) => q.isCorrect).length} out of {questions.length} correct.
-                </p>
-                <Badge variant="outline" className="text-lg px-6 py-2">
-                  Score: {score}%
-                </Badge>
-              </>
-            )}
+            <div className="text-6xl mb-4">🎉</div>
+            <h2 className="text-3xl font-bold text-primary">
+              {isPerfect ? "Perfect Score!" : "Game Complete!"}
+            </h2>
+            <p className="text-lg text-muted-foreground">
+              You got {questions.filter((q) => q.isCorrect).length} out of {questions.length} correct in {unitTitle}!
+            </p>
+            <Badge className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground text-lg px-6 py-2">
+              {questions.filter((q) => q.isCorrect).length} / {questions.length} Complete
+            </Badge>
 
             {/* Results breakdown */}
             <div className="max-h-48 overflow-y-auto space-y-2">
@@ -591,12 +580,16 @@ export const VoiceMasterGame = ({
               {saving && <span className="text-sm text-muted-foreground">(saving...)</span>}
             </div>
 
-            <GameResultActions
-              onPlayAgain={() => resetGame(true)}
-              onPracticeMistakes={() => resetGame(false)}
-              onBack={onBack}
-              hasMistakes={!isPerfect}
-            />
+            <div className="flex justify-center gap-4 pt-4">
+              <Button variant="outline" onClick={() => resetGame(true)} size="lg">
+                <RotateCcw className="h-5 w-5 mr-2" />
+                Play Again
+              </Button>
+              <Button variant="hero" onClick={onComplete} size="lg">
+                <Check className="h-5 w-5 mr-2" />
+                Complete
+              </Button>
+            </div>
           </Card>
         </div>
       </div>
@@ -682,8 +675,8 @@ export const VoiceMasterGame = ({
                   </>
                 ) : (
                   <>
-                    See Results
-                    <Trophy className="h-5 w-5 ml-2" />
+                  See Results
+                  <Check className="h-5 w-5 ml-2" />
                   </>
                 )}
               </Button>
