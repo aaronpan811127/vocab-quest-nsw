@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Gamepad2, Sparkles, Trophy, BookOpen, ArrowLeft, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { TermsAcceptanceCheckbox } from "@/components/TermsAcceptanceCheckbox";
 
 const Auth = () => {
   const [email, setEmail] = useState("");
@@ -16,6 +17,7 @@ const Auth = () => {
   const [username, setUsername] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const { signIn, signUp, resetPassword, user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -86,6 +88,15 @@ const Auth = () => {
       toast({
         title: "Missing fields",
         description: "Please fill in all fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!termsAccepted) {
+      toast({
+        title: "Terms required",
+        description: "Please accept the Terms & Conditions and Privacy Policy to continue",
         variant: "destructive",
       });
       return;
@@ -279,7 +290,12 @@ const Auth = () => {
                           disabled={isLoading}
                         />
                       </div>
-                      <Button type="submit" className="w-full" variant="gaming" disabled={isLoading}>
+                      <TermsAcceptanceCheckbox
+                        checked={termsAccepted}
+                        onCheckedChange={setTermsAccepted}
+                        disabled={isLoading}
+                      />
+                      <Button type="submit" className="w-full" variant="gaming" disabled={isLoading || !termsAccepted}>
                         {isLoading ? "Creating account..." : "Create Account"}
                       </Button>
                     </form>
@@ -309,7 +325,7 @@ const Auth = () => {
             </Button>
           </div>
           
-          <p className="text-xs text-muted-foreground">By continuing, you agree to learn awesome vocabulary! 🎮</p>
+          <p className="text-xs text-muted-foreground">Ready to learn awesome vocabulary! 🎮</p>
         </div>
       </div>
     </div>

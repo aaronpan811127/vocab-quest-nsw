@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Users, Heart, BarChart3, CreditCard, ArrowLeft, Gamepad2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { TermsAcceptanceCheckbox } from "@/components/TermsAcceptanceCheckbox";
 
 const ParentAuth = () => {
   const [email, setEmail] = useState("");
@@ -15,6 +16,7 @@ const ParentAuth = () => {
   const [parentName, setParentName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const { signIn, signUpAsParent, resetPassword, user, currentRole } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -87,6 +89,15 @@ const ParentAuth = () => {
       toast({
         title: "Missing fields",
         description: "Please fill in all fields",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!termsAccepted) {
+      toast({
+        title: "Terms required",
+        description: "Please accept the Terms & Conditions and Privacy Policy to continue",
         variant: "destructive"
       });
       return;
@@ -296,10 +307,15 @@ const ParentAuth = () => {
                           disabled={isLoading}
                         />
                       </div>
+                      <TermsAcceptanceCheckbox
+                        checked={termsAccepted}
+                        onCheckedChange={setTermsAccepted}
+                        disabled={isLoading}
+                      />
                       <Button 
                         type="submit" 
                         className="w-full bg-secondary hover:bg-secondary/90" 
-                        disabled={isLoading}
+                        disabled={isLoading || !termsAccepted}
                       >
                         {isLoading ? "Creating account..." : "Create Parent Account"}
                       </Button>
