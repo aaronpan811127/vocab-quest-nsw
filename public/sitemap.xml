@@ -1,37 +1,37 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://vocab-quest-nsw.lovable.app/</loc>
+    <loc>https://vocabquests.com/</loc>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://vocab-quest-nsw.lovable.app/how-it-works</loc>
+    <loc>https://vocabquests.com/how-it-works</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://vocab-quest-nsw.lovable.app/pricing</loc>
+    <loc>https://vocabquests.com/pricing</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://vocab-quest-nsw.lovable.app/contact</loc>
+    <loc>https://vocabquests.com/contact</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://vocab-quest-nsw.lovable.app/terms</loc>
+    <loc>https://vocabquests.com/terms</loc>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://vocab-quest-nsw.lovable.app/auth</loc>
+    <loc>https://vocabquests.com/auth</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://vocab-quest-nsw.lovable.app/parent-auth</loc>
+    <loc>https://vocabquests.com/parent-auth</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
