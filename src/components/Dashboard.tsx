@@ -78,7 +78,7 @@ export const Dashboard = ({ onStartGame, onBack, selectedUnitId, onUnitChange }:
   const { user } = useAuth();
   const { profile, loading } = useProfile();
   const { selectedTestType } = useTestType();
-  const { maxUnitsPerTestType, tier, isTrialActive, trialDaysRemaining, trialExpired, subscribed } = useSubscription();
+  const { maxUnitsPerTestType, tier, isTrialActive, trialDaysRemaining, trialExpired, subscribed, loading: subscriptionLoading } = useSubscription();
   
   // Use legacy hook for computing unit unlock status across all units
   const { games: gamesConfigAll, groupedGames: groupedGamesAll, loading: gamesLoadingAll, getSortedSections: getSortedSectionsAll, getRequiredGames: getRequiredGamesAll } = useGamesConfig(selectedTestType?.id || null);
@@ -826,7 +826,7 @@ Game XP = (Avg Score over all attempts × 0.5) + Time Bonus
         </div>
 
         {/* Trial Expired Banner */}
-        {trialExpired && !subscribed && (
+        {!subscriptionLoading && trialExpired && !subscribed && (
           <div className="rounded-xl border-2 border-destructive/30 bg-destructive/5 p-4 sm:p-6">
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
               <div className="p-3 rounded-full bg-destructive/10">
@@ -850,7 +850,7 @@ Game XP = (Avg Score over all attempts × 0.5) + Time Bonus
         )}
 
         {/* Trial Active Reminder */}
-        {isTrialActive && !subscribed && (
+        {!subscriptionLoading && isTrialActive && !subscribed && (
           <div className="rounded-xl border border-primary/30 bg-primary/5 p-3 sm:p-4">
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
               <div className="flex items-center gap-2 text-primary">
