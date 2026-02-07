@@ -82,11 +82,14 @@ export const ReadingGame = ({ unitId, unitTitle, unitWords, onComplete, onBack }
     setError(null);
     
     try {
-      // Fetch all passages for this unit
+      // Fetch reading passages for this unit (exclude other passage types)
       const { data: passages, error: passageError } = await supabase
         .from('reading_passages')
         .select('*')
-        .eq('unit_id', unitId);
+        .eq('unit_id', unitId)
+        .not('title', 'ilike', 'Linked Extracts:%')
+        .not('title', 'ilike', 'Cloze Passage:%')
+        .not('title', 'ilike', 'Gap Fill Passage:%');
 
       if (passageError) throw passageError;
       
@@ -248,7 +251,10 @@ export const ReadingGame = ({ unitId, unitTitle, unitWords, onComplete, onBack }
       const { data: existingPassages } = await supabase
         .from('reading_passages')
         .select('*')
-        .eq('unit_id', unitId);
+        .eq('unit_id', unitId)
+        .not('title', 'ilike', 'Linked Extracts:%')
+        .not('title', 'ilike', 'Cloze Passage:%')
+        .not('title', 'ilike', 'Gap Fill Passage:%');
 
       if (existingPassages && existingPassages.length > 0) {
         await loadPassageWithQuestions(existingPassages[0]);
