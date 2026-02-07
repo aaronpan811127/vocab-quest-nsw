@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Gamepad2, Mail, MessageSquare, Send, Home, Sun, Moon, CheckCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { SiteFooter } from "@/components/SiteFooter";
 import { useTheme } from "next-themes";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
@@ -262,20 +263,7 @@ const Contact = () => {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="py-8 px-4 sm:px-6 border-t bg-card">
-        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded-lg bg-gradient-primary">
-              <Gamepad2 className="h-4 w-4 text-primary-foreground" />
-            </div>
-            <span className="font-bold">VocabQuest</span>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} VocabQuest. Making vocabulary learning fun.
-          </p>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 };

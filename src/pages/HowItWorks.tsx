@@ -24,6 +24,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "next-themes";
 import { Sun, Moon, Home } from "lucide-react";
+import { SiteFooter } from "@/components/SiteFooter";
 
 // Student-focused content
 const studentSteps = [
@@ -340,20 +341,7 @@ export default function HowItWorks() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="py-8 px-4 sm:px-6 border-t bg-card">
-        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded-lg bg-gradient-primary">
-              <Gamepad2 className="h-4 w-4 text-primary-foreground" />
-            </div>
-            <span className="font-bold">VocabQuest</span>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} VocabQuest. Making vocabulary learning fun.
-          </p>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }
