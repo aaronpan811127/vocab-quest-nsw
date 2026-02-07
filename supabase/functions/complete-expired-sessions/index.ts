@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
 serve(async (req) => {
@@ -13,7 +13,7 @@ serve(async (req) => {
 
   try {
     const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
+    if (!authHeader?.startsWith('Bearer ')) {
       return new Response(
         JSON.stringify({ success: false, error: 'Unauthorized' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -24,25 +24,29 @@ serve(async (req) => {
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
+    // Validate user token using getClaims
     const supabaseUser = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } }
     });
 
-    const { data: { user }, error: userError } = await supabaseUser.auth.getUser();
-    if (userError || !user) {
+    const token = authHeader.replace('Bearer ', '');
+    const { data: claimsData, error: claimsError } = await supabaseUser.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims) {
+      console.log('Auth validation failed:', claimsError?.message);
       return new Response(
         JSON.stringify({ success: false, error: 'Invalid user token' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
+    const userId = claimsData.claims.sub;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Find all incomplete test sessions for this user
     const { data: incompleteSessions, error: fetchError } = await supabase
       .from('game_attempts')
       .select('id, game_id, unit_id, started_at, total_duration_seconds, total_questions')
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .eq('completed', false)
       .not('started_at', 'is', null);
 
@@ -67,7 +71,6 @@ serve(async (req) => {
       if (now >= expiresAt) {
         expiredSessions.push(session.id);
 
-        // Complete the expired session with 0 score (no answers submitted)
         const timeSpentSeconds = session.total_duration_seconds;
         
         await supabase
@@ -80,11 +83,10 @@ serve(async (req) => {
           })
           .eq('id', session.id);
 
-        // Update user_progress for the expired session
         const { data: existingProgress } = await supabase
           .from('user_progress')
           .select('id, attempts, best_score')
-          .eq('user_id', user.id)
+          .eq('user_id', userId)
           .eq('unit_id', session.unit_id)
           .eq('game_id', session.game_id)
           .single();
@@ -96,7 +98,7 @@ serve(async (req) => {
               attempts: (existingProgress.attempts || 0) + 1,
               best_score: Math.max(existingProgress.best_score || 0, 0),
               total_time_seconds: timeSpentSeconds,
-              completed: false, // 0 score means not passed
+              completed: false,
               updated_at: new Date().toISOString()
             })
             .eq('id', existingProgress.id);
@@ -104,7 +106,7 @@ serve(async (req) => {
           await supabase
             .from('user_progress')
             .insert({
-              user_id: user.id,
+              user_id: userId,
               unit_id: session.unit_id,
               game_id: session.game_id,
               best_score: 0,

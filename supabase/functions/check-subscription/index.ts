@@ -53,9 +53,15 @@ serve(async (req) => {
     const token = authHeader.replace("Bearer ", "");
     logStep("Authenticating user with token");
     
-    const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
-    if (userError || !userData.user?.email) {
-      logStep("Auth failed or session expired - returning free tier", { error: userError?.message });
+    // Use anon key client for getClaims (signing-keys compatible)
+    const anonClient = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+      { global: { headers: { Authorization: authHeader } } }
+    );
+    const { data: claimsData, error: claimsError } = await anonClient.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims?.email) {
+      logStep("Auth failed or session expired - returning free tier", { error: claimsError?.message });
       return new Response(JSON.stringify({ 
         subscribed: false,
         tier: 'free',
@@ -69,7 +75,7 @@ serve(async (req) => {
         status: 200,
       });
     }
-    const user = userData.user;
+    const user = { id: claimsData.claims.sub as string, email: claimsData.claims.email as string };
     logStep("User authenticated", { userId: user.id, email: user.email });
 
     // Fetch user profile to get trial_started_at
