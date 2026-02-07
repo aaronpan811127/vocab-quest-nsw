@@ -6,9 +6,10 @@ interface TermsAcceptanceCheckboxProps {
   checked: boolean;
   onCheckedChange: (checked: boolean) => void;
   disabled?: boolean;
+  showSubscriptionTerms?: boolean;
 }
 
-export const TermsAcceptanceCheckbox = ({ checked, onCheckedChange, disabled }: TermsAcceptanceCheckboxProps) => {
+export const TermsAcceptanceCheckbox = ({ checked, onCheckedChange, disabled, showSubscriptionTerms = false }: TermsAcceptanceCheckboxProps) => {
   return (
     <div className="flex items-start gap-2">
       <Checkbox
@@ -23,10 +24,14 @@ export const TermsAcceptanceCheckbox = ({ checked, onCheckedChange, disabled }: 
         <Link to="/terms?tab=website" target="_blank" className="text-primary hover:underline">
           Website T&C
         </Link>
-        ,{" "}
-        <Link to="/terms?tab=subscription" target="_blank" className="text-primary hover:underline">
-          Subscription T&C
-        </Link>
+        {showSubscriptionTerms && (
+          <>
+            ,{" "}
+            <Link to="/terms?tab=subscription" target="_blank" className="text-primary hover:underline">
+              Subscription T&C
+            </Link>
+          </>
+        )}
         {" "}and{" "}
         <Link to="/terms?tab=privacy" target="_blank" className="text-primary hover:underline">
           Privacy Policy
