@@ -12,13 +12,17 @@ export const SiteFooter = () => {
             </div>
             <span className="font-bold">VocabQuest</span>
           </div>
-          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+          <div className="flex items-center gap-4 text-sm text-muted-foreground flex-wrap justify-center sm:justify-end">
             <Link to="/terms?tab=website" className="hover:text-foreground transition-colors">
               Website T&C
             </Link>
             <span className="text-border">|</span>
             <Link to="/terms?tab=subscription" className="hover:text-foreground transition-colors">
               Subscription T&C
+            </Link>
+            <span className="text-border">|</span>
+            <Link to="/terms?tab=privacy" className="hover:text-foreground transition-colors">
+              Privacy Policy
             </Link>
             <span className="text-border">|</span>
             <Link to="/contact" className="hover:text-foreground transition-colors">
