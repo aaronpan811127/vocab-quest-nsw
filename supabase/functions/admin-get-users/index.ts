@@ -26,14 +26,20 @@ Deno.serve(async (req) => {
     }
 
     const token = authHeader.replace('Bearer ', '');
-    const { data: { user: adminUser }, error: authError } = await supabase.auth.getUser(token);
+    const anonClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { global: { headers: { Authorization: authHeader } } }
+    );
+    const { data: claimsData, error: claimsError } = await anonClient.auth.getClaims(token);
     
-    if (authError || !adminUser) {
+    if (claimsError || !claimsData?.claims) {
       return new Response(
         JSON.stringify({ error: 'Invalid token' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+    const adminUser = { id: claimsData.claims.sub as string };
 
     // Check if user is admin
     const { data: isAdmin } = await supabase.rpc('is_admin', { p_user_id: adminUser.id });
