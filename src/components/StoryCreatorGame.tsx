@@ -5,8 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
-import { PenTool, Trophy, Zap, ArrowRight, Check, X, Loader2, Lightbulb } from "lucide-react";
-import { GameResultActions } from "./GameResultActions";
+import { PenTool, Zap, ArrowRight, Check, X, Loader2, Lightbulb, RotateCcw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -355,49 +354,37 @@ export const StoryCreatorGame = ({ unitId, unitTitle, unitWords, onComplete, onB
       <div className="min-h-screen bg-gradient-hero p-6">
         <div className="max-w-2xl mx-auto">
           <Card className="p-8 text-center space-y-6 bg-card/50 backdrop-blur-sm border-2 border-border/50">
-            {isPerfect ? (
-              <>
-                <div className="text-6xl mb-4">🎉</div>
-                <Trophy className="h-16 w-16 mx-auto text-success" />
-                <h2 className="text-3xl font-bold text-success">Perfect Writing!</h2>
-                <p className="text-lg text-muted-foreground">You used every word correctly!</p>
-                <Badge className="bg-gradient-success text-success-foreground text-lg px-6 py-2">Score: {score}%</Badge>
-              </>
-            ) : (
-              <>
-                <div className="text-6xl mb-4">✍️</div>
-                <h2 className="text-3xl font-bold">Great Writing!</h2>
-                <p className="text-lg text-muted-foreground">
-                  You correctly used {questions.filter((q) => q.isCorrect).length} out of {questions.length} words.
-                </p>
-                <Badge variant="outline" className="text-lg px-6 py-2">
-                  Score: {score}%
-                </Badge>
-              </>
-            )}
+            <div className="text-6xl mb-4">🎉</div>
+            <h2 className="text-3xl font-bold text-primary">
+              {isPerfect ? "Perfect Score!" : "Game Complete!"}
+            </h2>
+            <p className="text-lg text-muted-foreground">
+              You got {questions.filter((q) => q.isCorrect).length} out of {questions.length} correct in {unitTitle}!
+            </p>
+            <Badge className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground text-lg px-6 py-2">
+              {questions.filter((q) => q.isCorrect).length} / {questions.length} Complete
+            </Badge>
 
             {/* Results breakdown */}
-            <div className="max-h-64 overflow-y-auto space-y-3 text-left">
+            <div className="max-h-48 overflow-y-auto space-y-2">
               {questions.map((q, i) => (
                 <div
                   key={i}
-                  className={`p-4 rounded-lg ${
+                  className={`flex items-start gap-2 p-3 rounded-lg ${
                     q.isCorrect
                       ? "bg-success/10 border border-success/30"
                       : "bg-destructive/10 border border-destructive/30"
                   }`}
                 >
-                  <div className="flex items-start gap-2">
-                    {q.isCorrect ? (
-                      <Check className="h-5 w-5 text-success mt-0.5 flex-shrink-0" />
-                    ) : (
-                      <X className="h-5 w-5 text-destructive mt-0.5 flex-shrink-0" />
-                    )}
-                    <div className="space-y-1 flex-1">
-                      <p className="font-medium">{q.word}</p>
-                      <p className="text-sm text-muted-foreground italic">"{q.userSentence}"</p>
-                      <p className="text-sm">{q.feedback}</p>
-                    </div>
+                  {q.isCorrect ? (
+                    <Check className="h-5 w-5 text-success mt-0.5 flex-shrink-0" />
+                  ) : (
+                    <X className="h-5 w-5 text-destructive mt-0.5 flex-shrink-0" />
+                  )}
+                  <div className="space-y-1 flex-1 text-left">
+                    <p className="font-medium">{q.word}</p>
+                    <p className="text-sm text-muted-foreground italic">"{q.userSentence}"</p>
+                    <p className="text-sm">{q.feedback}</p>
                   </div>
                 </div>
               ))}
@@ -417,12 +404,16 @@ export const StoryCreatorGame = ({ unitId, unitTitle, unitWords, onComplete, onB
               {saving && <span className="text-sm text-muted-foreground">(saving...)</span>}
             </div>
 
-            <GameResultActions
-              onPlayAgain={() => resetGame(true)}
-              onPracticeMistakes={() => resetGame(false)}
-              onBack={onBack}
-              hasMistakes={!isPerfect}
-            />
+            <div className="flex justify-center gap-4 pt-4">
+              <Button variant="outline" onClick={() => resetGame(true)} size="lg">
+                <RotateCcw className="h-5 w-5 mr-2" />
+                Play Again
+              </Button>
+              <Button variant="hero" onClick={onComplete} size="lg">
+                <Check className="h-5 w-5 mr-2" />
+                Complete
+              </Button>
+            </div>
           </Card>
         </div>
       </div>
@@ -502,8 +493,8 @@ export const StoryCreatorGame = ({ unitId, unitTitle, unitWords, onComplete, onB
                     </>
                   ) : (
                     <>
-                      See Results
-                      <Trophy className="h-5 w-5 ml-2" />
+                    See Results
+                    <Check className="h-5 w-5 ml-2" />
                     </>
                   )}
                 </Button>
