@@ -7,9 +7,7 @@ import {
   BookOpen, 
   ArrowRight,
   RotateCcw,
-  Trophy,
   Zap,
-  RefreshCw,
   Check,
   Loader2
 } from "lucide-react";
@@ -85,7 +83,15 @@ export const ReadingGame = ({ unitId, unitTitle, unitWords, onComplete, onBack }
     setError(null);
     
     try {
-      // Fetch reading passages for this unit (exclude other passage types)
+      const readingGameId = '8832f06f-9eed-4330-b663-7e1afc654780';
+
+      // Check if user has a previous non-perfect attempt to retry incorrect questions
+      if (user) {
+        const retryResult = await loadIncorrectFromLastAttempt(readingGameId);
+        if (retryResult) return; // Successfully loaded incorrect questions
+      }
+
+      // Normal flow: fetch new passage
       const { data: passages, error: passageError } = await supabase
         .from('reading_passages')
         .select('*')
@@ -105,25 +111,17 @@ export const ReadingGame = ({ unitId, unitTitle, unitWords, onComplete, onBack }
       // Get passage IDs the user has already attempted
       const attemptedPassageIds = new Set<string>();
       if (user) {
-        const { data: gameData } = await supabase
-          .from('games')
-          .select('id')
-          .eq('game_type', 'reading')
-          .single();
+        const { data: attempts } = await supabase
+          .from('game_attempts')
+          .select('passage_id')
+          .eq('user_id', user.id)
+          .eq('unit_id', unitId)
+          .eq('game_id', readingGameId)
+          .not('passage_id', 'is', null);
 
-        if (gameData) {
-          const { data: attempts } = await supabase
-            .from('game_attempts')
-            .select('passage_id')
-            .eq('user_id', user.id)
-            .eq('unit_id', unitId)
-            .eq('game_id', gameData.id)
-            .not('passage_id', 'is', null);
-
-          attempts?.forEach(a => {
-            if (a.passage_id) attemptedPassageIds.add(a.passage_id);
-          });
-        }
+        attempts?.forEach(a => {
+          if (a.passage_id) attemptedPassageIds.add(a.passage_id);
+        });
       }
 
       // Find unattempted passages
@@ -139,7 +137,6 @@ export const ReadingGame = ({ unitId, unitTitle, unitWords, onComplete, onBack }
       const selectedPassage = unattemptedPassages[Math.floor(Math.random() * unattemptedPassages.length)];
 
       // Fetch questions for this passage
-      const readingGameId = '8832f06f-9eed-4330-b663-7e1afc654780';
       const { data: questionsData, error: questionsError } = await supabase
         .from('questions_for_play')
         .select('id, question_text, options, passage_id, unit_id, game_id')
@@ -175,6 +172,78 @@ export const ReadingGame = ({ unitId, unitTitle, unitWords, onComplete, onBack }
       setError("Failed to load game data. Please try again.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadIncorrectFromLastAttempt = async (readingGameId: string): Promise<boolean> => {
+    if (!user) return false;
+
+    try {
+      // Get the most recent attempt for this unit
+      const { data: lastAttempt } = await supabase
+        .from('game_attempts')
+        .select('id, passage_id, score')
+        .eq('user_id', user.id)
+        .eq('unit_id', unitId)
+        .eq('game_id', readingGameId)
+        .not('passage_id', 'is', null)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (!lastAttempt || lastAttempt.score === 100 || !lastAttempt.passage_id) return false;
+
+      // Get incorrect question IDs from last attempt
+      const { data: incorrectData } = await supabase
+        .from('attempt_incorrect_answers')
+        .select('question_id')
+        .eq('attempt_id', lastAttempt.id);
+
+      if (!incorrectData || incorrectData.length === 0) return false;
+
+      const incorrectIds = incorrectData.map(d => d.question_id);
+
+      // Load the passage
+      const { data: passageData } = await supabase
+        .from('reading_passages')
+        .select('*')
+        .eq('id', lastAttempt.passage_id)
+        .single();
+
+      if (!passageData) return false;
+
+      // Load only the incorrect questions
+      const { data: questionsData } = await supabase
+        .from('questions_for_play')
+        .select('id, question_text, options, passage_id, unit_id, game_id')
+        .eq('passage_id', lastAttempt.passage_id)
+        .eq('game_id', readingGameId)
+        .in('id', incorrectIds);
+
+      if (!questionsData || questionsData.length === 0) return false;
+
+      setPassage({
+        id: passageData.id,
+        title: passageData.title,
+        content: passageData.content,
+        highlighted_words: passageData.highlighted_words || []
+      });
+
+      const formattedQuestions: Question[] = questionsData.map(q => ({
+        id: q.id,
+        question_text: q.question_text,
+        options: Array.isArray(q.options) ? q.options : JSON.parse(q.options as string)
+      }));
+
+      const shuffled = formattedQuestions.sort(() => Math.random() - 0.5);
+      setQuestions(shuffled);
+      setAllQuestions(shuffled);
+      setIsRetryingMistakes(true);
+      setLoading(false);
+      return true;
+    } catch (err) {
+      console.error('Error loading incorrect questions:', err);
+      return false;
     }
   };
 
@@ -363,26 +432,7 @@ export const ReadingGame = ({ unitId, unitTitle, unitWords, onComplete, onBack }
   const getScore = () => serverScore;
   const getCorrectCount = () => serverCorrectCount;
 
-  const retryIncorrectQuestions = () => {
-    // Filter to only the questions that were answered incorrectly
-    const incorrectQuestions = allQuestions.filter(q => incorrectQuestionIds.includes(q.id));
-    
-    if (incorrectQuestions.length === 0) return;
 
-    setQuestions(incorrectQuestions);
-    setCurrentQuestion(0);
-    setSelectedAnswers([]);
-    setShowResults(false);
-    setGameCompleted(false);
-    setEarnedXp(0);
-    setShowXpAnimation(false);
-    setServerScore(0);
-    setServerCorrectCount(0);
-    setIncorrectQuestionIds([]);
-    setIsRetryingMistakes(true);
-    hasCelebrated.current = false;
-    startTimeRef.current = Date.now();
-  };
 
   const resetGame = () => {
     setCurrentQuestion(0);
@@ -451,8 +501,6 @@ export const ReadingGame = ({ unitId, unitTitle, unitWords, onComplete, onBack }
   }
 
   if (showResults) {
-    const score = getScore();
-    const hasIncorrect = incorrectQuestionIds.length > 0;
     const isPerfect = gameCompleted;
 
     return (
@@ -487,20 +535,13 @@ export const ReadingGame = ({ unitId, unitTitle, unitWords, onComplete, onBack }
             </div>
 
             <div className="flex justify-center gap-4 pt-4">
-              {hasIncorrect ? (
-                <Button variant="outline" onClick={retryIncorrectQuestions} size="lg">
-                  <RefreshCw className="h-5 w-5 mr-2" />
-                  Retry Incorrect ({incorrectQuestionIds.length})
-                </Button>
-              ) : (
-                <Button variant="outline" onClick={resetGame} size="lg">
-                  <RotateCcw className="h-5 w-5 mr-2" />
-                  Play Again
-                </Button>
-              )}
-              <Button variant="hero" onClick={isPerfect ? onComplete : onBack} size="lg">
+              <Button variant="outline" onClick={resetGame} size="lg">
+                <RotateCcw className="h-5 w-5 mr-2" />
+                Play Again
+              </Button>
+              <Button variant="hero" onClick={onComplete} size="lg">
                 <Check className="h-5 w-5 mr-2" />
-                {isPerfect ? 'Complete' : 'Back'}
+                Complete
               </Button>
             </div>
           </Card>
