@@ -365,6 +365,11 @@ export const WordShooterGame = ({
 
   const handleNext = async () => {
     if (currentRound < rounds.length - 1) {
+      // Reset round-level state BEFORE advancing to prevent stale highlight flash
+      setCardsVisible(false);
+      setSelectedAnswer(null);
+      setRoundLocked(false);
+      setTimeExpired(false);
       setCurrentRound((prev) => prev + 1);
     } else {
       setSaving(true);
