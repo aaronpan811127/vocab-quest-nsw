@@ -101,7 +101,7 @@ interface WordStruggleData {
 }
 
 // Learning games: vocabulary building, practice
-const LEARNING_GAMES = ['flashcards', 'matching', 'oddoneout', 'intuition'];
+const LEARNING_GAMES = ['flashcards', 'matching', 'oddoneout'];
 // Compete games: active recall, dictation, comprehension
 const COMPETE_GAMES = ['listening', 'speaking', 'reading', 'writing'];
 
