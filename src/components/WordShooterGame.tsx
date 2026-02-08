@@ -85,6 +85,37 @@ const playHitSound = () => {
   }
 };
 
+/* ---- Web Audio miss sound ---- */
+const playMissSound = () => {
+  try {
+    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    // Descending "buzz" for wrong answer
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = "sawtooth";
+    osc.frequency.setValueAtTime(300, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(120, ctx.currentTime + 0.25);
+    gain.gain.setValueAtTime(0.2, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+    osc.connect(gain).connect(ctx.destination);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.3);
+    // Second low tone for "thud" feel
+    const osc2 = ctx.createOscillator();
+    const gain2 = ctx.createGain();
+    osc2.type = "square";
+    osc2.frequency.setValueAtTime(80, ctx.currentTime);
+    osc2.frequency.exponentialRampToValueAtTime(60, ctx.currentTime + 0.15);
+    gain2.gain.setValueAtTime(0.12, ctx.currentTime);
+    gain2.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
+    osc2.connect(gain2).connect(ctx.destination);
+    osc2.start(ctx.currentTime);
+    osc2.stop(ctx.currentTime + 0.2);
+  } catch {
+    // Silently fail if AudioContext unavailable
+  }
+};
+
 export const WordShooterGame = ({
   unitId,
   unitTitle,
@@ -366,6 +397,8 @@ export const WordShooterGame = ({
     if (isCorrect) {
       setCorrectAnswers((prev) => prev + 1);
       playHitSound();
+    } else {
+      playMissSound();
     }
 
     setRoundResults((prev) => [
@@ -382,6 +415,7 @@ export const WordShooterGame = ({
   // Handle timeout (no selection)
   useEffect(() => {
     if (timeExpired && !selectedAnswer && rounds.length > 0 && currentRound < rounds.length) {
+      playMissSound();
       const currentR = rounds[currentRound];
       setRoundResults((prev) => [
         ...prev,
