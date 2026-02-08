@@ -984,24 +984,57 @@ export const AdminQuestionReview = () => {
 
                                   // Gap Fill / Cloze Passage format: { passage, options, answers }
                                   if (parsed && typeof parsed === 'object' && parsed.passage) {
+                                    // Render passage with highlighted [Gap X] markers
+                                    const renderPassageWithGaps = (text: string) => {
+                                      const parts = text.split(/(\[Gap \d+\])/g);
+                                      return parts.map((part, i) => {
+                                        const gapMatch = part.match(/^\[Gap (\d+)\]$/);
+                                        if (gapMatch) {
+                                          const gapNum = gapMatch[1];
+                                          const answerLabel = parsed.answers?.[gapNum];
+                                          const answerOption = answerLabel && parsed.options?.find((o: { label?: string }) => o.label === answerLabel);
+                                          return (
+                                            <span
+                                              key={i}
+                                              className="inline-flex items-center gap-1 px-2 py-0.5 mx-0.5 bg-primary/15 border border-primary/30 text-primary text-xs font-bold rounded"
+                                              title={answerOption ? `Answer: ${answerLabel} – ${answerOption.text}` : undefined}
+                                            >
+                                              Gap {gapNum}
+                                              {answerLabel && (
+                                                <span className="text-[10px] font-semibold bg-primary/20 px-1 rounded">
+                                                  {answerLabel}
+                                                </span>
+                                              )}
+                                            </span>
+                                          );
+                                        }
+                                        return <span key={i}>{part}</span>;
+                                      });
+                                    };
+
                                     return (
                                       <div className="space-y-4">
                                         <div className="p-4 bg-muted rounded-lg">
                                           <p className="text-sm font-medium text-muted-foreground mb-2">Passage:</p>
-                                          <p className="text-sm whitespace-pre-wrap">{parsed.passage}</p>
+                                          <p className="text-sm whitespace-pre-wrap leading-relaxed">{renderPassageWithGaps(parsed.passage)}</p>
                                         </div>
                                         {parsed.options && Array.isArray(parsed.options) && (
                                           <div className="p-4 bg-muted rounded-lg">
-                                            <p className="text-sm font-medium text-muted-foreground mb-2">Options:</p>
-                                            <div className="space-y-2">
-                                              {parsed.options.map((opt: { label?: string; text?: string }, idx: number) => (
-                                                <div key={idx} className="flex gap-2 text-sm">
-                                                  <span className="px-2 py-0.5 bg-primary/10 text-primary text-xs font-semibold rounded shrink-0">
-                                                    {opt.label || String.fromCharCode(65 + idx)}
-                                                  </span>
-                                                  <span className="text-muted-foreground">{opt.text}</span>
-                                                </div>
-                                              ))}
+                                            <p className="text-sm font-medium text-muted-foreground mb-2">Options ({parsed.options.length}):</p>
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                              {parsed.options.map((opt: { label?: string; text?: string }, idx: number) => {
+                                                const label = opt.label || String.fromCharCode(65 + idx);
+                                                const isUsed = parsed.answers && Object.values(parsed.answers).includes(label);
+                                                return (
+                                                  <div key={idx} className={`flex gap-2 text-sm p-2 rounded-md border ${isUsed ? 'border-primary/30 bg-primary/5' : 'border-border/50 bg-background/50'}`}>
+                                                    <span className={`px-2 py-0.5 text-xs font-bold rounded shrink-0 ${isUsed ? 'bg-primary/20 text-primary' : 'bg-muted-foreground/10 text-muted-foreground'}`}>
+                                                      {label}
+                                                    </span>
+                                                    <span className="text-foreground">{opt.text}</span>
+                                                    {!isUsed && <Badge variant="outline" className="text-[10px] ml-auto shrink-0">distractor</Badge>}
+                                                  </div>
+                                                );
+                                              })}
                                             </div>
                                           </div>
                                         )}
@@ -1009,11 +1042,15 @@ export const AdminQuestionReview = () => {
                                           <div className="p-4 bg-muted rounded-lg">
                                             <p className="text-sm font-medium text-muted-foreground mb-2">Answer Key:</p>
                                             <div className="flex flex-wrap gap-2">
-                                              {Object.entries(parsed.answers).map(([gap, label]) => (
-                                                <Badge key={gap} variant="outline" className="text-xs">
-                                                  Gap {gap} → {String(label)}
-                                                </Badge>
-                                              ))}
+                                              {Object.entries(parsed.answers).map(([gap, label]) => {
+                                                const opt = parsed.options?.find((o: { label?: string }) => o.label === label);
+                                                return (
+                                                  <Badge key={gap} variant="outline" className="text-xs py-1">
+                                                    Gap {gap} → <span className="font-bold text-primary ml-1">{String(label)}</span>
+                                                    {opt && <span className="ml-1 text-muted-foreground truncate max-w-[120px]">({(opt as { text?: string }).text})</span>}
+                                                  </Badge>
+                                                );
+                                              })}
                                             </div>
                                           </div>
                                         )}
