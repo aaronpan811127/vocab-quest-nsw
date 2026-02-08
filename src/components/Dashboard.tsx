@@ -669,14 +669,27 @@ Game XP = (Avg Score over all attempts × 0.5) + Time Bonus
     maxAttempts: number | null;
   }>> = {};
 
-  // All sections are always unlocked – no prerequisite required
-  const getSectionUnlockStatus = (_sectionDisplayOrder: number): boolean => {
+  // Learn and Challenge are always unlocked; Test requires all Learn + Challenge games completed
+  const getSectionUnlockStatus = (sectionCode: string): boolean => {
+    if (sectionCode === 'learn' || sectionCode === 'challenge') return true;
+    
+    // For test (and any other section), require all learn + challenge games to be completed
+    for (const section of sortedSections) {
+      if (section.code === 'learn' || section.code === 'challenge') {
+        const sectionGames = groupedGames[section.code]?.games || [];
+        const allCompleted = sectionGames.every(g => {
+          const progress = gameProgress[g.game_type];
+          return progress?.completed;
+        });
+        if (!allCompleted) return false;
+      }
+    }
     return true;
   };
 
   sortedSections.forEach(section => {
     const sectionGames = groupedGames[section.code]?.games || [];
-    const sectionUnlocked = getSectionUnlockStatus(section.displayOrder);
+    const sectionUnlocked = getSectionUnlockStatus(section.code);
 
     gamesBySection[section.code] = sectionGames.map(game => {
       const data = getGameData(game.game_type);
@@ -712,8 +725,19 @@ Game XP = (Avg Score over all attempts × 0.5) + Time Bonus
     });
   });
 
-  // All sections are always unlocked – no prerequisite required
-  const isPrevSectionCompleted = (_sectionIndex: number): boolean => {
+  // Learn and Challenge always unlocked; Test requires learn + challenge completed
+  const isPrevSectionCompleted = (sectionIndex: number): boolean => {
+    const currentSection = sortedSections[sectionIndex];
+    if (!currentSection) return true;
+    if (currentSection.code === 'learn' || currentSection.code === 'challenge') return true;
+    
+    // For test section, check that all learn + challenge games are completed
+    for (const section of sortedSections) {
+      if (section.code === 'learn' || section.code === 'challenge') {
+        const sectionGamesList = gamesBySection[section.code] || [];
+        if (!sectionGamesList.every(g => g.isCompleted)) return false;
+      }
+    }
     return true;
   };
 
@@ -738,9 +762,9 @@ Game XP = (Avg Score over all attempts × 0.5) + Time Bonus
   };
 
   // Helper to get section description
-  const getSectionDescription = (code: string, isUnlocked: boolean, prevSectionName?: string) => {
-    if (!isUnlocked && prevSectionName) {
-      return `Complete all ${prevSectionName} games to unlock`;
+  const getSectionDescription = (code: string, isUnlocked: boolean) => {
+    if (!isUnlocked) {
+      return 'Complete all Learn and Challenge games to unlock';
     }
     switch (code) {
       case 'learn': return 'Practice and master vocabulary';
@@ -895,7 +919,7 @@ Game XP = (Avg Score over all attempts × 0.5) + Time Bonus
               const prevSection = sortedSections[sectionIndex - 1];
               const SectionIcon = getSectionIcon(section.code, isUnlocked);
               const sectionColor = getSectionColor(section.code, isUnlocked);
-              const sectionDesc = getSectionDescription(section.code, isUnlocked, prevSection?.name);
+              const sectionDesc = getSectionDescription(section.code, isUnlocked);
 
               return (
                 <div key={section.code} className="space-y-4">
