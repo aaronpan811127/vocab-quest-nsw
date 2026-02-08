@@ -169,6 +169,16 @@ export const GameCard = ({
             </div>
           )}
 
+          {/* Perfect score requirement for learn & challenge games */}
+          {(sectionCode === 'learn' || sectionCode === 'challenge') && !isCompleted && maxAttempts !== 1 && (
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary/10 border border-primary/30">
+              <Target className="h-4 w-4 text-primary flex-shrink-0" />
+              <span className="text-xs font-medium text-primary">
+                Score 100% to pass this game
+              </span>
+            </div>
+          )}
+
         {/* Stats - different display based on game type and section */}
         {!isLocked && hasStats && (
           <div className={`grid ${isChallenge ? 'grid-cols-3' : 'grid-cols-2'} gap-2 py-2 px-3 rounded-lg bg-muted/30 border border-border/50`}>
