@@ -515,10 +515,6 @@ export const ReadingGame = ({ unitId, unitTitle, unitWords, onComplete, onBack }
                   Retry Incorrect ({incorrectQuestionIds.length})
                 </Button>
               ) : null}
-              <Button variant="outline" onClick={resetGame} size="lg" className="w-full">
-                <RotateCcw className="h-4 w-4 mr-2" />
-                New Passage
-              </Button>
               <Button variant="ghost" onClick={onBack} size="sm" className="w-full text-muted-foreground">
                 Back
               </Button>
