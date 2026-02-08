@@ -215,7 +215,13 @@ export const FlashcardGame = ({ unitId, unitTitle, unitWords, gameId, onComplete
 
       if (fetchError) throw fetchError;
 
-      if (!data || data.length === 0) {
+      // Filter vocabulary to only include words from the unit snapshot
+      const unitWordsLower = (unitWords || []).map(w => w.toLowerCase());
+      const filteredData = (data || []).filter((v: any) => 
+        unitWordsLower.includes(v.word.toLowerCase())
+      );
+
+      if (filteredData.length === 0) {
         // Use unitWords from snapshot instead of fetching from database
         if (!unitWords || unitWords.length === 0) {
           setError("No vocabulary words found for this unit.");
@@ -238,7 +244,7 @@ export const FlashcardGame = ({ unitId, unitTitle, unitWords, gameId, onComplete
         // Generate vocabulary in background
         await generateVocabulary(unitWords);
       } else {
-        setWords(data as Word[]);
+        setWords(filteredData as Word[]);
       }
     } catch (err) {
       console.error('Error fetching vocabulary:', err);
