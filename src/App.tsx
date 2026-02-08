@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -8,19 +9,23 @@ import { HelmetProvider } from "react-helmet-async";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { TestTypeProvider } from "@/contexts/TestTypeContext";
 import { SubscriptionProvider } from "@/contexts/SubscriptionContext";
+
+// Eagerly load the main index page for fast initial render
 import Index from "./pages/Index";
-import Auth from "./pages/Auth";
-import ParentAuth from "./pages/ParentAuth";
-import ParentDashboard from "./pages/ParentDashboard";
-import ChildProgress from "./pages/ChildProgress";
-import ResetPassword from "./pages/ResetPassword";
-import AdminAuth from "./pages/AdminAuth";
-import AdminDashboard from "./pages/AdminDashboard";
-import HowItWorks from "./pages/HowItWorks";
-import Pricing from "./pages/Pricing";
-import Contact from "./pages/Contact";
-import Terms from "./pages/Terms";
-import NotFound from "./pages/NotFound";
+
+// Lazy-load all other routes to reduce initial bundle size
+const Auth = lazy(() => import("./pages/Auth"));
+const ParentAuth = lazy(() => import("./pages/ParentAuth"));
+const ParentDashboard = lazy(() => import("./pages/ParentDashboard"));
+const ChildProgress = lazy(() => import("./pages/ChildProgress"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+const AdminAuth = lazy(() => import("./pages/AdminAuth"));
+const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
+const HowItWorks = lazy(() => import("./pages/HowItWorks"));
+const Pricing = lazy(() => import("./pages/Pricing"));
+const Contact = lazy(() => import("./pages/Contact"));
+const Terms = lazy(() => import("./pages/Terms"));
+const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
 
@@ -35,6 +40,7 @@ const App = () => (
               <Toaster />
               <Sonner />
               <BrowserRouter>
+                <Suspense fallback={<div className="min-h-screen" />}>
                 <Routes>
                   <Route path="/" element={<Index />} />
                   <Route path="/how-it-works" element={<HowItWorks />} />
@@ -51,6 +57,7 @@ const App = () => (
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>
+                </Suspense>
               </BrowserRouter>
             </TooltipProvider>
           </TestTypeProvider>

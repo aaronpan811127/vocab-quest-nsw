@@ -1,23 +1,25 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { SEOHead } from "@/components/SEOHead";
 import { Navigation } from "@/components/Navigation";
 import { MobileNav } from "@/components/MobileNav";
 import { Hero } from "@/components/Hero";
-import { Dashboard } from "@/components/Dashboard";
-import { ReadingGame } from "@/components/ReadingGame";
-import { ListeningGame } from "@/components/ListeningGame";
-import { VoiceMasterGame } from "@/components/VoiceMasterGame";
-import { StoryCreatorGame } from "@/components/StoryCreatorGame";
-import { FlashcardGame } from "@/components/FlashcardGame";
-import { MatchingGame } from "@/components/MatchingGame";
-import { OddOneOutGame } from "@/components/OddOneOutGame";
-import { WordIntuitionGame } from "@/components/WordIntuitionGame";
-import { ContextMasterGame } from "@/components/ContextMasterGame";
-import { ClozeChallengeGame } from "@/components/ClozeChallengeGame";
-import { ClozePassageGame } from "@/components/ClozePassageGame";
-import { GapFillPassageGame } from "@/components/GapFillPassageGame";
-import { WordShooterGame } from "@/components/WordShooterGame";
 import { useAuth } from "@/contexts/AuthContext";
+
+// Lazy-load Dashboard and all game components to reduce initial bundle
+const Dashboard = lazy(() => import("@/components/Dashboard").then(m => ({ default: m.Dashboard })));
+const ReadingGame = lazy(() => import("@/components/ReadingGame").then(m => ({ default: m.ReadingGame })));
+const ListeningGame = lazy(() => import("@/components/ListeningGame").then(m => ({ default: m.ListeningGame })));
+const VoiceMasterGame = lazy(() => import("@/components/VoiceMasterGame").then(m => ({ default: m.VoiceMasterGame })));
+const StoryCreatorGame = lazy(() => import("@/components/StoryCreatorGame").then(m => ({ default: m.StoryCreatorGame })));
+const FlashcardGame = lazy(() => import("@/components/FlashcardGame").then(m => ({ default: m.FlashcardGame })));
+const MatchingGame = lazy(() => import("@/components/MatchingGame").then(m => ({ default: m.MatchingGame })));
+const OddOneOutGame = lazy(() => import("@/components/OddOneOutGame").then(m => ({ default: m.OddOneOutGame })));
+const WordIntuitionGame = lazy(() => import("@/components/WordIntuitionGame").then(m => ({ default: m.WordIntuitionGame })));
+const ContextMasterGame = lazy(() => import("@/components/ContextMasterGame").then(m => ({ default: m.ContextMasterGame })));
+const ClozeChallengeGame = lazy(() => import("@/components/ClozeChallengeGame").then(m => ({ default: m.ClozeChallengeGame })));
+const ClozePassageGame = lazy(() => import("@/components/ClozePassageGame").then(m => ({ default: m.ClozePassageGame })));
+const GapFillPassageGame = lazy(() => import("@/components/GapFillPassageGame").then(m => ({ default: m.GapFillPassageGame })));
+const WordShooterGame = lazy(() => import("@/components/WordShooterGame").then(m => ({ default: m.WordShooterGame })));
 import { useProfile } from "@/hooks/useProfile";
 import { useExpiredSessionCheck } from "@/hooks/useExpiredSessionCheck";
 import { TestType } from "@/contexts/TestTypeContext";
@@ -169,7 +171,9 @@ const Index = () => {
         onViewChange={setCurrentView}
       />
       <div className={`pt-16 sm:pt-20 ${showMobileNav ? 'pb-20 md:pb-0' : ''}`}>
-        {renderContent()}
+        <Suspense fallback={<div className="min-h-[60vh]" />}>
+          {renderContent()}
+        </Suspense>
       </div>
       {showMobileNav && (
         <MobileNav
