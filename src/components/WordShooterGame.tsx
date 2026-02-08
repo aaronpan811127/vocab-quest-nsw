@@ -646,19 +646,7 @@ export const WordShooterGame = ({
           {!roundLocked && cardsVisible && (
             <div className="absolute inset-0 pointer-events-none opacity-[0.03]"
               style={{
-                backgroundImage: `repeating-linear-gradient(
-                  0deg,
-                  transparent,
-                  transparent 20px,
-                  hsl(var(--primary)) 20px,
-                  hsl(var(--primary)) 21px
-                ), repeating-linear-gradient(
-                  90deg,
-                  transparent,
-                  transparent 20px,
-                  hsl(var(--primary)) 20px,
-                  hsl(var(--primary)) 21px
-                )`,
+                backgroundImage: `repeating-linear-gradient(0deg, transparent, transparent 20px, hsl(var(--primary)) 20px, hsl(var(--primary)) 21px), repeating-linear-gradient(90deg, transparent, transparent 20px, hsl(var(--primary)) 20px, hsl(var(--primary)) 21px)`,
               }}
             />
           )}
@@ -673,19 +661,9 @@ export const WordShooterGame = ({
               <Crosshair className="h-4 w-4" />
             </div>
             <div className="relative inline-block">
-              {/* Bullseye rings around target word */}
-              <div className={`
-                absolute -inset-4 rounded-full border-2 border-dashed border-primary/20
-                ${!roundLocked ? 'animate-crosshair-spin' : ''}
-              `} style={{ animationDuration: '8s' }} />
-              <div className={`
-                absolute -inset-8 rounded-full border border-dashed border-primary/10
-                ${!roundLocked ? 'animate-crosshair-spin' : ''}
-              `} style={{ animationDuration: '12s', animationDirection: 'reverse' }} />
-              <div className={`
-                inline-block px-8 py-4 rounded-xl bg-primary/10 border-2 border-primary/30
-                ${!roundLocked ? 'animate-target-pulse' : ''}
-              `}>
+              <div className={`absolute -inset-4 rounded-full border-2 border-dashed border-primary/20 ${!roundLocked ? 'animate-crosshair-spin' : ''}`} style={{ animationDuration: '8s' }} />
+              <div className={`absolute -inset-8 rounded-full border border-dashed border-primary/10 ${!roundLocked ? 'animate-crosshair-spin' : ''}`} style={{ animationDuration: '12s', animationDirection: 'reverse' }} />
+              <div className={`inline-block px-8 py-4 rounded-xl bg-primary/10 border-2 border-primary/30 ${!roundLocked ? 'animate-target-pulse' : ''}`}>
                 <span className="text-2xl sm:text-3xl font-bold text-primary">
                   {currentR.targetWord}
                 </span>
@@ -696,105 +674,39 @@ export const WordShooterGame = ({
           {/* Circular timer */}
           <div className="flex items-center justify-center mb-5">
             <div className="relative w-16 h-16">
-              {/* Timer ring background */}
               <svg className="w-full h-full -rotate-90" viewBox="0 0 64 64">
+                <circle cx="32" cy="32" r="28" fill="none" stroke="hsl(var(--muted))" strokeWidth="4" />
                 <circle
-                  cx="32" cy="32" r="28"
-                  fill="none"
-                  stroke="hsl(var(--muted))"
-                  strokeWidth="4"
-                />
-                <circle
-                  cx="32" cy="32" r="28"
-                  fill="none"
+                  cx="32" cy="32" r="28" fill="none"
                   stroke={isUrgent ? 'hsl(var(--destructive))' : isWarning ? 'hsl(var(--warning))' : 'hsl(var(--primary))'}
-                  strokeWidth="4"
-                  strokeLinecap="round"
+                  strokeWidth="4" strokeLinecap="round"
                   strokeDasharray={`${2 * Math.PI * 28}`}
                   strokeDashoffset={`${2 * Math.PI * 28 * (1 - timerPercentage / 100)}`}
                   className="transition-all duration-100"
                 />
               </svg>
-              {/* Timer text */}
               <div className="absolute inset-0 flex items-center justify-center">
-                <span className={`text-lg font-bold ${
-                  isUrgent ? 'text-destructive animate-pulse' : isWarning ? 'text-warning' : 'text-primary'
-                }`}>
+                <span className={`text-lg font-bold ${isUrgent ? 'text-destructive animate-pulse' : isWarning ? 'text-warning' : 'text-primary'}`}>
                   {countdown.toFixed(1)}
                 </span>
               </div>
-              {/* Urgency ring pulse */}
               {isUrgent && !roundLocked && (
                 <div className="absolute inset-0 rounded-full border-2 border-destructive animate-impact-ring" />
               )}
             </div>
           </div>
 
-          {/* Option cards with fly-in animation */}
-          <div className="grid grid-cols-2 gap-3 sm:gap-4">
-            {currentR.options.map((option, index) => {
-              const isSelected = selectedAnswer === option;
-              const isCorrect = option === currentR.correctAnswer;
-              const showCorrectHighlight = roundLocked && isCorrect;
-              const showWrongHighlight = roundLocked && isSelected && !isCorrect;
-              const isTimedOut = timeExpired && !selectedAnswer;
-              const isFlipped = !cardsVisible && !roundLocked;
-
-              return (
-                <button
-                  key={index}
-                  onClick={() => handleSelectAnswer(option)}
-                  disabled={roundLocked || !cardsVisible}
-                  className={`
-                    relative h-auto py-5 px-4 text-base sm:text-lg font-medium rounded-xl
-                    border-2 transition-colors duration-300 transform
-                    ${cardsVisible ? 'animate-card-fly-in' : ''}
-                    ${showWrongHighlight ? 'animate-shake' : ''}
-                    ${
-                      isFlipped
-                        ? "bg-muted border-border scale-95 opacity-50"
-                        : showCorrectHighlight
-                        ? "bg-success/20 border-success text-success-foreground scale-105 shadow-lg"
-                        : showWrongHighlight
-                        ? "bg-destructive/20 border-destructive text-destructive-foreground"
-                        : isTimedOut && isCorrect
-                        ? "bg-success/20 border-success text-success-foreground"
-                        : isTimedOut
-                        ? "bg-muted/50 border-border/50 opacity-60"
-                        : "bg-card border-border/50 hover:border-primary/50 hover:bg-primary/5 hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
-                    }
-                  `}
-                  style={{
-                    animationDelay: cardsVisible ? `${index * 80}ms` : '0ms',
-                    animationFillMode: 'both',
-                  }}
-                >
-                  {/* Bullseye hit effect on correct */}
-                  {showCorrectHighlight && (
-                    <>
-                      <div className="absolute inset-0 rounded-xl border-2 border-success animate-impact-ring" />
-                      <div className="absolute inset-0 rounded-xl border-2 border-success animate-impact-ring" style={{ animationDelay: '0.15s' }} />
-                    </>
-                  )}
-
-                  <div className="flex items-center justify-center gap-2 relative z-10">
-                    {showCorrectHighlight && (
-                      <div className="relative">
-                        <Target className="h-5 w-5 text-success" />
-                        <div className="absolute inset-0 animate-bullseye-hit">
-                          <Target className="h-5 w-5 text-success" />
-                        </div>
-                      </div>
-                    )}
-                    {showWrongHighlight && (
-                      <X className="h-5 w-5 text-destructive" />
-                    )}
-                    <span>{isFlipped ? "?" : option}</span>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
+          {/* Shooting gallery – moving word targets */}
+          <ShootingGallery
+            key={`round-${currentRound}`}
+            options={currentR.options}
+            correctAnswer={currentR.correctAnswer}
+            selectedAnswer={selectedAnswer}
+            roundLocked={roundLocked}
+            cardsVisible={cardsVisible}
+            timeExpired={timeExpired}
+            onSelect={handleSelectAnswer}
+          />
 
           {/* Feedback after selection or timeout */}
           {roundLocked && (
@@ -806,29 +718,17 @@ export const WordShooterGame = ({
               {selectedAnswer === currentR.correctAnswer ? (
                 <p className="font-medium text-success flex items-center gap-2">
                   <Target className="h-5 w-5" />
-                  Direct hit!{" "}
-                  <span className="text-foreground">
-                    "{currentR.correctAnswer}"
-                  </span>{" "}
-                  is a {currentR.questionType} of "{currentR.targetWord}".
+                  Direct hit! <span className="text-foreground">"{currentR.correctAnswer}"</span> is a {currentR.questionType} of "{currentR.targetWord}".
                 </p>
               ) : timeExpired && !selectedAnswer ? (
                 <p className="font-medium text-destructive flex items-center gap-2">
                   <Clock className="h-5 w-5" />
-                  Time's up! The target was{" "}
-                  <span className="text-foreground">
-                    "{currentR.correctAnswer}"
-                  </span>
-                  .
+                  Time's up! The target was <span className="text-foreground">"{currentR.correctAnswer}"</span>.
                 </p>
               ) : (
                 <p className="font-medium text-destructive flex items-center gap-2">
                   <X className="h-5 w-5" />
-                  Missed! The target was{" "}
-                  <span className="text-foreground">
-                    "{currentR.correctAnswer}"
-                  </span>
-                  .
+                  Missed! The target was <span className="text-foreground">"{currentR.correctAnswer}"</span>.
                 </p>
               )}
             </div>
@@ -838,18 +738,179 @@ export const WordShooterGame = ({
         {/* Next button */}
         {roundLocked && (
           <div className="flex justify-center animate-slide-up">
-            <Button
-              variant="hero"
-              onClick={handleNext}
-              size="lg"
-              className="min-w-[150px] gap-2"
-            >
+            <Button variant="hero" onClick={handleNext} size="lg" className="min-w-[150px] gap-2">
               <Crosshair className="h-4 w-4" />
               {currentRound < rounds.length - 1 ? "Next Target" : "See Results"}
             </Button>
           </div>
         )}
       </div>
+    </div>
+  );
+};
+
+/* ================================================================
+   ShootingGallery – word cards that drift randomly in a container
+   ================================================================ */
+
+interface ShootingGalleryProps {
+  options: string[];
+  correctAnswer: string;
+  selectedAnswer: string | null;
+  roundLocked: boolean;
+  cardsVisible: boolean;
+  timeExpired: boolean;
+  onSelect: (answer: string) => void;
+}
+
+interface CardPosition {
+  x: number;
+  y: number;
+  dx: number;
+  dy: number;
+}
+
+const GALLERY_HEIGHT = 260;
+const CARD_W = 140;
+const CARD_H = 52;
+const SPEED = 0.8;
+
+function randomStartPositions(count: number, containerWidth: number): CardPosition[] {
+  const positions: CardPosition[] = [];
+  for (let i = 0; i < count; i++) {
+    const x = Math.random() * Math.max(0, containerWidth - CARD_W);
+    const y = Math.random() * Math.max(0, GALLERY_HEIGHT - CARD_H);
+    const angle = Math.random() * Math.PI * 2;
+    positions.push({
+      x,
+      y,
+      dx: Math.cos(angle) * SPEED * (0.7 + Math.random() * 0.6),
+      dy: Math.sin(angle) * SPEED * (0.7 + Math.random() * 0.6),
+    });
+  }
+  return positions;
+}
+
+const ShootingGallery = ({
+  options,
+  correctAnswer,
+  selectedAnswer,
+  roundLocked,
+  cardsVisible,
+  timeExpired,
+  onSelect,
+}: ShootingGalleryProps) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [positions, setPositions] = useState<CardPosition[]>([]);
+  const animRef = useRef<number>(0);
+  const posRef = useRef<CardPosition[]>([]);
+
+  // Initialise positions once container mounts
+  useEffect(() => {
+    const w = containerRef.current?.clientWidth || 400;
+    const initial = randomStartPositions(options.length, w);
+    posRef.current = initial;
+    setPositions([...initial]);
+  }, [options.length]);
+
+  // Animate cards while visible and not locked
+  useEffect(() => {
+    if (!cardsVisible || roundLocked) {
+      cancelAnimationFrame(animRef.current);
+      return;
+    }
+
+    const containerW = containerRef.current?.clientWidth || 400;
+
+    const tick = () => {
+      const next = posRef.current.map((p) => {
+        let { x, y, dx, dy } = p;
+        x += dx;
+        y += dy;
+        if (x <= 0) { x = 0; dx = Math.abs(dx); }
+        if (x >= containerW - CARD_W) { x = containerW - CARD_W; dx = -Math.abs(dx); }
+        if (y <= 0) { y = 0; dy = Math.abs(dy); }
+        if (y >= GALLERY_HEIGHT - CARD_H) { y = GALLERY_HEIGHT - CARD_H; dy = -Math.abs(dy); }
+        return { x, y, dx, dy };
+      });
+      posRef.current = next;
+      setPositions([...next]);
+      animRef.current = requestAnimationFrame(tick);
+    };
+
+    animRef.current = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(animRef.current);
+  }, [cardsVisible, roundLocked]);
+
+  return (
+    <div
+      ref={containerRef}
+      className="relative w-full rounded-xl bg-muted/20 border border-border/30 overflow-hidden"
+      style={{ height: GALLERY_HEIGHT }}
+    >
+      {/* Crosshair reticle in centre */}
+      {!roundLocked && cardsVisible && (
+        <div className="absolute inset-0 pointer-events-none flex items-center justify-center opacity-10">
+          <Crosshair className="h-24 w-24 text-primary" />
+        </div>
+      )}
+
+      {options.map((option, index) => {
+        const pos = positions[index];
+        if (!pos) return null;
+
+        const isSelected = selectedAnswer === option;
+        const isCorrect = option === correctAnswer;
+        const showCorrectHighlight = roundLocked && isCorrect;
+        const showWrongHighlight = roundLocked && isSelected && !isCorrect;
+        const isTimedOut = timeExpired && !selectedAnswer;
+
+        return (
+          <button
+            key={`${option}-${index}`}
+            onClick={() => onSelect(option)}
+            disabled={roundLocked || !cardsVisible}
+            className={`
+              absolute flex items-center justify-center gap-1.5
+              px-4 py-2.5 text-sm sm:text-base font-semibold rounded-xl
+              border-2 shadow-md select-none
+              transition-colors duration-200
+              ${showWrongHighlight ? 'animate-shake' : ''}
+              ${
+                !cardsVisible
+                  ? "opacity-0 scale-75"
+                  : showCorrectHighlight
+                  ? "bg-success/20 border-success text-success scale-110 shadow-lg z-20"
+                  : showWrongHighlight
+                  ? "bg-destructive/20 border-destructive text-destructive z-20"
+                  : isTimedOut && isCorrect
+                  ? "bg-success/20 border-success text-success z-20"
+                  : isTimedOut
+                  ? "bg-muted/50 border-border/50 opacity-60"
+                  : "bg-card border-border/50 hover:border-primary hover:bg-primary/10 hover:shadow-glow cursor-pointer active:scale-90 z-10"
+              }
+            `}
+            style={{
+              left: pos.x,
+              top: pos.y,
+              width: CARD_W,
+              height: CARD_H,
+            }}
+          >
+            {showCorrectHighlight && (
+              <>
+                <div className="absolute inset-0 rounded-xl border-2 border-success animate-impact-ring" />
+                <div className="absolute inset-0 rounded-xl border-2 border-success animate-impact-ring" style={{ animationDelay: '0.15s' }} />
+              </>
+            )}
+            <span className="relative z-10 flex items-center gap-1.5 truncate">
+              {showCorrectHighlight && <Target className="h-4 w-4 text-success shrink-0" />}
+              {showWrongHighlight && <X className="h-4 w-4 text-destructive shrink-0" />}
+              {cardsVisible ? option : "?"}
+            </span>
+          </button>
+        );
+      })}
     </div>
   );
 };
