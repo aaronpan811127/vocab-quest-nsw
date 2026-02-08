@@ -844,23 +844,54 @@ interface CardPosition {
   dy: number;
 }
 
-const GALLERY_HEIGHT = 260;
+const GALLERY_HEIGHT = 280;
 const CARD_W = 140;
 const CARD_H = 52;
 const SPEED = 0.8;
+const PADDING = 8; // minimum gap between cards
+
+function rectsOverlap(a: CardPosition, b: CardPosition): boolean {
+  return !(
+    a.x + CARD_W + PADDING <= b.x ||
+    b.x + CARD_W + PADDING <= a.x ||
+    a.y + CARD_H + PADDING <= b.y ||
+    b.y + CARD_H + PADDING <= a.y
+  );
+}
 
 function randomStartPositions(count: number, containerWidth: number): CardPosition[] {
   const positions: CardPosition[] = [];
+  const maxAttempts = 200;
+
   for (let i = 0; i < count; i++) {
-    const x = Math.random() * Math.max(0, containerWidth - CARD_W);
-    const y = Math.random() * Math.max(0, GALLERY_HEIGHT - CARD_H);
-    const angle = Math.random() * Math.PI * 2;
-    positions.push({
-      x,
-      y,
-      dx: Math.cos(angle) * SPEED * (0.7 + Math.random() * 0.6),
-      dy: Math.sin(angle) * SPEED * (0.7 + Math.random() * 0.6),
-    });
+    let placed = false;
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      const x = Math.random() * Math.max(0, containerWidth - CARD_W);
+      const y = Math.random() * Math.max(0, GALLERY_HEIGHT - CARD_H);
+      const candidate = { x, y, dx: 0, dy: 0 };
+      const overlaps = positions.some((p) => rectsOverlap(candidate, p));
+      if (!overlaps) {
+        const angle = Math.random() * Math.PI * 2;
+        candidate.dx = Math.cos(angle) * SPEED * (0.7 + Math.random() * 0.6);
+        candidate.dy = Math.sin(angle) * SPEED * (0.7 + Math.random() * 0.6);
+        positions.push(candidate);
+        placed = true;
+        break;
+      }
+    }
+    if (!placed) {
+      // Fallback: place in a grid-like position
+      const cols = Math.ceil(Math.sqrt(count));
+      const col = i % cols;
+      const row = Math.floor(i / cols);
+      const angle = Math.random() * Math.PI * 2;
+      positions.push({
+        x: col * (CARD_W + PADDING * 2),
+        y: row * (CARD_H + PADDING * 2),
+        dx: Math.cos(angle) * SPEED * (0.7 + Math.random() * 0.6),
+        dy: Math.sin(angle) * SPEED * (0.7 + Math.random() * 0.6),
+      });
+    }
   }
   return positions;
 }
@@ -897,6 +928,7 @@ const ShootingGallery = ({
     const containerW = containerRef.current?.clientWidth || 400;
 
     const tick = () => {
+      // Move each card
       const next = posRef.current.map((p) => {
         let { x, y, dx, dy } = p;
         x += dx;
@@ -907,6 +939,51 @@ const ShootingGallery = ({
         if (y >= GALLERY_HEIGHT - CARD_H) { y = GALLERY_HEIGHT - CARD_H; dy = -Math.abs(dy); }
         return { x, y, dx, dy };
       });
+
+      // Separate overlapping cards by nudging them apart
+      for (let i = 0; i < next.length; i++) {
+        for (let j = i + 1; j < next.length; j++) {
+          const a = next[i];
+          const b = next[j];
+          if (rectsOverlap(a, b)) {
+            // Calculate center-to-center vector
+            const acx = a.x + CARD_W / 2;
+            const acy = a.y + CARD_H / 2;
+            const bcx = b.x + CARD_W / 2;
+            const bcy = b.y + CARD_H / 2;
+            let sepX = acx - bcx;
+            let sepY = acy - bcy;
+            const dist = Math.sqrt(sepX * sepX + sepY * sepY) || 1;
+            sepX /= dist;
+            sepY /= dist;
+            // Push apart
+            const push = 1.5;
+            a.x += sepX * push;
+            a.y += sepY * push;
+            b.x -= sepX * push;
+            b.y -= sepY * push;
+            // Reverse directions on overlap
+            if (Math.sign(a.dx) === Math.sign(b.dx)) {
+              a.dx = -a.dx;
+            } else {
+              a.dx = -a.dx;
+              b.dx = -b.dx;
+            }
+            if (Math.sign(a.dy) === Math.sign(b.dy)) {
+              a.dy = -a.dy;
+            } else {
+              a.dy = -a.dy;
+              b.dy = -b.dy;
+            }
+            // Clamp within bounds
+            a.x = Math.max(0, Math.min(containerW - CARD_W, a.x));
+            a.y = Math.max(0, Math.min(GALLERY_HEIGHT - CARD_H, a.y));
+            b.x = Math.max(0, Math.min(containerW - CARD_W, b.x));
+            b.y = Math.max(0, Math.min(GALLERY_HEIGHT - CARD_H, b.y));
+          }
+        }
+      }
+
       posRef.current = next;
       setPositions([...next]);
       animRef.current = requestAnimationFrame(tick);
