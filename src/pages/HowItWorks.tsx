@@ -19,7 +19,10 @@ import {
   PenTool,
   LayoutGrid,
   Lightbulb,
-  FileText
+  FileText,
+  FlaskConical,
+  GraduationCap,
+  ExternalLink
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "next-themes";
@@ -165,8 +168,74 @@ export default function HowItWorks() {
         </div>
       </nav>
 
-      {/* FOR PARENTS Section */}
+      {/* Why VocabQuest - Key Differentiators */}
       <section className="pt-24 sm:pt-32 pb-16 sm:pb-20 px-4 sm:px-6">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-12">
+            <Badge className="bg-primary/10 text-primary border-primary/30 px-4 py-2 text-sm font-medium mb-4">
+              <Star className="h-4 w-4 mr-2" />
+              Why VocabQuest
+            </Badge>
+            <h2 className="text-3xl sm:text-4xl font-bold mb-4">The Only Platform Purpose-Built for NSW Vocabulary</h2>
+            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+              No generic word games — every feature is designed specifically to help NSW students master vocabulary for Selective, OC &amp; NAPLAN success.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-6 mb-8">
+            {/* Differentiator 1 */}
+            <Card className="overflow-hidden border-2 border-primary/20 hover:border-primary/40 transition-all duration-300 hover:shadow-card">
+              <CardContent className="p-6 text-center">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center mx-auto mb-4">
+                  <Target className="h-8 w-8 text-primary-foreground" />
+                </div>
+                <h3 className="text-xl font-bold mb-2">NSW-Dedicated Focus</h3>
+                <p className="text-muted-foreground text-sm leading-relaxed">
+                  The only website exclusively dedicated to improving vocabulary learning for NSW students. Every word list, every question, and every exercise is aligned with Selective School, OC, and NAPLAN reading requirements.
+                </p>
+              </CardContent>
+            </Card>
+
+            {/* Differentiator 2 */}
+            <Card className="overflow-hidden border-2 border-secondary/20 hover:border-secondary/40 transition-all duration-300 hover:shadow-card">
+              <CardContent className="p-6 text-center">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-secondary to-secondary/80 flex items-center justify-center mx-auto mb-4">
+                  <GraduationCap className="h-8 w-8 text-primary-foreground" />
+                </div>
+                <h3 className="text-xl font-bold mb-2">Created by Expert Educators</h3>
+                <p className="text-muted-foreground text-sm leading-relaxed">
+                  Designed and curated by educators with decades of hands-on experience preparing students for NSW academic assessments. Real classroom insight drives every aspect of the curriculum.
+                </p>
+              </CardContent>
+            </Card>
+
+            {/* Differentiator 3 */}
+            <Card className="overflow-hidden border-2 border-success/20 hover:border-success/40 transition-all duration-300 hover:shadow-card">
+              <CardContent className="p-6 text-center">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-success to-success/80 flex items-center justify-center mx-auto mb-4">
+                  <FlaskConical className="h-8 w-8 text-primary-foreground" />
+                </div>
+                <h3 className="text-xl font-bold mb-2">Proven Scientific Methodology</h3>
+                <p className="text-muted-foreground text-sm leading-relaxed">
+                  Built on spaced repetition and active recall — techniques proven by decades of cognitive science research to maximise long-term retention.
+                </p>
+                <a
+                  href="https://doi.org/10.1016/j.jarmac.2016.10.002"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline mt-3 font-medium"
+                >
+                  <ExternalLink className="h-3 w-3" />
+                  Karpicke (2017) — Retrieval-Based Learning
+                </a>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </section>
+
+      {/* FOR PARENTS Section */}
+      <section className="pb-16 sm:pb-20 px-4 sm:px-6">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
             <Badge className="bg-secondary/10 text-secondary border-secondary/30 px-4 py-2 text-sm font-medium mb-4">
