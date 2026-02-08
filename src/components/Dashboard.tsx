@@ -670,22 +670,17 @@ Game XP = (Avg Score over all attempts × 0.5) + Time Bonus
     maxAttempts: number | null;
   }>> = {};
 
-  // Learn and Challenge are always unlocked; Test requires all Learn + Challenge games completed
+  // Learn and Challenge are always unlocked; Test requires all Challenge games completed
   const getSectionUnlockStatus = (sectionCode: string): boolean => {
     if (sectionCode === 'learn' || sectionCode === 'challenge') return true;
     
-    // For test (and any other section), require all learn + challenge games to be completed
-    for (const section of sortedSections) {
-      if (section.code === 'learn' || section.code === 'challenge') {
-        const sectionGames = groupedGames[section.code]?.games || [];
-        const allCompleted = sectionGames.every(g => {
-          const progress = gameProgress[g.game_type];
-          return (progress?.bestScore || 0) >= 100;
-        });
-        if (!allCompleted) return false;
-      }
-    }
-    return true;
+    // For test (and any other section), require all challenge games to be completed
+    const challengeGames = groupedGames['challenge']?.games || [];
+    const allChallengeCompleted = challengeGames.every(g => {
+      const progress = gameProgress[g.game_type];
+      return (progress?.bestScore || 0) >= 100;
+    });
+    return allChallengeCompleted;
   };
 
   sortedSections.forEach(section => {
@@ -726,20 +721,15 @@ Game XP = (Avg Score over all attempts × 0.5) + Time Bonus
     });
   });
 
-  // Learn and Challenge always unlocked; Test requires learn + challenge completed
+  // Learn and Challenge always unlocked; Test requires only challenge completed
   const isPrevSectionCompleted = (sectionIndex: number): boolean => {
     const currentSection = sortedSections[sectionIndex];
     if (!currentSection) return true;
     if (currentSection.code === 'learn' || currentSection.code === 'challenge') return true;
     
-    // For test section, check that all learn + challenge games are completed
-    for (const section of sortedSections) {
-      if (section.code === 'learn' || section.code === 'challenge') {
-        const sectionGamesList = gamesBySection[section.code] || [];
-        if (!sectionGamesList.every(g => g.isCompleted)) return false;
-      }
-    }
-    return true;
+    // For test section, check that all challenge games are completed
+    const challengeGamesList = gamesBySection['challenge'] || [];
+    return challengeGamesList.every(g => g.isCompleted);
   };
 
   // Helper to get section icon based on code
