@@ -12,6 +12,8 @@ import {
   Zap,
   RotateCcw,
   Clock,
+  Target,
+  CircleDot,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -595,14 +597,21 @@ export const WordShooterGame = ({
   // Active game round
   const currentR = rounds[currentRound];
   const timerPercentage = (countdown / (FLIP_DURATION_MS / 1000)) * 100;
+  const isUrgent = countdown <= 0.5;
+  const isWarning = countdown <= 1 && !isUrgent;
 
   return (
     <div className="min-h-screen bg-gradient-hero p-4 sm:p-6">
       <div className="max-w-2xl mx-auto space-y-4 sm:space-y-6">
-        {/* Header */}
+        {/* Header with animated crosshair */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Crosshair className="h-6 w-6 text-primary" />
+            <div className="relative">
+              <Crosshair className={`h-7 w-7 text-primary ${!roundLocked ? 'animate-crosshair-spin' : 'animate-crosshair-lock'}`} />
+              {!roundLocked && cardsVisible && (
+                <div className="absolute inset-0 rounded-full animate-target-pulse" />
+              )}
+            </div>
             <h1 className="text-lg sm:text-2xl font-bold">Word Shooter</h1>
             <Badge className="bg-gradient-primary text-primary-foreground hidden sm:inline-flex">
               {unitTitle}
@@ -616,83 +625,119 @@ export const WordShooterGame = ({
         {/* Progress */}
         <div className="space-y-2">
           <div className="flex justify-between text-xs sm:text-sm">
-            <span>
+            <span className="flex items-center gap-1.5">
+              <Target className="h-3.5 w-3.5 text-primary" />
               Round {currentRound + 1} of {rounds.length}
             </span>
-            <span>{correctAnswers} correct</span>
+            <span className="flex items-center gap-1.5">
+              <CircleDot className="h-3.5 w-3.5 text-success" />
+              {correctAnswers} hits
+            </span>
           </div>
           <Progress
             value={((currentRound + 1) / rounds.length) * 100}
             className="h-2"
           />
-          <p className="text-xs text-muted-foreground text-center bg-primary/10 rounded-lg py-2 px-3">
-            🎯{" "}
-            <span className="font-semibold">
-              Pick the {currentR.questionType} before time runs out!
-            </span>{" "}
-            Score all words to pass.
-          </p>
         </div>
 
-        {/* Prompt */}
-        <Card className="p-6 bg-card/50 backdrop-blur-sm border-2 border-border/50">
+        {/* Main game card */}
+        <Card className="relative overflow-hidden p-6 bg-card/50 backdrop-blur-sm border-2 border-border/50">
+          {/* Scope scan overlay */}
+          {!roundLocked && cardsVisible && (
+            <div className="absolute inset-0 pointer-events-none opacity-[0.03]"
+              style={{
+                backgroundImage: `repeating-linear-gradient(
+                  0deg,
+                  transparent,
+                  transparent 20px,
+                  hsl(var(--primary)) 20px,
+                  hsl(var(--primary)) 21px
+                ), repeating-linear-gradient(
+                  90deg,
+                  transparent,
+                  transparent 20px,
+                  hsl(var(--primary)) 20px,
+                  hsl(var(--primary)) 21px
+                )`,
+              }}
+            />
+          )}
+
+          {/* Target word with crosshair decoration */}
           <div className="text-center mb-6 space-y-3">
-            <h2 className="text-lg sm:text-xl font-semibold">
-              Find the{" "}
-              <span className="text-primary">{currentR.questionType}</span> of:
-            </h2>
-            <div className="inline-block px-6 py-3 rounded-xl bg-primary/10 border-2 border-primary/30">
-              <span className="text-2xl sm:text-3xl font-bold text-primary">
-                {currentR.targetWord}
+            <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+              <Crosshair className="h-4 w-4" />
+              <span>
+                Find the <span className="font-bold text-primary">{currentR.questionType}</span>
               </span>
+              <Crosshair className="h-4 w-4" />
             </div>
-          </div>
-
-          {/* Timer bar */}
-          <div className="mb-4">
-            <div className="flex items-center justify-between text-xs mb-1">
-              <div className="flex items-center gap-1 text-muted-foreground">
-                <Clock className="h-3.5 w-3.5" />
-                <span>Time remaining</span>
+            <div className="relative inline-block">
+              {/* Bullseye rings around target word */}
+              <div className={`
+                absolute -inset-4 rounded-full border-2 border-dashed border-primary/20
+                ${!roundLocked ? 'animate-crosshair-spin' : ''}
+              `} style={{ animationDuration: '8s' }} />
+              <div className={`
+                absolute -inset-8 rounded-full border border-dashed border-primary/10
+                ${!roundLocked ? 'animate-crosshair-spin' : ''}
+              `} style={{ animationDuration: '12s', animationDirection: 'reverse' }} />
+              <div className={`
+                inline-block px-8 py-4 rounded-xl bg-primary/10 border-2 border-primary/30
+                ${!roundLocked ? 'animate-target-pulse' : ''}
+              `}>
+                <span className="text-2xl sm:text-3xl font-bold text-primary">
+                  {currentR.targetWord}
+                </span>
               </div>
-              <span
-                className={`font-bold ${
-                  countdown <= 0.5
-                    ? "text-destructive"
-                    : countdown <= 1
-                    ? "text-warning"
-                    : "text-primary"
-                }`}
-              >
-                {countdown.toFixed(1)}s
-              </span>
-            </div>
-            <div className="h-2 rounded-full bg-muted/50 overflow-hidden">
-              <div
-                className={`h-full rounded-full transition-all duration-100 ${
-                  timerPercentage <= 25
-                    ? "bg-destructive"
-                    : timerPercentage <= 50
-                    ? "bg-warning"
-                    : "bg-primary"
-                }`}
-                style={{ width: `${timerPercentage}%` }}
-              />
             </div>
           </div>
 
-          {/* Option cards */}
+          {/* Circular timer */}
+          <div className="flex items-center justify-center mb-5">
+            <div className="relative w-16 h-16">
+              {/* Timer ring background */}
+              <svg className="w-full h-full -rotate-90" viewBox="0 0 64 64">
+                <circle
+                  cx="32" cy="32" r="28"
+                  fill="none"
+                  stroke="hsl(var(--muted))"
+                  strokeWidth="4"
+                />
+                <circle
+                  cx="32" cy="32" r="28"
+                  fill="none"
+                  stroke={isUrgent ? 'hsl(var(--destructive))' : isWarning ? 'hsl(var(--warning))' : 'hsl(var(--primary))'}
+                  strokeWidth="4"
+                  strokeLinecap="round"
+                  strokeDasharray={`${2 * Math.PI * 28}`}
+                  strokeDashoffset={`${2 * Math.PI * 28 * (1 - timerPercentage / 100)}`}
+                  className="transition-all duration-100"
+                />
+              </svg>
+              {/* Timer text */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span className={`text-lg font-bold ${
+                  isUrgent ? 'text-destructive animate-pulse' : isWarning ? 'text-warning' : 'text-primary'
+                }`}>
+                  {countdown.toFixed(1)}
+                </span>
+              </div>
+              {/* Urgency ring pulse */}
+              {isUrgent && !roundLocked && (
+                <div className="absolute inset-0 rounded-full border-2 border-destructive animate-impact-ring" />
+              )}
+            </div>
+          </div>
+
+          {/* Option cards with fly-in animation */}
           <div className="grid grid-cols-2 gap-3 sm:gap-4">
             {currentR.options.map((option, index) => {
               const isSelected = selectedAnswer === option;
               const isCorrect = option === currentR.correctAnswer;
-              const showCorrectHighlight =
-                roundLocked && isCorrect;
-              const showWrongHighlight =
-                roundLocked && isSelected && !isCorrect;
+              const showCorrectHighlight = roundLocked && isCorrect;
+              const showWrongHighlight = roundLocked && isSelected && !isCorrect;
               const isTimedOut = timeExpired && !selectedAnswer;
-
-              // Card flip: visible when timer running or locked
               const isFlipped = !cardsVisible && !roundLocked;
 
               return (
@@ -702,7 +747,9 @@ export const WordShooterGame = ({
                   disabled={roundLocked || !cardsVisible}
                   className={`
                     relative h-auto py-5 px-4 text-base sm:text-lg font-medium rounded-xl
-                    border-2 transition-all duration-300 transform
+                    border-2 transition-colors duration-300 transform
+                    ${cardsVisible ? 'animate-card-fly-in' : ''}
+                    ${showWrongHighlight ? 'animate-shake' : ''}
                     ${
                       isFlipped
                         ? "bg-muted border-border scale-95 opacity-50"
@@ -717,10 +764,27 @@ export const WordShooterGame = ({
                         : "bg-card border-border/50 hover:border-primary/50 hover:bg-primary/5 hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
                     }
                   `}
+                  style={{
+                    animationDelay: cardsVisible ? `${index * 80}ms` : '0ms',
+                    animationFillMode: 'both',
+                  }}
                 >
-                  <div className="flex items-center justify-center gap-2">
+                  {/* Bullseye hit effect on correct */}
+                  {showCorrectHighlight && (
+                    <>
+                      <div className="absolute inset-0 rounded-xl border-2 border-success animate-impact-ring" />
+                      <div className="absolute inset-0 rounded-xl border-2 border-success animate-impact-ring" style={{ animationDelay: '0.15s' }} />
+                    </>
+                  )}
+
+                  <div className="flex items-center justify-center gap-2 relative z-10">
                     {showCorrectHighlight && (
-                      <Check className="h-5 w-5 text-success" />
+                      <div className="relative">
+                        <Target className="h-5 w-5 text-success" />
+                        <div className="absolute inset-0 animate-bullseye-hit">
+                          <Target className="h-5 w-5 text-success" />
+                        </div>
+                      </div>
                     )}
                     {showWrongHighlight && (
                       <X className="h-5 w-5 text-destructive" />
@@ -734,26 +798,33 @@ export const WordShooterGame = ({
 
           {/* Feedback after selection or timeout */}
           {roundLocked && (
-            <div className="mt-6 p-4 rounded-lg bg-muted/50 space-y-2">
+            <div className={`mt-6 p-4 rounded-lg space-y-2 animate-slide-up ${
+              selectedAnswer === currentR.correctAnswer
+                ? 'bg-success/10 border border-success/30'
+                : 'bg-destructive/10 border border-destructive/30'
+            }`}>
               {selectedAnswer === currentR.correctAnswer ? (
-                <p className="font-medium text-success">
-                  ✅ Correct!{" "}
+                <p className="font-medium text-success flex items-center gap-2">
+                  <Target className="h-5 w-5" />
+                  Direct hit!{" "}
                   <span className="text-foreground">
                     "{currentR.correctAnswer}"
                   </span>{" "}
                   is a {currentR.questionType} of "{currentR.targetWord}".
                 </p>
               ) : timeExpired && !selectedAnswer ? (
-                <p className="font-medium text-destructive">
-                  ⏰ Time's up! The answer was{" "}
+                <p className="font-medium text-destructive flex items-center gap-2">
+                  <Clock className="h-5 w-5" />
+                  Time's up! The target was{" "}
                   <span className="text-foreground">
                     "{currentR.correctAnswer}"
                   </span>
                   .
                 </p>
               ) : (
-                <p className="font-medium text-destructive">
-                  ❌ Wrong! The correct answer was{" "}
+                <p className="font-medium text-destructive flex items-center gap-2">
+                  <X className="h-5 w-5" />
+                  Missed! The target was{" "}
                   <span className="text-foreground">
                     "{currentR.correctAnswer}"
                   </span>
@@ -766,14 +837,15 @@ export const WordShooterGame = ({
 
         {/* Next button */}
         {roundLocked && (
-          <div className="flex justify-center">
+          <div className="flex justify-center animate-slide-up">
             <Button
               variant="hero"
               onClick={handleNext}
               size="lg"
-              className="min-w-[150px]"
+              className="min-w-[150px] gap-2"
             >
-              {currentRound < rounds.length - 1 ? "Next" : "See Results"}
+              <Crosshair className="h-4 w-4" />
+              {currentRound < rounds.length - 1 ? "Next Target" : "See Results"}
             </Button>
           </div>
         )}

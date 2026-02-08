@@ -131,6 +131,49 @@ export default {
   					opacity: '1',
   					transform: 'translateY(0)'
   				}
+  			},
+  			'crosshair-spin': {
+  				'0%': { transform: 'rotate(0deg) scale(1)' },
+  				'25%': { transform: 'rotate(90deg) scale(1.1)' },
+  				'50%': { transform: 'rotate(180deg) scale(1)' },
+  				'75%': { transform: 'rotate(270deg) scale(1.1)' },
+  				'100%': { transform: 'rotate(360deg) scale(1)' }
+  			},
+  			'crosshair-lock': {
+  				'0%': { transform: 'scale(1.5)', opacity: '0.5' },
+  				'50%': { transform: 'scale(0.9)', opacity: '1' },
+  				'100%': { transform: 'scale(1)', opacity: '1' }
+  			},
+  			'bullseye-hit': {
+  				'0%': { transform: 'scale(0)', opacity: '1' },
+  				'50%': { transform: 'scale(1.5)', opacity: '0.6' },
+  				'100%': { transform: 'scale(2)', opacity: '0' }
+  			},
+  			'card-fly-in': {
+  				'0%': { transform: 'translateY(40px) scale(0.8) rotateX(20deg)', opacity: '0' },
+  				'60%': { transform: 'translateY(-5px) scale(1.02) rotateX(0deg)', opacity: '1' },
+  				'100%': { transform: 'translateY(0) scale(1) rotateX(0deg)', opacity: '1' }
+  			},
+  			'shake': {
+  				'0%, 100%': { transform: 'translateX(0)' },
+  				'20%': { transform: 'translateX(-8px)' },
+  				'40%': { transform: 'translateX(8px)' },
+  				'60%': { transform: 'translateX(-6px)' },
+  				'80%': { transform: 'translateX(6px)' }
+  			},
+  			'target-pulse': {
+  				'0%': { boxShadow: '0 0 0 0 hsl(var(--primary) / 0.4)' },
+  				'70%': { boxShadow: '0 0 0 15px hsl(var(--primary) / 0)' },
+  				'100%': { boxShadow: '0 0 0 0 hsl(var(--primary) / 0)' }
+  			},
+  			'scope-scan': {
+  				'0%': { backgroundPosition: '0% 50%' },
+  				'50%': { backgroundPosition: '100% 50%' },
+  				'100%': { backgroundPosition: '0% 50%' }
+  			},
+  			'impact-ring': {
+  				'0%': { transform: 'scale(0.3)', opacity: '1', borderWidth: '4px' },
+  				'100%': { transform: 'scale(1.8)', opacity: '0', borderWidth: '1px' }
   			}
   		},
   		animation: {
@@ -138,7 +181,15 @@ export default {
   			'accordion-up': 'accordion-up 0.2s ease-out',
   			'glow-pulse': 'glow-pulse 2s ease-in-out infinite',
   			float: 'float 3s ease-in-out infinite',
-  			'slide-up': 'slide-up 0.5s ease-out'
+  			'slide-up': 'slide-up 0.5s ease-out',
+  			'crosshair-spin': 'crosshair-spin 3s linear infinite',
+  			'crosshair-lock': 'crosshair-lock 0.4s ease-out forwards',
+  			'bullseye-hit': 'bullseye-hit 0.6s ease-out forwards',
+  			'card-fly-in': 'card-fly-in 0.5s ease-out forwards',
+  			'shake': 'shake 0.5s ease-out',
+  			'target-pulse': 'target-pulse 1.5s ease-out infinite',
+  			'scope-scan': 'scope-scan 3s ease-in-out infinite',
+  			'impact-ring': 'impact-ring 0.6s ease-out forwards'
   		},
 		fontFamily: {
 			sans: [
