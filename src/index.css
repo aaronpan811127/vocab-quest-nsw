@@ -19,8 +19,8 @@ All colors MUST be HSL.
     --popover: 0 0% 100%;
     --popover-foreground: 240 20% 20%;
 
-    /* Cheerful sky blue primary */
-    --primary: 199 89% 48%;
+    /* Cheerful sky blue primary (darkened for WCAG AA contrast with white text) */
+    --primary: 199 89% 36%;
     --primary-foreground: 0 0% 100%;
 
     /* Fun purple secondary */
@@ -39,7 +39,7 @@ All colors MUST be HSL.
 
     --border: 45 30% 85%;
     --input: 45 30% 85%;
-    --ring: 199 89% 48%;
+    --ring: 199 89% 36%;
 
     /* Happy green for achievements */
     --success: 145 65% 45%;
@@ -50,28 +50,28 @@ All colors MUST be HSL.
     --warning-foreground: 240 20% 20%;
 
     /* Kid-friendly gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(199 89% 48%), hsl(280 65% 60%));
+    --gradient-primary: linear-gradient(135deg, hsl(199 89% 36%), hsl(280 65% 60%));
     --gradient-secondary: linear-gradient(135deg, hsl(280 65% 60%), hsl(32 95% 55%));
     --gradient-success: linear-gradient(135deg, hsl(145 65% 45%), hsl(170 65% 50%));
-    --gradient-hero: linear-gradient(135deg, hsl(45 100% 97%), hsl(199 89% 48% / 0.08));
+    --gradient-hero: linear-gradient(135deg, hsl(45 100% 97%), hsl(199 89% 36% / 0.08));
 
     /* Soft, friendly shadows */
-    --shadow-glow: 0 0 20px hsl(199 89% 48% / 0.25);
+    --shadow-glow: 0 0 20px hsl(199 89% 36% / 0.25);
     --shadow-card: 0 8px 24px hsl(240 20% 20% / 0.08);
-    --shadow-button: 0 4px 12px hsl(199 89% 48% / 0.3);
+    --shadow-button: 0 4px 12px hsl(199 89% 36% / 0.3);
 
     --radius: 1rem;
 
     --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 240 20% 20%;
-    --sidebar-primary: 199 89% 48%;
+    --sidebar-primary: 199 89% 36%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 280 65% 60%;
     --sidebar-accent-foreground: 0 0% 100%;
     --sidebar-border: 45 30% 85%;
-    --sidebar-ring: 199 89% 48%;
+    --sidebar-ring: 199 89% 36%;
 
-    --chart-1: 199 89% 48%;
+    --chart-1: 199 89% 36%;
     --chart-2: 280 65% 60%;
     --chart-3: 32 95% 55%;
     --chart-4: 145 65% 45%;
@@ -108,7 +108,7 @@ All colors MUST be HSL.
     --popover: 0 0% 100%;
     --popover-foreground: 240 20% 20%;
 
-    --primary: 199 89% 48%;
+    --primary: 199 89% 36%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 280 65% 60%;
@@ -125,18 +125,18 @@ All colors MUST be HSL.
 
     --border: 45 30% 85%;
     --input: 45 30% 85%;
-    --ring: 199 89% 48%;
+    --ring: 199 89% 36%;
 
-    --gradient-hero: linear-gradient(135deg, hsl(45 100% 97%), hsl(199 89% 48% / 0.08));
+    --gradient-hero: linear-gradient(135deg, hsl(45 100% 97%), hsl(199 89% 36% / 0.08));
     
     --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 240 20% 20%;
-    --sidebar-primary: 199 89% 48%;
+    --sidebar-primary: 199 89% 36%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 280 65% 60%;
     --sidebar-accent-foreground: 0 0% 100%;
     --sidebar-border: 45 30% 85%;
-    --sidebar-ring: 199 89% 48%;
+    --sidebar-ring: 199 89% 36%;
   }
 
   .dark {
@@ -216,7 +216,7 @@ All colors MUST be HSL.
     right: 0;
     bottom: 0;
     background: 
-      radial-gradient(circle at 10% 20%, hsl(199 89% 48% / 0.12) 0%, transparent 25%),
+      radial-gradient(circle at 10% 20%, hsl(199 89% 36% / 0.12) 0%, transparent 25%),
       radial-gradient(circle at 90% 80%, hsl(280 65% 60% / 0.12) 0%, transparent 25%),
       radial-gradient(circle at 50% 50%, hsl(32 95% 55% / 0.08) 0%, transparent 35%),
       radial-gradient(circle at 80% 20%, hsl(145 65% 45% / 0.1) 0%, transparent 20%),
@@ -271,7 +271,7 @@ All colors MUST be HSL.
   /* Fun animations */
   @keyframes glow-pulse {
     0%, 100% { box-shadow: var(--shadow-glow); }
-    50% { box-shadow: 0 0 35px hsl(199 89% 48% / 0.4); }
+    50% { box-shadow: 0 0 35px hsl(199 89% 36% / 0.4); }
   }
 
   @keyframes float {
