@@ -21,8 +21,7 @@ import {
   Lightbulb,
   FileText,
   FlaskConical,
-  GraduationCap,
-  ExternalLink
+  GraduationCap
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "next-themes";
@@ -219,15 +218,9 @@ export default function HowItWorks() {
                 <p className="text-muted-foreground text-sm leading-relaxed">
                   Built on spaced repetition and active recall — techniques proven by decades of cognitive science research to maximise long-term retention.
                 </p>
-                <a
-                  href="https://doi.org/10.1016/j.jarmac.2016.10.002"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline mt-3 font-medium"
-                >
-                  <ExternalLink className="h-3 w-3" />
-                  Karpicke (2017) — Retrieval-Based Learning
-                </a>
+                <p className="text-xs text-muted-foreground mt-3 font-medium italic">
+                  Based on Karpicke &amp; Blunt (2011), "Retrieval Practice Produces More Learning than Elaborative Studying" — Science, 331(6018), 772–775
+                </p>
               </CardContent>
             </Card>
           </div>
