@@ -210,7 +210,7 @@ export const Navigation = ({
                   </div>
                 }>
                   <ProfileSettings trigger={
-                    <button className="w-8 h-8 rounded-full bg-gradient-primary flex items-center justify-center text-primary-foreground font-bold text-sm overflow-hidden cursor-pointer hover:ring-2 hover:ring-primary transition-all">
+                    <button aria-label="Profile settings" className="w-8 h-8 rounded-full bg-gradient-primary flex items-center justify-center text-primary-foreground font-bold text-sm overflow-hidden cursor-pointer hover:ring-2 hover:ring-primary transition-all">
                       {profile.avatar_url ? (
                         <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
                       ) : (
