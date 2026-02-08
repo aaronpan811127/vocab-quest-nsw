@@ -3,14 +3,13 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Skeleton } from "@/components/ui/skeleton";
 import { 
   BookOpen, 
   ArrowRight,
   RotateCcw,
   Trophy,
   Zap,
-  Sparkles,
+  RefreshCw,
   Loader2
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -46,6 +45,7 @@ export const ReadingGame = ({ unitId, unitTitle, unitWords, onComplete, onBack }
   const [gameCompleted, setGameCompleted] = useState(false);
   const [passage, setPassage] = useState<Passage | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
+  const [allQuestions, setAllQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -54,6 +54,8 @@ export const ReadingGame = ({ unitId, unitTitle, unitWords, onComplete, onBack }
   const [generatingQuestions, setGeneratingQuestions] = useState(false);
   const [serverScore, setServerScore] = useState(0);
   const [serverCorrectCount, setServerCorrectCount] = useState(0);
+  const [incorrectQuestionIds, setIncorrectQuestionIds] = useState<string[]>([]);
+  const [isRetryingMistakes, setIsRetryingMistakes] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
   const { celebrate } = useCelebration();
@@ -94,7 +96,6 @@ export const ReadingGame = ({ unitId, unitTitle, unitWords, onComplete, onBack }
       if (passageError) throw passageError;
       
       if (!passages || passages.length === 0) {
-        // No passages at all - need to generate one
         console.log('No passages available, generating new one...');
         await generateNewPassage();
         return;
@@ -103,7 +104,6 @@ export const ReadingGame = ({ unitId, unitTitle, unitWords, onComplete, onBack }
       // Get passage IDs the user has already attempted
       const attemptedPassageIds = new Set<string>();
       if (user) {
-        // First get the game_id for reading
         const { data: gameData } = await supabase
           .from('games')
           .select('id')
@@ -128,7 +128,6 @@ export const ReadingGame = ({ unitId, unitTitle, unitWords, onComplete, onBack }
       // Find unattempted passages
       const unattemptedPassages = passages.filter(p => !attemptedPassageIds.has(p.id));
 
-      // If all passages attempted, generate new or fallback
       if (unattemptedPassages.length === 0) {
         console.log('All passages attempted, generating new one...');
         await generateNewPassage();
@@ -138,7 +137,7 @@ export const ReadingGame = ({ unitId, unitTitle, unitWords, onComplete, onBack }
       // Pick a random unattempted passage
       const selectedPassage = unattemptedPassages[Math.floor(Math.random() * unattemptedPassages.length)];
 
-      // Fetch questions for this passage (using secure view that excludes correct_answer)
+      // Fetch questions for this passage
       const readingGameId = '8832f06f-9eed-4330-b663-7e1afc654780';
       const { data: questionsData, error: questionsError } = await supabase
         .from('questions_for_play')
@@ -153,7 +152,6 @@ export const ReadingGame = ({ unitId, unitTitle, unitWords, onComplete, onBack }
         return;
       }
 
-      // Set the passage
       setPassage({
         id: selectedPassage.id,
         title: selectedPassage.title,
@@ -167,9 +165,10 @@ export const ReadingGame = ({ unitId, unitTitle, unitWords, onComplete, onBack }
         options: Array.isArray(q.options) ? q.options : JSON.parse(q.options as string)
       }));
 
-      // Shuffle and take up to 10 questions
       const shuffled = formattedQuestions.sort(() => Math.random() - 0.5);
-      setQuestions(shuffled.slice(0, Math.min(10, shuffled.length)));
+      const selected = shuffled.slice(0, Math.min(10, shuffled.length));
+      setQuestions(selected);
+      setAllQuestions(selected);
     } catch (err) {
       console.error('Error fetching reading game data:', err);
       setError("Failed to load game data. Please try again.");
@@ -200,7 +199,6 @@ export const ReadingGame = ({ unitId, unitTitle, unitWords, onComplete, onBack }
         throw new Error(data.error || 'Failed to generate passage');
       }
 
-      // Set the new passage
       setPassage({
         id: data.passage.id,
         title: data.passage.title,
@@ -208,7 +206,6 @@ export const ReadingGame = ({ unitId, unitTitle, unitWords, onComplete, onBack }
         highlighted_words: data.passage.highlighted_words || []
       });
 
-      // Format and set the new questions
       const formattedQuestions: Question[] = data.questions.map((q: any) => ({
         id: q.id,
         question_text: q.question_text,
@@ -216,11 +213,12 @@ export const ReadingGame = ({ unitId, unitTitle, unitWords, onComplete, onBack }
         correct_answer: q.correct_answer
       }));
 
-      setQuestions(formattedQuestions.slice(0, 10));
+      const selected = formattedQuestions.slice(0, 10);
+      setQuestions(selected);
+      setAllQuestions(selected);
     } catch (err: any) {
       console.error('Error generating passage:', err);
       
-      // Handle specific errors
       if (err.message?.includes('Rate limit') || err.message?.includes('429')) {
         toast({
           title: "Rate limit exceeded",
@@ -247,7 +245,6 @@ export const ReadingGame = ({ unitId, unitTitle, unitWords, onComplete, onBack }
         });
       }
 
-      // Fall back to existing passages
       const { data: existingPassages } = await supabase
         .from('reading_passages')
         .select('*')
@@ -289,7 +286,9 @@ export const ReadingGame = ({ unitId, unitTitle, unitWords, onComplete, onBack }
         options: Array.isArray(q.options) ? q.options : JSON.parse(q.options as string)
       }));
       const shuffled = formattedQuestions.sort(() => Math.random() - 0.5);
-      setQuestions(shuffled.slice(0, Math.min(10, shuffled.length)));
+      const selected = shuffled.slice(0, Math.min(10, shuffled.length));
+      setQuestions(selected);
+      setAllQuestions(selected);
     } else {
       setError("No questions available for this passage.");
     }
@@ -318,13 +317,11 @@ export const ReadingGame = ({ unitId, unitTitle, unitWords, onComplete, onBack }
     try {
       const timeSpentSeconds = Math.round((Date.now() - startTimeRef.current) / 1000);
       
-      // Prepare answers for server-side validation
       const answers = selectedAnswers.map((answerIndex, questionIndex) => ({
         question_id: questions[questionIndex].id,
         answer_index: answerIndex
       }));
 
-      // Submit to server-side function for secure validation
       const { data, error } = await supabase.functions.invoke('submit-game', {
         body: {
           unit_id: unitId,
@@ -344,13 +341,15 @@ export const ReadingGame = ({ unitId, unitTitle, unitWords, onComplete, onBack }
         throw new Error(data.error || 'Failed to submit game');
       }
 
-      // Use server-calculated values
       setServerScore(data.score);
       setServerCorrectCount(data.correct_count);
       setEarnedXp(data.game_xp);
       setGameCompleted(data.is_perfect);
       
-      // Trigger XP animation after a short delay
+      // Store incorrect question IDs from server response
+      const wrongIds: string[] = data.incorrect_question_ids || [];
+      setIncorrectQuestionIds(wrongIds);
+      
       setTimeout(() => setShowXpAnimation(true), 300);
 
     } catch (err) {
@@ -360,12 +359,28 @@ export const ReadingGame = ({ unitId, unitTitle, unitWords, onComplete, onBack }
     }
   };
 
-  const getScore = () => {
-    return serverScore;
-  };
+  const getScore = () => serverScore;
+  const getCorrectCount = () => serverCorrectCount;
 
-  const getCorrectCount = () => {
-    return serverCorrectCount;
+  const retryIncorrectQuestions = () => {
+    // Filter to only the questions that were answered incorrectly
+    const incorrectQuestions = allQuestions.filter(q => incorrectQuestionIds.includes(q.id));
+    
+    if (incorrectQuestions.length === 0) return;
+
+    setQuestions(incorrectQuestions);
+    setCurrentQuestion(0);
+    setSelectedAnswers([]);
+    setShowResults(false);
+    setGameCompleted(false);
+    setEarnedXp(0);
+    setShowXpAnimation(false);
+    setServerScore(0);
+    setServerCorrectCount(0);
+    setIncorrectQuestionIds([]);
+    setIsRetryingMistakes(true);
+    hasCelebrated.current = false;
+    startTimeRef.current = Date.now();
   };
 
   const resetGame = () => {
@@ -377,12 +392,15 @@ export const ReadingGame = ({ unitId, unitTitle, unitWords, onComplete, onBack }
     setShowXpAnimation(false);
     setServerScore(0);
     setServerCorrectCount(0);
+    setIncorrectQuestionIds([]);
+    setIsRetryingMistakes(false);
+    setAllQuestions([]);
+    hasCelebrated.current = false;
     startTimeRef.current = Date.now();
     fetchPassageAndQuestions();
   };
 
   const renderContent = (content: string) => {
-    // Remove ** markers and return plain text
     return content.replace(/\*\*/g, '');
   };
 
@@ -433,6 +451,8 @@ export const ReadingGame = ({ unitId, unitTitle, unitWords, onComplete, onBack }
 
   if (showResults) {
     const score = getScore();
+    const hasIncorrect = incorrectQuestionIds.length > 0;
+
     return (
       <div className="min-h-screen bg-gradient-hero p-6">
         <div className="max-w-4xl mx-auto">
@@ -459,9 +479,11 @@ export const ReadingGame = ({ unitId, unitTitle, unitWords, onComplete, onBack }
                 <Badge variant="outline" className="text-lg px-6 py-2">
                   Score: {score}%
                 </Badge>
-                <p className="text-sm text-muted-foreground">
-                  Try again with a new passage for more practice.
-                </p>
+                {hasIncorrect && (
+                  <p className="text-sm text-muted-foreground">
+                    You have {incorrectQuestionIds.length} incorrect question{incorrectQuestionIds.length > 1 ? 's' : ''} to retry.
+                  </p>
+                )}
               </>
             )}
 
@@ -481,19 +503,23 @@ export const ReadingGame = ({ unitId, unitTitle, unitWords, onComplete, onBack }
               {saving && <span className="text-sm text-muted-foreground">(saving...)</span>}
             </div>
 
-            <div className="flex justify-center gap-4 pt-4">
+            <div className="flex flex-col gap-3 pt-4 w-full max-w-sm mx-auto">
               {gameCompleted ? (
-                <Button variant="hero" onClick={onComplete} size="lg">
+                <Button variant="hero" onClick={onComplete} size="lg" className="w-full">
                   <Trophy className="h-5 w-5 mr-2" />
                   Complete Game
                 </Button>
-              ) : (
-                <Button variant="game" onClick={resetGame} size="lg">
-                  <RotateCcw className="h-5 w-5 mr-2" />
-                  Try New Passage
+              ) : hasIncorrect ? (
+                <Button variant="game" onClick={retryIncorrectQuestions} size="lg" className="w-full">
+                  <RefreshCw className="h-5 w-5 mr-2" />
+                  Retry Incorrect ({incorrectQuestionIds.length})
                 </Button>
-              )}
-              <Button variant="outline" onClick={onBack} size="lg">
+              ) : null}
+              <Button variant="outline" onClick={resetGame} size="lg" className="w-full">
+                <RotateCcw className="h-4 w-4 mr-2" />
+                New Passage
+              </Button>
+              <Button variant="ghost" onClick={onBack} size="sm" className="w-full text-muted-foreground">
                 Back
               </Button>
             </div>
@@ -516,6 +542,11 @@ export const ReadingGame = ({ unitId, unitTitle, unitWords, onComplete, onBack }
             <Badge className="bg-gradient-primary text-primary-foreground">
               {unitTitle}
             </Badge>
+            {isRetryingMistakes && (
+              <Badge variant="outline" className="border-destructive text-destructive">
+                Retrying Mistakes
+              </Badge>
+            )}
           </div>
           <Button variant="outline" onClick={onBack}>
             Back
@@ -530,7 +561,12 @@ export const ReadingGame = ({ unitId, unitTitle, unitWords, onComplete, onBack }
           </div>
           <Progress value={progress} className="h-3" />
           <p className="text-xs text-muted-foreground text-center bg-primary/10 rounded-lg py-2 px-3">
-            🎯 <span className="font-semibold">Goal: Answer all {questions.length} questions correctly!</span> Read the passage carefully before answering.
+            🎯 <span className="font-semibold">
+              {isRetryingMistakes 
+                ? `Retry: Answer all ${questions.length} incorrect question${questions.length > 1 ? 's' : ''} correctly!`
+                : `Goal: Answer all ${questions.length} questions correctly!`
+              }
+            </span> Read the passage carefully before answering.
           </p>
         </div>
 
