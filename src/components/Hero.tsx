@@ -101,6 +101,9 @@ export const Hero = ({ onSelectTestType }: HeroProps) => {
           <p className="text-base sm:text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto leading-relaxed px-2">
             The only platform purpose-built for NSW students to master vocabulary, strengthen reading skills, and excel in Selective, OC &amp; NAPLAN tests.
           </p>
+          <p className="text-sm sm:text-base text-muted-foreground/80 max-w-xl mx-auto px-2">
+            Master words through epic gaming adventures. 20-minute daily challenges that build your vocabulary with endless fun and real results.
+          </p>
         </div>
 
         {/* Trust Signals */}
