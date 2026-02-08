@@ -52,7 +52,38 @@ interface WordShooterGameProps {
 }
 
 const WORD_SHOOTER_GAME_ID = "e1f2a3b4-c5d6-7e8f-9a0b-1c2d3e4f5a6b";
-const FLIP_DURATION_MS = 2000;
+const FLIP_DURATION_MS = 3000;
+
+/* ---- Web Audio hit sound ---- */
+const playHitSound = () => {
+  try {
+    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    // Short rising "ping"
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(600, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(1200, ctx.currentTime + 0.08);
+    gain.gain.setValueAtTime(0.35, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.25);
+    osc.connect(gain).connect(ctx.destination);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.25);
+    // Second harmonic for richness
+    const osc2 = ctx.createOscillator();
+    const gain2 = ctx.createGain();
+    osc2.type = "triangle";
+    osc2.frequency.setValueAtTime(900, ctx.currentTime);
+    osc2.frequency.exponentialRampToValueAtTime(1800, ctx.currentTime + 0.06);
+    gain2.gain.setValueAtTime(0.15, ctx.currentTime);
+    gain2.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.18);
+    osc2.connect(gain2).connect(ctx.destination);
+    osc2.start(ctx.currentTime);
+    osc2.stop(ctx.currentTime + 0.18);
+  } catch {
+    // Silently fail if AudioContext unavailable
+  }
+};
 
 export const WordShooterGame = ({
   unitId,
@@ -334,6 +365,7 @@ export const WordShooterGame = ({
 
     if (isCorrect) {
       setCorrectAnswers((prev) => prev + 1);
+      playHitSound();
     }
 
     setRoundResults((prev) => [
@@ -658,11 +690,14 @@ export const WordShooterGame = ({
 
           {/* Target word with crosshair decoration */}
           <div className="text-center mb-6 space-y-3">
-            <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+            {/* Prominent synonym/antonym banner */}
+            <div className={`inline-flex items-center gap-2 px-5 py-2 rounded-full text-sm font-bold uppercase tracking-wider border-2 ${
+              currentR.questionType === 'synonym'
+                ? 'bg-success/15 border-success/40 text-success'
+                : 'bg-destructive/15 border-destructive/40 text-destructive'
+            }`}>
               <Crosshair className="h-4 w-4" />
-              <span>
-                Find the <span className="font-bold text-primary">{currentR.questionType}</span>
-              </span>
+              <span>Find the {currentR.questionType}</span>
               <Crosshair className="h-4 w-4" />
             </div>
             <div className="relative inline-block">
