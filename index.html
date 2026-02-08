@@ -39,10 +39,102 @@
     <meta name="twitter:site" content="@vocabquests" />
     <meta name="twitter:image" content="https://vocabquests.com/og-image.png" />
     <link rel="canonical" href="https://vocabquests.com" />
+
+    <!-- Critical inline CSS for instant FCP before external stylesheet loads -->
+    <style>
+      :root {
+        --background: 45 100% 97%;
+        --foreground: 240 20% 20%;
+        --primary: 199 89% 36%;
+        --primary-foreground: 0 0% 100%;
+        --muted-foreground: 240 10% 40%;
+      }
+      .dark {
+        --background: 240 20% 12%;
+        --foreground: 45 30% 95%;
+        --primary: 199 85% 55%;
+        --primary-foreground: 240 20% 12%;
+        --muted-foreground: 45 20% 75%;
+      }
+      body {
+        margin: 0;
+        background: hsl(45 100% 97%);
+        color: hsl(240 20% 20%);
+        font-family: 'Nunito', system-ui, -apple-system, sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+      .dark body, html.dark body {
+        background: hsl(240 20% 12%);
+        color: hsl(45 30% 95%);
+      }
+      /* Loading shell styles */
+      .loading-shell {
+        min-height: 100vh;
+      }
+      .loading-nav {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 64px;
+        display: flex;
+        align-items: center;
+        padding: 0 1rem;
+        background: hsla(45, 100%, 97%, 0.8);
+        backdrop-filter: blur(8px);
+        border-bottom: 1px solid hsl(45 30% 85%);
+        z-index: 50;
+      }
+      .dark .loading-nav {
+        background: hsla(240, 20%, 12%, 0.8);
+        border-color: hsl(240 10% 30%);
+      }
+      .loading-logo {
+        font-family: 'Fredoka', system-ui, sans-serif;
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: hsl(199 89% 36%);
+      }
+      .dark .loading-logo {
+        color: hsl(199 85% 55%);
+      }
+      .loading-hero {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        padding: 5rem 1rem 2rem;
+        text-align: center;
+      }
+      .loading-hero h1 {
+        font-family: 'Fredoka', system-ui, sans-serif;
+        font-size: clamp(1.875rem, 5vw, 4.5rem);
+        font-weight: 700;
+        line-height: 1.1;
+        letter-spacing: -0.01em;
+        margin: 0;
+      }
+      .loading-hero h1 span {
+        background: linear-gradient(135deg, hsl(199 89% 36%), hsl(280 65% 60%));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+    </style>
   </head>
 
   <body>
-    <div id="root"></div>
+    <!-- Loading shell for instant FCP — replaced by React on mount -->
+    <div id="root">
+      <div class="loading-shell">
+        <nav class="loading-nav">
+          <div class="loading-logo">🎮 VocabQuest</div>
+        </nav>
+        <div class="loading-hero">
+          <h1>Level Up Your <span>Vocabulary</span></h1>
+        </div>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
