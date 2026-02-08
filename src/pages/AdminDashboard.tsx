@@ -13,7 +13,7 @@ import { AdminUnitEditor } from "@/components/admin/AdminUnitEditor";
 const AdminDashboard = () => {
   const { isAdmin, loading, user } = useAdminAuth();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState("questions");
+  const [activeTab, setActiveTab] = useState("units");
 
   useEffect(() => {
     if (!loading && (!user || !isAdmin)) {
