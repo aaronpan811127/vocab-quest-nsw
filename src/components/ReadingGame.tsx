@@ -10,6 +10,7 @@ import {
   Trophy,
   Zap,
   RefreshCw,
+  Check,
   Loader2
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -452,40 +453,22 @@ export const ReadingGame = ({ unitId, unitTitle, unitWords, onComplete, onBack }
   if (showResults) {
     const score = getScore();
     const hasIncorrect = incorrectQuestionIds.length > 0;
+    const isPerfect = gameCompleted;
 
     return (
       <div className="min-h-screen bg-gradient-hero p-6">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-2xl mx-auto">
           <Card className="p-8 text-center space-y-6 bg-card/50 backdrop-blur-sm border-2 border-border/50">
-            {gameCompleted ? (
-              <>
-                <div className="text-6xl mb-4">🎉</div>
-                <Trophy className="h-16 w-16 mx-auto text-success" />
-                <h2 className="text-3xl font-bold text-success">Perfect Score!</h2>
-                <p className="text-lg text-muted-foreground">
-                  You've mastered all the vocabulary in this passage!
-                </p>
-                <Badge className="bg-gradient-success text-success-foreground text-lg px-6 py-2">
-                  Score: {score}%
-                </Badge>
-              </>
-            ) : (
-              <>
-                <div className="text-6xl mb-4">📚</div>
-                <h2 className="text-3xl font-bold">Good Effort!</h2>
-                <p className="text-lg text-muted-foreground">
-                  You got {getCorrectCount()} out of {questions.length} correct.
-                </p>
-                <Badge variant="outline" className="text-lg px-6 py-2">
-                  Score: {score}%
-                </Badge>
-                {hasIncorrect && (
-                  <p className="text-sm text-muted-foreground">
-                    You have {incorrectQuestionIds.length} incorrect question{incorrectQuestionIds.length > 1 ? 's' : ''} to retry.
-                  </p>
-                )}
-              </>
-            )}
+            <div className="text-6xl mb-4">🎉</div>
+            <h2 className="text-3xl font-bold text-primary">
+              {isPerfect ? "Perfect Score!" : "Game Complete!"}
+            </h2>
+            <p className="text-lg text-muted-foreground">
+              You got {getCorrectCount()} out of {questions.length} correct in {unitTitle}!
+            </p>
+            <Badge className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground text-lg px-6 py-2">
+              {getCorrectCount()} / {questions.length} Correct
+            </Badge>
 
             {/* XP Earned Animation */}
             <div 
@@ -503,20 +486,21 @@ export const ReadingGame = ({ unitId, unitTitle, unitWords, onComplete, onBack }
               {saving && <span className="text-sm text-muted-foreground">(saving...)</span>}
             </div>
 
-            <div className="flex flex-col gap-3 pt-4 w-full max-w-sm mx-auto">
-              {gameCompleted ? (
-                <Button variant="hero" onClick={onComplete} size="lg" className="w-full">
-                  <Trophy className="h-5 w-5 mr-2" />
-                  Complete Game
-                </Button>
-              ) : hasIncorrect ? (
-                <Button variant="game" onClick={retryIncorrectQuestions} size="lg" className="w-full">
+            <div className="flex justify-center gap-4 pt-4">
+              {hasIncorrect ? (
+                <Button variant="outline" onClick={retryIncorrectQuestions} size="lg">
                   <RefreshCw className="h-5 w-5 mr-2" />
                   Retry Incorrect ({incorrectQuestionIds.length})
                 </Button>
-              ) : null}
-              <Button variant="ghost" onClick={onBack} size="sm" className="w-full text-muted-foreground">
-                Back
+              ) : (
+                <Button variant="outline" onClick={resetGame} size="lg">
+                  <RotateCcw className="h-5 w-5 mr-2" />
+                  Play Again
+                </Button>
+              )}
+              <Button variant="hero" onClick={isPerfect ? onComplete : onBack} size="lg">
+                <Check className="h-5 w-5 mr-2" />
+                {isPerfect ? 'Complete' : 'Back'}
               </Button>
             </div>
           </Card>
