@@ -641,7 +641,8 @@ Game XP = (Avg Score over all attempts × 0.5) + Time Bonus
     const progress = gameProgress[gameType];
     return {
       progress: progress?.bestScore || 0,
-      isCompleted: progress?.completed || false,
+      // Only mark as completed when best score is 100% (perfect)
+      isCompleted: (progress?.bestScore || 0) >= 100,
       totalXp: progress?.totalXp || 0,
       totalTimeSeconds: progress?.totalTimeSeconds || 0,
       attempts: progress?.attempts || 0,
@@ -679,7 +680,7 @@ Game XP = (Avg Score over all attempts × 0.5) + Time Bonus
         const sectionGames = groupedGames[section.code]?.games || [];
         const allCompleted = sectionGames.every(g => {
           const progress = gameProgress[g.game_type];
-          return progress?.completed;
+          return (progress?.bestScore || 0) >= 100;
         });
         if (!allCompleted) return false;
       }
