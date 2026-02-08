@@ -1,6 +1,6 @@
+import { lazy, Suspense, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Home, LayoutDashboard, Gamepad2, LogOut, LogIn, Sun, Moon, HelpCircle, Menu, CreditCard, Mail } from "lucide-react";
-import { ProfileSettings } from "@/components/ProfileSettings";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/useProfile";
 import { useTestType } from "@/contexts/TestTypeContext";
@@ -8,7 +8,9 @@ import { useNavigate } from "react-router-dom";
 import { useTheme } from "next-themes";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { useState } from "react";
+
+// Lazy-load ProfileSettings since it's only shown on user click
+const ProfileSettings = lazy(() => import("@/components/ProfileSettings").then(m => ({ default: m.ProfileSettings })));
 
 interface NavigationProps {
   currentView?: "hero" | "dashboard" | "game";
@@ -202,15 +204,21 @@ export const Navigation = ({
             
             {user && profile ? (
               <>
-                <ProfileSettings trigger={
-                  <button className="w-8 h-8 rounded-full bg-gradient-primary flex items-center justify-center text-primary-foreground font-bold text-sm overflow-hidden cursor-pointer hover:ring-2 hover:ring-primary transition-all">
-                    {profile.avatar_url ? (
-                      <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
-                    ) : (
-                      profile.username?.[0]?.toUpperCase() || user.email?.[0]?.toUpperCase() || "U"
-                    )}
-                  </button>
-                } />
+                <Suspense fallback={
+                  <div className="w-8 h-8 rounded-full bg-gradient-primary flex items-center justify-center text-primary-foreground font-bold text-sm">
+                    {profile.username?.[0]?.toUpperCase() || user.email?.[0]?.toUpperCase() || "U"}
+                  </div>
+                }>
+                  <ProfileSettings trigger={
+                    <button className="w-8 h-8 rounded-full bg-gradient-primary flex items-center justify-center text-primary-foreground font-bold text-sm overflow-hidden cursor-pointer hover:ring-2 hover:ring-primary transition-all">
+                      {profile.avatar_url ? (
+                        <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                      ) : (
+                        profile.username?.[0]?.toUpperCase() || user.email?.[0]?.toUpperCase() || "U"
+                      )}
+                    </button>
+                  } />
+                </Suspense>
                 <Button variant="ghost" size="icon" onClick={handleSignOut} className="hidden md:flex h-8 w-8 sm:h-9 sm:w-9">
                   <LogOut className="h-4 w-4" />
                 </Button>
