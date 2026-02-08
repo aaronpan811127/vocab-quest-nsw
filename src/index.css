@@ -1,6 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap");
-@import url("https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap");
-@import url("https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&display=swap");
+/* Fonts are loaded via <link> tags in index.html to avoid render-blocking @import chains */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
