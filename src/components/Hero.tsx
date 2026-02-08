@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Gamepad2, Zap, Trophy, Star, LogIn, GraduationCap, BookOpen, Target, Award, Users, HelpCircle, ShieldCheck, GraduationCap as EducatorIcon, FlaskConical } from "lucide-react";
+import { Gamepad2, Zap, Trophy, Star, LogIn, GraduationCap, BookOpen, Target, Award, Users, HelpCircle, ShieldCheck, GraduationCap as EducatorIcon, FlaskConical, Clock, Swords } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTestType, TestType } from "@/contexts/TestTypeContext";
 import { useNavigate } from "react-router-dom";
@@ -107,13 +107,32 @@ export const Hero = ({ onSelectTestType }: HeroProps) => {
           <h1 className="text-3xl sm:text-5xl md:text-7xl font-bold tracking-tight">
             Level Up Your <span className="bg-gradient-primary bg-clip-text text-transparent">Vocabulary</span>
           </h1>
-          <p className="text-base sm:text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto leading-relaxed px-2">
-            The only platform purpose-built for NSW students to master vocabulary, strengthen reading skills, and excel in Selective, OC &amp; NAPLAN tests.
-          </p>
-          <p className="text-base sm:text-lg md:text-xl text-muted-foreground/80 max-w-xl mx-auto px-2 leading-relaxed">
-            Master words through epic gaming adventures. 20-minute daily challenges that build your vocabulary with endless fun and real results.
-          </p>
-        </div>
+           <p className="text-base sm:text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto leading-relaxed px-2">
+             The only platform purpose-built for NSW students to master vocabulary, strengthen reading skills, and excel in Selective, OC &amp; NAPLAN tests.
+           </p>
+         </div>
+
+         {/* Value Props */}
+         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 max-w-2xl mx-auto">
+           <div className="flex items-center gap-3 p-3 sm:p-4 rounded-xl bg-card/40 backdrop-blur-sm border border-border/50 text-left">
+             <div className="p-2 rounded-lg bg-warning/15 flex-shrink-0">
+               <Swords className="h-5 w-5 text-warning" />
+             </div>
+             <div>
+               <div className="font-semibold text-xs sm:text-sm">Epic Gaming Adventures</div>
+               <div className="text-[10px] sm:text-xs text-muted-foreground">Master words through fun, engaging game modes</div>
+             </div>
+           </div>
+           <div className="flex items-center gap-3 p-3 sm:p-4 rounded-xl bg-card/40 backdrop-blur-sm border border-border/50 text-left">
+             <div className="p-2 rounded-lg bg-primary/15 flex-shrink-0">
+               <Clock className="h-5 w-5 text-primary" />
+             </div>
+             <div>
+               <div className="font-semibold text-xs sm:text-sm">20-Min Daily Challenges</div>
+               <div className="text-[10px] sm:text-xs text-muted-foreground">Build vocabulary with real results, every day</div>
+             </div>
+           </div>
+         </div>
 
         {/* Trust Signals */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 max-w-3xl mx-auto">
