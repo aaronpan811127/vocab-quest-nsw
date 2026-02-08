@@ -4,7 +4,6 @@ import { Gamepad2, Zap, Trophy, Star, LogIn, GraduationCap, BookOpen, Target, Aw
 import { useAuth } from "@/contexts/AuthContext";
 import { useTestType, TestType } from "@/contexts/TestTypeContext";
 import { useNavigate } from "react-router-dom";
-import heroImage from "@/assets/hero-gaming.jpg";
 import catPattern from "@/assets/cat-pattern.png";
 
 interface HeroProps {
@@ -44,7 +43,7 @@ export const Hero = ({ onSelectTestType }: HeroProps) => {
       {/* Background Image */}
       <div className="absolute inset-0 z-0">
         <img
-          src={heroImage}
+          src="/images/hero-gaming.jpg"
           alt="VocabQuest gamified vocabulary learning for NSW students"
           fetchPriority="high"
           decoding="async"
