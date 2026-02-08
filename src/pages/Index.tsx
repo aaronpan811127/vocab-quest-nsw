@@ -15,6 +15,7 @@ import { ContextMasterGame } from "@/components/ContextMasterGame";
 import { ClozeChallengeGame } from "@/components/ClozeChallengeGame";
 import { ClozePassageGame } from "@/components/ClozePassageGame";
 import { GapFillPassageGame } from "@/components/GapFillPassageGame";
+import { WordShooterGame } from "@/components/WordShooterGame";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/useProfile";
 import { useExpiredSessionCheck } from "@/hooks/useExpiredSessionCheck";
@@ -105,6 +106,8 @@ const Index = () => {
         return <ClozePassageGame {...commonProps} />;
       case "gap_fill_passage":
         return <GapFillPassageGame {...commonProps} />;
+      case "word_shooter":
+        return <WordShooterGame {...commonProps} />;
       default:
         return <ReadingGame {...commonProps} />;
     }
