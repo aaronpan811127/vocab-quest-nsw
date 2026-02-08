@@ -24,7 +24,7 @@ const Pricing = () => {
     <div className="min-h-screen bg-background">
       <SEOHead
         title="Pricing"
-        description="Start your VocabQuest journey with a free 7-day trial. Premium plans unlock unlimited vocabulary units and full parent dashboard for NSW test prep."
+        description="Start your VocabQuests journey with a free 7-day trial. Premium plans unlock unlimited vocabulary units and full parent dashboard for NSW test prep."
         path="/pricing"
         jsonLd={{
           "@context": "https://schema.org",
@@ -64,7 +64,7 @@ const Pricing = () => {
               <div className="p-1.5 sm:p-2 rounded-lg bg-gradient-primary">
                 <Gamepad2 className="h-5 w-5 sm:h-6 sm:w-6 text-primary-foreground" />
               </div>
-              <span className="font-bold text-lg sm:text-2xl">VocabQuest</span>
+              <span className="font-bold text-lg sm:text-2xl">VocabQuests</span>
             </div>
             <div className="flex items-center gap-2">
               <Button variant="ghost" size="icon" onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>

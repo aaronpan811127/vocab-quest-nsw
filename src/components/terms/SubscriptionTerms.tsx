@@ -8,21 +8,21 @@ export const SubscriptionTerms = () => {
         <section>
           <h3 className="text-lg font-semibold mb-2">1. Subscription Overview</h3>
           <p className="text-muted-foreground leading-relaxed">
-            VocabQuest offers a Premium subscription plan ("{PRICING.premium.name}") that provides enhanced access to our educational platform. By subscribing, you agree to these Subscription Terms and Conditions in addition to our Website Terms and Conditions. The Premium plan is available at ${PRICING.premium.monthlyPrice}/month or ${PRICING.premium.annualPrice}/year.
+            VocabQuests offers a Premium subscription plan ("{PRICING.premium.name}") that provides enhanced access to our educational platform. By subscribing, you agree to these Subscription Terms and Conditions in addition to our Website Terms and Conditions. The Premium plan is available at ${PRICING.premium.monthlyPrice}/month or ${PRICING.premium.annualPrice}/year.
           </p>
         </section>
 
         <section>
           <h3 className="text-lg font-semibold mb-2">2. Free Trial</h3>
           <p className="text-muted-foreground leading-relaxed">
-            VocabQuest offers a 7-day free trial period for new student accounts. During the trial, students have access to the first 2 units and all vocabulary games. Parents may link 1 child and view high-level progress reports during the trial period. No credit card is required for the free trial. After the trial period expires, continued access to all features requires an active Premium subscription.
+            VocabQuests offers a 7-day free trial period for new student accounts. During the trial, students have access to the first 2 units and all vocabulary games. Parents may link 1 child and view high-level progress reports during the trial period. No credit card is required for the free trial. After the trial period expires, continued access to all features requires an active Premium subscription.
           </p>
         </section>
 
         <section>
           <h3 className="text-lg font-semibold mb-2">3. Billing & Payment</h3>
           <p className="text-muted-foreground leading-relaxed">
-            Subscription fees are billed in advance on a monthly or annual basis depending on the plan you select. Payment is processed securely through our third-party payment processor, Stripe. By providing your payment information, you authorise VocabQuest to charge the applicable subscription fee to your nominated payment method. All prices are in Australian Dollars (AUD) unless otherwise specified.
+            Subscription fees are billed in advance on a monthly or annual basis depending on the plan you select. Payment is processed securely through our third-party payment processor, Stripe. By providing your payment information, you authorise VocabQuests to charge the applicable subscription fee to your nominated payment method. All prices are in Australian Dollars (AUD) unless otherwise specified.
           </p>
         </section>
 
@@ -43,7 +43,7 @@ export const SubscriptionTerms = () => {
         <section>
           <h3 className="text-lg font-semibold mb-2">6. Subscription Features</h3>
           <p className="text-muted-foreground leading-relaxed">
-            The Premium subscription includes: unlimited access to all vocabulary units and games for linked student accounts; the ability to link up to 3 student accounts; full detailed progress reports; words-to-practice insights; unit completion tracking; and email support. VocabQuest reserves the right to modify, add, or remove subscription features at any time, with reasonable notice provided to subscribers.
+            The Premium subscription includes: unlimited access to all vocabulary units and games for linked student accounts; the ability to link up to 3 student accounts; full detailed progress reports; words-to-practice insights; unit completion tracking; and email support. VocabQuests reserves the right to modify, add, or remove subscription features at any time, with reasonable notice provided to subscribers.
           </p>
         </section>
 
@@ -57,14 +57,14 @@ export const SubscriptionTerms = () => {
         <section>
           <h3 className="text-lg font-semibold mb-2">8. Service Availability</h3>
           <p className="text-muted-foreground leading-relaxed">
-            VocabQuest strives to maintain continuous service availability but does not guarantee uninterrupted access. Scheduled maintenance, technical issues, or circumstances beyond our control may result in temporary service disruptions. We will endeavour to notify subscribers of planned maintenance in advance. Prolonged service outages may be eligible for pro-rated credit at VocabQuest's discretion.
+            VocabQuests strives to maintain continuous service availability but does not guarantee uninterrupted access. Scheduled maintenance, technical issues, or circumstances beyond our control may result in temporary service disruptions. We will endeavour to notify subscribers of planned maintenance in advance. Prolonged service outages may be eligible for pro-rated credit at VocabQuests' discretion.
           </p>
         </section>
 
         <section>
           <h3 className="text-lg font-semibold mb-2">9. Price Changes</h3>
           <p className="text-muted-foreground leading-relaxed">
-            VocabQuest reserves the right to adjust subscription pricing. Any price increase will take effect at the start of the next billing cycle following a minimum 30-day notice period. You will be notified of price changes via the email address associated with your account. If you do not agree to the new pricing, you may cancel your subscription before the new pricing takes effect.
+            VocabQuests reserves the right to adjust subscription pricing. Any price increase will take effect at the start of the next billing cycle following a minimum 30-day notice period. You will be notified of price changes via the email address associated with your account. If you do not agree to the new pricing, you may cancel your subscription before the new pricing takes effect.
           </p>
         </section>
 
@@ -78,7 +78,7 @@ export const SubscriptionTerms = () => {
         <section>
           <h3 className="text-lg font-semibold mb-2">11. Data Retention</h3>
           <p className="text-muted-foreground leading-relaxed">
-            Upon cancellation or expiration of your subscription, student progress data and account information will be retained for 12 months. During this period, you may reactivate your subscription and regain access to all previously saved data. After 12 months of inactivity, VocabQuest reserves the right to delete stored data in accordance with applicable data protection laws.
+            Upon cancellation or expiration of your subscription, student progress data and account information will be retained for 12 months. During this period, you may reactivate your subscription and regain access to all previously saved data. After 12 months of inactivity, VocabQuests reserves the right to delete stored data in accordance with applicable data protection laws.
           </p>
         </section>
 

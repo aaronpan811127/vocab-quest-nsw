@@ -133,7 +133,7 @@ const ParentAuth = () => {
       }
     } else {
       toast({
-        title: "Welcome to VocabQuest!",
+        title: "Welcome to VocabQuests!",
         description: "Your parent account has been created successfully.",
       });
       navigate("/parent-dashboard");
@@ -144,7 +144,7 @@ const ParentAuth = () => {
     <div className="min-h-screen bg-gradient-to-b from-secondary/10 via-background to-background flex items-center justify-center p-4">
       <SEOHead
         title="Parent Sign In"
-        description="Sign in or create your VocabQuest parent account to monitor your child's vocabulary progress and manage your subscription."
+        description="Sign in or create your VocabQuests parent account to monitor your child's vocabulary progress and manage your subscription."
         path="/parent-auth"
       />
       <div className="w-full max-w-md space-y-8">
@@ -153,7 +153,7 @@ const ParentAuth = () => {
           <div className="flex items-center justify-center gap-2">
             <Users className="h-10 w-10 text-secondary" />
             <h1 className="text-3xl font-bold bg-gradient-to-r from-secondary to-secondary/70 bg-clip-text text-transparent">
-              VocabQuest
+              VocabQuests
             </h1>
           </div>
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-secondary/10 border-2 border-secondary/30">

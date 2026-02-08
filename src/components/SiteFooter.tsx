@@ -10,7 +10,7 @@ export const SiteFooter = () => {
             <div className="p-1.5 rounded-lg bg-gradient-primary">
               <Gamepad2 className="h-4 w-4 text-primary-foreground" />
             </div>
-            <span className="font-bold">VocabQuest</span>
+            <span className="font-bold">VocabQuests</span>
           </div>
           <div className="flex items-center gap-4 text-sm text-muted-foreground flex-wrap justify-center sm:justify-end">
             <Link to="/terms?tab=website" className="hover:text-foreground transition-colors">
@@ -31,7 +31,7 @@ export const SiteFooter = () => {
           </div>
         </div>
         <p className="text-sm text-muted-foreground text-center sm:text-left">
-          © {new Date().getFullYear()} VocabQuest. Making vocabulary learning fun.
+          © {new Date().getFullYear()} VocabQuests. Making vocabulary learning fun.
         </p>
       </div>
     </footer>

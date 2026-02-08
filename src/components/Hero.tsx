@@ -50,7 +50,7 @@ export const Hero = ({ onSelectTestType }: HeroProps) => {
       <div className="absolute inset-0 z-0">
         <img
           src="/images/hero-gaming.jpg"
-          alt="VocabQuest gamified vocabulary learning for NSW students"
+          alt="VocabQuests gamified vocabulary learning for NSW students"
           fetchPriority="high"
           decoding="async"
           width={1539}
@@ -99,7 +99,7 @@ export const Hero = ({ onSelectTestType }: HeroProps) => {
         {/* Badge */}
         <Badge className="bg-gradient-primary text-primary-foreground px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium">
           <Gamepad2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
-          VocabQuest Learning
+          VocabQuests Learning
         </Badge>
 
         {/* Headline */}

@@ -107,7 +107,7 @@ const Contact = () => {
                 <div className="p-1.5 sm:p-2 rounded-lg bg-gradient-primary">
                   <Gamepad2 className="h-5 w-5 sm:h-6 sm:w-6 text-primary-foreground" />
                 </div>
-                <span className="font-bold text-lg sm:text-2xl">VocabQuest</span>
+                <span className="font-bold text-lg sm:text-2xl">VocabQuests</span>
               </div>
               <div className="flex items-center gap-2">
                 <Button variant="ghost" size="icon" onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
@@ -146,7 +146,7 @@ const Contact = () => {
     <div className="min-h-screen bg-background">
       <SEOHead
         title="Contact Us"
-        description="Have questions about VocabQuest? Get in touch with our team for support with NSW Selective, OC and NAPLAN vocabulary preparation."
+        description="Have questions about VocabQuests? Get in touch with our team for support with NSW Selective, OC and NAPLAN vocabulary preparation."
         path="/contact"
       />
       <nav className="fixed top-0 left-0 right-0 z-50 bg-card/80 backdrop-blur-md border-b border-border">
@@ -156,7 +156,7 @@ const Contact = () => {
               <div className="p-1.5 sm:p-2 rounded-lg bg-gradient-primary">
                 <Gamepad2 className="h-5 w-5 sm:h-6 sm:w-6 text-primary-foreground" />
               </div>
-              <span className="font-bold text-lg sm:text-2xl">VocabQuest</span>
+              <span className="font-bold text-lg sm:text-2xl">VocabQuests</span>
             </div>
             <div className="flex items-center gap-2">
               <Button variant="ghost" size="icon" onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>

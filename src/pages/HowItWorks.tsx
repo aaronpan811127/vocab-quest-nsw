@@ -126,7 +126,7 @@ const studentTestimonials = [
     role: "Year 4 Student",
   },
   {
-    quote: "I got into my dream school! VocabQuest helped me learn words I never knew before.",
+    quote: "I got into my dream school! VocabQuests helped me learn words I never knew before.",
     author: "Sophie L.",
     role: "Year 6 Student",
   },
@@ -147,7 +147,7 @@ export default function HowItWorks() {
     <div className="min-h-screen bg-background">
       <SEOHead
         title="How It Works"
-        description="Discover how VocabQuest helps NSW students master vocabulary for Selective, OC and NAPLAN tests through gamified learning, expert-curated content, and spaced repetition."
+        description="Discover how VocabQuests helps NSW students master vocabulary for Selective, OC and NAPLAN tests through gamified learning, expert-curated content, and spaced repetition."
         path="/how-it-works"
       />
       <nav className="fixed top-0 left-0 right-0 z-50 bg-card/80 backdrop-blur-md border-b border-border">
@@ -157,7 +157,7 @@ export default function HowItWorks() {
               <div className="p-1.5 sm:p-2 rounded-lg bg-gradient-primary">
                 <Gamepad2 className="h-5 w-5 sm:h-6 sm:w-6 text-primary-foreground" />
               </div>
-              <span className="font-bold text-lg sm:text-2xl">VocabQuest</span>
+              <span className="font-bold text-lg sm:text-2xl">VocabQuests</span>
             </div>
             <div className="flex items-center gap-2">
               <Button variant="ghost" size="icon" onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
@@ -172,13 +172,13 @@ export default function HowItWorks() {
         </div>
       </nav>
 
-      {/* Why VocabQuest - Key Differentiators */}
+      {/* Why VocabQuests - Key Differentiators */}
       <section className="pt-24 sm:pt-32 pb-16 sm:pb-20 px-4 sm:px-6">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
             <Badge className="bg-primary/10 text-primary border-primary/30 px-4 py-2 text-sm font-medium mb-4">
               <Star className="h-4 w-4 mr-2" />
-              Why VocabQuest
+              Why VocabQuests
             </Badge>
             <h1 className="text-3xl sm:text-4xl font-bold mb-4">The Only Platform Purpose-Built for NSW Vocabulary</h1>
             <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
