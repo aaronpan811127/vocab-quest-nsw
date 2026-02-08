@@ -116,6 +116,8 @@ export const SubscriptionProvider = ({ children }: { children: ReactNode }) => {
   };
 
   useEffect(() => {
+    // Reset to loading state immediately when user changes to prevent flash of stale values
+    setState(prev => ({ ...prev, loading: true }));
     checkSubscription();
   }, [user]);
 
