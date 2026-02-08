@@ -669,21 +669,8 @@ Game XP = (Avg Score over all attempts × 0.5) + Time Bonus
     maxAttempts: number | null;
   }>> = {};
 
-  // Check if all games in previous sections are completed
-  const getSectionUnlockStatus = (sectionDisplayOrder: number): boolean => {
-    if (sectionDisplayOrder <= 1) return true; // First section is always unlocked
-    
-    // Check all games in sections with lower display order
-    for (const section of sortedSections) {
-      if (section.displayOrder < sectionDisplayOrder) {
-        const sectionGames = groupedGames[section.code]?.games || [];
-        const allCompleted = sectionGames.every(g => {
-          const progress = gameProgress[g.game_type];
-          return progress?.completed;
-        });
-        if (!allCompleted) return false;
-      }
-    }
+  // All sections are always unlocked – no prerequisite required
+  const getSectionUnlockStatus = (_sectionDisplayOrder: number): boolean => {
     return true;
   };
 
@@ -725,12 +712,9 @@ Game XP = (Avg Score over all attempts × 0.5) + Time Bonus
     });
   });
 
-  // Helper to check if previous section is completed
-  const isPrevSectionCompleted = (sectionIndex: number): boolean => {
-    if (sectionIndex <= 0) return true;
-    const prevSection = sortedSections[sectionIndex - 1];
-    const prevGames = gamesBySection[prevSection.code] || [];
-    return prevGames.every(g => g.isCompleted);
+  // All sections are always unlocked – no prerequisite required
+  const isPrevSectionCompleted = (_sectionIndex: number): boolean => {
+    return true;
   };
 
   // Helper to get section icon based on code
