@@ -959,9 +959,11 @@ export const AdminQuestionReview = () => {
                             <div className="mt-2 space-y-3 max-h-80 overflow-y-auto">
                               {(() => {
                                 try {
-                                  const extracts = JSON.parse(passageGroup.passage_content);
-                                  if (Array.isArray(extracts)) {
-                                    return extracts.map((extract: { label?: string; title?: string; content?: string }, idx: number) => (
+                                  const parsed = JSON.parse(passageGroup.passage_content);
+
+                                  // Linked Extracts format: array of { label, title, content }
+                                  if (Array.isArray(parsed)) {
+                                    return parsed.map((extract: { label?: string; title?: string; content?: string }, idx: number) => (
                                       <div key={idx} className="p-3 bg-muted rounded-lg border border-border/50">
                                         <div className="flex items-center gap-2 mb-2">
                                           {extract.label && (
@@ -979,6 +981,46 @@ export const AdminQuestionReview = () => {
                                       </div>
                                     ));
                                   }
+
+                                  // Gap Fill / Cloze Passage format: { passage, options, answers }
+                                  if (parsed && typeof parsed === 'object' && parsed.passage) {
+                                    return (
+                                      <div className="space-y-4">
+                                        <div className="p-4 bg-muted rounded-lg">
+                                          <p className="text-sm font-medium text-muted-foreground mb-2">Passage:</p>
+                                          <p className="text-sm whitespace-pre-wrap">{parsed.passage}</p>
+                                        </div>
+                                        {parsed.options && Array.isArray(parsed.options) && (
+                                          <div className="p-4 bg-muted rounded-lg">
+                                            <p className="text-sm font-medium text-muted-foreground mb-2">Options:</p>
+                                            <div className="space-y-2">
+                                              {parsed.options.map((opt: { label?: string; text?: string }, idx: number) => (
+                                                <div key={idx} className="flex gap-2 text-sm">
+                                                  <span className="px-2 py-0.5 bg-primary/10 text-primary text-xs font-semibold rounded shrink-0">
+                                                    {opt.label || String.fromCharCode(65 + idx)}
+                                                  </span>
+                                                  <span className="text-muted-foreground">{opt.text}</span>
+                                                </div>
+                                              ))}
+                                            </div>
+                                          </div>
+                                        )}
+                                        {parsed.answers && typeof parsed.answers === 'object' && (
+                                          <div className="p-4 bg-muted rounded-lg">
+                                            <p className="text-sm font-medium text-muted-foreground mb-2">Answer Key:</p>
+                                            <div className="flex flex-wrap gap-2">
+                                              {Object.entries(parsed.answers).map(([gap, label]) => (
+                                                <Badge key={gap} variant="outline" className="text-xs">
+                                                  Gap {gap} → {String(label)}
+                                                </Badge>
+                                              ))}
+                                            </div>
+                                          </div>
+                                        )}
+                                      </div>
+                                    );
+                                  }
+
                                   return <p className="p-4 bg-muted rounded-lg text-sm whitespace-pre-wrap">{passageGroup.passage_content}</p>;
                                 } catch {
                                   return <p className="p-4 bg-muted rounded-lg text-sm whitespace-pre-wrap">{passageGroup.passage_content}</p>;
