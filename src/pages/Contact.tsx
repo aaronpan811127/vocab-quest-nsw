@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { SEOHead } from "@/components/SEOHead";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -106,7 +107,7 @@ const Contact = () => {
                 <div className="p-1.5 sm:p-2 rounded-lg bg-gradient-primary">
                   <Gamepad2 className="h-5 w-5 sm:h-6 sm:w-6 text-primary-foreground" />
                 </div>
-                <h1 className="font-bold text-lg sm:text-2xl">VocabQuest</h1>
+                <span className="font-bold text-lg sm:text-2xl">VocabQuest</span>
               </div>
               <div className="flex items-center gap-2">
                 <Button variant="ghost" size="icon" onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
@@ -143,7 +144,11 @@ const Contact = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Navigation */}
+      <SEOHead
+        title="Contact Us"
+        description="Have questions about VocabQuest? Get in touch with our team for support with NSW Selective, OC and NAPLAN vocabulary preparation."
+        path="/contact"
+      />
       <nav className="fixed top-0 left-0 right-0 z-50 bg-card/80 backdrop-blur-md border-b border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4">
           <div className="flex items-center justify-between">
@@ -151,7 +156,7 @@ const Contact = () => {
               <div className="p-1.5 sm:p-2 rounded-lg bg-gradient-primary">
                 <Gamepad2 className="h-5 w-5 sm:h-6 sm:w-6 text-primary-foreground" />
               </div>
-              <h1 className="font-bold text-lg sm:text-2xl">VocabQuest</h1>
+              <span className="font-bold text-lg sm:text-2xl">VocabQuest</span>
             </div>
             <div className="flex items-center gap-2">
               <Button variant="ghost" size="icon" onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
@@ -173,7 +178,7 @@ const Contact = () => {
             <MessageSquare className="h-4 w-4 mr-2" />
             Get in Touch
           </Badge>
-          <h2 className="text-3xl sm:text-4xl font-bold mb-4">Contact Us</h2>
+          <h1 className="text-3xl sm:text-4xl font-bold mb-4">Contact Us</h1>
           <p className="text-muted-foreground text-lg">Have a question or feedback? We'd love to hear from you.</p>
         </div>
       </section>

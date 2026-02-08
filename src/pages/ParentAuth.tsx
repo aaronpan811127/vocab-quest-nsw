@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { SEOHead } from "@/components/SEOHead";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -141,6 +142,11 @@ const ParentAuth = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-secondary/10 via-background to-background flex items-center justify-center p-4">
+      <SEOHead
+        title="Parent Sign In"
+        description="Sign in or create your VocabQuest parent account to monitor your child's vocabulary progress and manage your subscription."
+        path="/parent-auth"
+      />
       <div className="w-full max-w-md space-y-8">
         {/* Header with Parent Account Badge */}
         <div className="text-center space-y-3">

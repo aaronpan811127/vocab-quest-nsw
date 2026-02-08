@@ -45,7 +45,7 @@ export const Hero = ({ onSelectTestType }: HeroProps) => {
       <div className="absolute inset-0 z-0">
         <img
           src={heroImage}
-          alt=""
+          alt="VocabQuest gamified vocabulary learning for NSW students"
           fetchPriority="high"
           decoding="async"
           className="w-full h-full object-cover object-center"

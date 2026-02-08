@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { SEOHead } from "@/components/SEOHead";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -21,7 +22,41 @@ const Pricing = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Navigation */}
+      <SEOHead
+        title="Pricing"
+        description="Start your VocabQuest journey with a free 7-day trial. Premium plans unlock unlimited vocabulary units and full parent dashboard for NSW test prep."
+        path="/pricing"
+        jsonLd={{
+          "@context": "https://schema.org",
+          "@type": "FAQPage",
+          mainEntity: [
+            {
+              "@type": "Question",
+              name: "What's included in the free trial?",
+              acceptedAnswer: {
+                "@type": "Answer",
+                text: "Students get 7 days of access to the first 2 units and all vocabulary games. Parents can link 1 child and view high-level progress.",
+              },
+            },
+            {
+              "@type": "Question",
+              name: "Can I add multiple children to my account?",
+              acceptedAnswer: {
+                "@type": "Answer",
+                text: "Yes! Premium parent accounts can link up to 3 student accounts, making it perfect for families with more than one child preparing for Selective or OC tests.",
+              },
+            },
+            {
+              "@type": "Question",
+              name: "What happens after the 7-day trial?",
+              acceptedAnswer: {
+                "@type": "Answer",
+                text: "After the trial period, students will need a parent to subscribe to continue accessing all units. All progress is saved, so nothing is lost when upgrading to Premium.",
+              },
+            },
+          ],
+        }}
+      />
       <nav className="fixed top-0 left-0 right-0 z-50 bg-card/80 backdrop-blur-md border-b border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4">
           <div className="flex items-center justify-between">
@@ -29,7 +64,7 @@ const Pricing = () => {
               <div className="p-1.5 sm:p-2 rounded-lg bg-gradient-primary">
                 <Gamepad2 className="h-5 w-5 sm:h-6 sm:w-6 text-primary-foreground" />
               </div>
-              <h1 className="font-bold text-lg sm:text-2xl">VocabQuest</h1>
+              <span className="font-bold text-lg sm:text-2xl">VocabQuest</span>
             </div>
             <div className="flex items-center gap-2">
               <Button variant="ghost" size="icon" onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
@@ -51,7 +86,7 @@ const Pricing = () => {
             <Crown className="h-4 w-4 mr-2" />
             Simple Pricing
           </Badge>
-          <h2 className="text-3xl sm:text-4xl font-bold">Start Learning Today</h2>
+          <h1 className="text-3xl sm:text-4xl font-bold">Start Learning Today</h1>
         </div>
       </section>
 
