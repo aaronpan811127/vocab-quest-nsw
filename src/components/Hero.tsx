@@ -1,10 +1,10 @@
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Gamepad2, Zap, Trophy, Star, LogIn, GraduationCap, BookOpen, Target, Award, Users, HelpCircle, ShieldCheck, GraduationCap as EducatorIcon, FlaskConical } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTestType, TestType } from "@/contexts/TestTypeContext";
 import { useNavigate } from "react-router-dom";
-import catPattern from "@/assets/cat-pattern.png";
 
 interface HeroProps {
   onSelectTestType?: (testType: TestType) => void;
@@ -29,6 +29,12 @@ export const Hero = ({ onSelectTestType }: HeroProps) => {
   const { testTypes, selectedTestType, setSelectedTestType, loading } = useTestType();
   const navigate = useNavigate();
 
+  // Defer decorative cat-pattern (73KB) to avoid blocking LCP
+  const [catPatternUrl, setCatPatternUrl] = useState<string | null>(null);
+  useEffect(() => {
+    import("@/assets/cat-pattern.png").then(mod => setCatPatternUrl(mod.default));
+  }, []);
+
   const handleSelectTestType = (testType: TestType) => {
     if (!user) {
       navigate("/auth");
@@ -47,20 +53,24 @@ export const Hero = ({ onSelectTestType }: HeroProps) => {
           alt="VocabQuest gamified vocabulary learning for NSW students"
           fetchPriority="high"
           decoding="async"
+          width={1539}
+          height={1080}
           className="w-full h-full object-cover object-center"
         />
         <div className="absolute inset-0 bg-background/90 backdrop-blur-sm" />
       </div>
 
-      {/* Cartoon Cat Pattern Overlay */}
-      <div
-        className="absolute inset-0 z-[1] opacity-[0.12] dark:opacity-[0.08] pointer-events-none"
-        style={{
-          backgroundImage: `url(${catPattern})`,
-          backgroundSize: '400px 400px',
-          backgroundRepeat: 'repeat',
-        }}
-      />
+      {/* Cartoon Cat Pattern Overlay - deferred to not block LCP */}
+      {catPatternUrl && (
+        <div
+          className="absolute inset-0 z-[1] opacity-[0.12] dark:opacity-[0.08] pointer-events-none"
+          style={{
+            backgroundImage: `url(${catPatternUrl})`,
+            backgroundSize: '400px 400px',
+            backgroundRepeat: 'repeat',
+          }}
+        />
+      )}
 
       {/* Floating Elements - Hidden on mobile */}
       <div className="absolute inset-0 z-[2] hidden sm:block">
