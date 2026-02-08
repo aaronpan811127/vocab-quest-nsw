@@ -956,7 +956,7 @@ export const AdminQuestionReview = () => {
                             </Button>
                           </CollapsibleTrigger>
                           <CollapsibleContent>
-                            <div className="mt-2 space-y-3 max-h-80 overflow-y-auto">
+                            <div className="mt-2 space-y-3">
                               {(() => {
                                 try {
                                   const parsed = JSON.parse(passageGroup.passage_content);
@@ -996,15 +996,10 @@ export const AdminQuestionReview = () => {
                                           return (
                                             <span
                                               key={i}
-                                              className="inline-flex items-center gap-1 px-2 py-0.5 mx-0.5 bg-primary/15 border border-primary/30 text-primary text-xs font-bold rounded"
+                                              className="inline-flex items-center px-2 py-0.5 mx-0.5 bg-primary/15 border border-primary/30 text-primary text-xs font-bold rounded"
                                               title={answerOption ? `Answer: ${answerLabel} – ${answerOption.text}` : undefined}
                                             >
                                               Gap {gapNum}
-                                              {answerLabel && (
-                                                <span className="text-[10px] font-semibold bg-primary/20 px-1 rounded">
-                                                  {answerLabel}
-                                                </span>
-                                              )}
                                             </span>
                                           );
                                         }
