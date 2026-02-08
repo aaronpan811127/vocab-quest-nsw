@@ -52,7 +52,7 @@ interface WordShooterGameProps {
 }
 
 const WORD_SHOOTER_GAME_ID = "e1f2a3b4-c5d6-7e8f-9a0b-1c2d3e4f5a6b";
-const FLIP_DURATION_MS = 3000;
+const FLIP_DURATION_MS = 5000;
 
 /* ---- Web Audio hit sound ---- */
 const playHitSound = () => {
