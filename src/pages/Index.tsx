@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { SEOHead } from "@/components/SEOHead";
 import { Navigation } from "@/components/Navigation";
 import { MobileNav } from "@/components/MobileNav";
 import { Hero } from "@/components/Hero";
@@ -130,21 +131,53 @@ const Index = () => {
   const showMobileNav = currentView !== "game";
 
   return (
-    <div className="min-h-screen">
-      <Navigation 
-        currentView={currentView} 
-        onViewChange={setCurrentView} 
+    <main className="min-h-screen">
+      <SEOHead
+        path="/"
+        jsonLd={[
+          {
+            "@context": "https://schema.org",
+            "@type": "Organization",
+            name: "VocabQuest",
+            url: "https://vocabquests.com",
+            logo: "https://vocabquests.com/og-image.png",
+            description: "The only platform purpose-built for NSW students to master vocabulary for Selective School, OC and NAPLAN tests.",
+            sameAs: [],
+          },
+          {
+            "@context": "https://schema.org",
+            "@type": "WebSite",
+            name: "VocabQuest",
+            url: "https://vocabquests.com",
+            potentialAction: {
+              "@type": "SearchAction",
+              target: "https://vocabquests.com/?q={search_term_string}",
+              "query-input": "required name=search_term_string",
+            },
+          },
+          {
+            "@context": "https://schema.org",
+            "@type": "EducationalOrganization",
+            name: "VocabQuest",
+            url: "https://vocabquests.com",
+            description: "Gamified vocabulary learning platform for NSW Selective, OC & NAPLAN test preparation.",
+          },
+        ]}
+      />
+      <Navigation
+        currentView={currentView}
+        onViewChange={setCurrentView}
       />
       <div className={`pt-16 sm:pt-20 ${showMobileNav ? 'pb-20 md:pb-0' : ''}`}>
         {renderContent()}
       </div>
       {showMobileNav && (
-        <MobileNav 
-          currentView={currentView} 
-          onViewChange={setCurrentView} 
+        <MobileNav
+          currentView={currentView}
+          onViewChange={setCurrentView}
         />
       )}
-    </div>
+    </main>
   );
 };
 

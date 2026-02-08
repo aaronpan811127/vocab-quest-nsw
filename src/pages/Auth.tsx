@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { SEOHead } from "@/components/SEOHead";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -141,6 +142,11 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen bg-gradient-hero flex items-center justify-center p-4">
+      <SEOHead
+        title="Student Sign In"
+        description="Sign in or create your VocabQuest student account to start mastering vocabulary for NSW Selective, OC and NAPLAN tests."
+        path="/auth"
+      />
       <div className="w-full max-w-md space-y-8">
         {/* Header with Student Account Badge */}
         <div className="text-center space-y-3">

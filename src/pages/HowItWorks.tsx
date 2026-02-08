@@ -1,3 +1,4 @@
+import { SEOHead } from "@/components/SEOHead";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -144,7 +145,11 @@ export default function HowItWorks() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Navigation */}
+      <SEOHead
+        title="How It Works"
+        description="Discover how VocabQuest helps NSW students master vocabulary for Selective, OC and NAPLAN tests through gamified learning, expert-curated content, and spaced repetition."
+        path="/how-it-works"
+      />
       <nav className="fixed top-0 left-0 right-0 z-50 bg-card/80 backdrop-blur-md border-b border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4">
           <div className="flex items-center justify-between">
@@ -152,7 +157,7 @@ export default function HowItWorks() {
               <div className="p-1.5 sm:p-2 rounded-lg bg-gradient-primary">
                 <Gamepad2 className="h-5 w-5 sm:h-6 sm:w-6 text-primary-foreground" />
               </div>
-              <h1 className="font-bold text-lg sm:text-2xl">VocabQuest</h1>
+              <span className="font-bold text-lg sm:text-2xl">VocabQuest</span>
             </div>
             <div className="flex items-center gap-2">
               <Button variant="ghost" size="icon" onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
@@ -175,7 +180,7 @@ export default function HowItWorks() {
               <Star className="h-4 w-4 mr-2" />
               Why VocabQuest
             </Badge>
-            <h2 className="text-3xl sm:text-4xl font-bold mb-4">The Only Platform Purpose-Built for NSW Vocabulary</h2>
+            <h1 className="text-3xl sm:text-4xl font-bold mb-4">The Only Platform Purpose-Built for NSW Vocabulary</h1>
             <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
               No generic word games — every feature is designed specifically to help NSW students master vocabulary for Selective, OC &amp; NAPLAN success.
             </p>

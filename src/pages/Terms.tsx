@@ -1,4 +1,5 @@
 import { useSearchParams } from "react-router-dom";
+import { SEOHead } from "@/components/SEOHead";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -23,7 +24,11 @@ const Terms = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Navigation */}
+      <SEOHead
+        title="Terms & Conditions"
+        description="Read VocabQuest's terms of service, subscription terms, and privacy policy. Learn about our data practices and children's privacy protections."
+        path="/terms"
+      />
       <nav className="fixed top-0 left-0 right-0 z-50 bg-card/80 backdrop-blur-md border-b border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4">
           <div className="flex items-center justify-between">
@@ -31,7 +36,7 @@ const Terms = () => {
               <div className="p-1.5 sm:p-2 rounded-lg bg-gradient-primary">
                 <Gamepad2 className="h-5 w-5 sm:h-6 sm:w-6 text-primary-foreground" />
               </div>
-              <h1 className="font-bold text-lg sm:text-2xl">VocabQuest</h1>
+              <span className="font-bold text-lg sm:text-2xl">VocabQuest</span>
             </div>
             <div className="flex items-center gap-2">
               <Button variant="ghost" size="icon" onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
@@ -53,7 +58,7 @@ const Terms = () => {
             <FileText className="h-4 w-4 mr-2" />
             Legal
           </Badge>
-          <h2 className="text-3xl sm:text-4xl font-bold mb-2">Terms & Conditions</h2>
+          <h1 className="text-3xl sm:text-4xl font-bold mb-2">Terms & Conditions</h1>
           <p className="text-muted-foreground">Last updated: {new Date().toLocaleDateString("en-AU", { year: "numeric", month: "long", day: "numeric" })}</p>
         </div>
       </section>
