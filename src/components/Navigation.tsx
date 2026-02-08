@@ -62,7 +62,7 @@ export const Navigation = ({
             <div className="p-1.5 sm:p-2 rounded-lg bg-gradient-primary">
               <Gamepad2 className="h-5 w-5 sm:h-6 sm:w-6 text-primary-foreground" />
             </div>
-            <h1 className="font-bold text-lg sm:text-2xl">VocabQuest</h1>
+            <h1 className="font-bold text-lg sm:text-2xl">VocabQuests</h1>
             {selectedTestType && currentView === "dashboard" && (
               <Badge variant="outline" className="hidden sm:flex bg-primary/10 text-primary border-primary/30">
                 {selectedTestType.name}
@@ -112,7 +112,7 @@ export const Navigation = ({
                 <SheetHeader>
                   <SheetTitle className="flex items-center gap-2">
                     <Gamepad2 className="h-5 w-5 text-primary" />
-                    VocabQuest
+                    VocabQuests
                   </SheetTitle>
                 </SheetHeader>
                 <div className="flex flex-col gap-2 mt-6">

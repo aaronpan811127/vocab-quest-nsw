@@ -140,7 +140,7 @@ const Index = () => {
           {
             "@context": "https://schema.org",
             "@type": "Organization",
-            name: "VocabQuest",
+            name: "VocabQuests",
             url: "https://vocabquests.com",
             logo: "https://vocabquests.com/og-image.png",
             description: "The only platform purpose-built for NSW students to master vocabulary for Selective School, OC and NAPLAN tests.",
@@ -149,7 +149,7 @@ const Index = () => {
           {
             "@context": "https://schema.org",
             "@type": "WebSite",
-            name: "VocabQuest",
+            name: "VocabQuests",
             url: "https://vocabquests.com",
             potentialAction: {
               "@type": "SearchAction",
@@ -160,7 +160,7 @@ const Index = () => {
           {
             "@context": "https://schema.org",
             "@type": "EducationalOrganization",
-            name: "VocabQuest",
+            name: "VocabQuests",
             url: "https://vocabquests.com",
             description: "Gamified vocabulary learning platform for NSW Selective, OC & NAPLAN test preparation.",
           },

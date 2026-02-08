@@ -7,7 +7,7 @@ export const PrivacyPolicy = () => {
         <section>
           <h3 className="text-lg font-semibold mb-2">1. Introduction</h3>
           <p className="text-muted-foreground leading-relaxed">
-            VocabQuest ("we", "us", or "our") is committed to protecting the privacy of all users, including children. This Privacy Policy explains how we collect, use, disclose, and safeguard your personal information when you use our website and services. By using VocabQuest, you consent to the practices described in this policy.
+            VocabQuests ("we", "us", or "our") is committed to protecting the privacy of all users, including children. This Privacy Policy explains how we collect, use, disclose, and safeguard your personal information when you use our website and services. By using VocabQuests, you consent to the practices described in this policy.
           </p>
         </section>
 
@@ -45,7 +45,7 @@ export const PrivacyPolicy = () => {
         <section>
           <h3 className="text-lg font-semibold mb-2">4. Children's Privacy</h3>
           <p className="text-muted-foreground leading-relaxed">
-            VocabQuest is designed for use by students, including children under the age of 13. We take children's privacy very seriously and comply with applicable child protection laws. We only collect information from children that is necessary to provide our educational services. Parent or guardian consent is required for children to create accounts. Parents can review, modify, or request deletion of their child's personal information at any time by contacting us. We do not use children's personal information for advertising or marketing purposes. We do not sell or share children's data with third parties.
+            VocabQuests is designed for use by students, including children under the age of 13. We take children's privacy very seriously and comply with applicable child protection laws. We only collect information from children that is necessary to provide our educational services. Parent or guardian consent is required for children to create accounts. Parents can review, modify, or request deletion of their child's personal information at any time by contacting us. We do not use children's personal information for advertising or marketing purposes. We do not sell or share children's data with third parties.
           </p>
         </section>
 
@@ -81,7 +81,7 @@ export const PrivacyPolicy = () => {
         <section>
           <h3 className="text-lg font-semibold mb-2">8. Cookies & Tracking</h3>
           <p className="text-muted-foreground leading-relaxed">
-            VocabQuest uses essential cookies required for the platform to function correctly, such as maintaining your login session and storing your theme preferences. We do not use advertising or marketing cookies. We do not use third-party tracking or analytics cookies that follow you across other websites.
+            VocabQuests uses essential cookies required for the platform to function correctly, such as maintaining your login session and storing your theme preferences. We do not use advertising or marketing cookies. We do not use third-party tracking or analytics cookies that follow you across other websites.
           </p>
         </section>
 
@@ -105,14 +105,14 @@ export const PrivacyPolicy = () => {
         <section>
           <h3 className="text-lg font-semibold mb-2">10. International Data Transfers</h3>
           <p className="text-muted-foreground leading-relaxed">
-            Your information may be stored and processed in Australia or other countries where our service providers operate. By using VocabQuest, you consent to the transfer of your information to these locations. We ensure that appropriate safeguards are in place to protect your data in accordance with this Privacy Policy.
+            Your information may be stored and processed in Australia or other countries where our service providers operate. By using VocabQuests, you consent to the transfer of your information to these locations. We ensure that appropriate safeguards are in place to protect your data in accordance with this Privacy Policy.
           </p>
         </section>
 
         <section>
           <h3 className="text-lg font-semibold mb-2">11. Changes to This Policy</h3>
           <p className="text-muted-foreground leading-relaxed">
-            We may update this Privacy Policy from time to time. We will notify you of any material changes by posting the updated policy on our website with a revised "Last updated" date. We encourage you to review this policy periodically. Continued use of VocabQuest after changes constitutes acceptance of the updated policy.
+            We may update this Privacy Policy from time to time. We will notify you of any material changes by posting the updated policy on our website with a revised "Last updated" date. We encourage you to review this policy periodically. Continued use of VocabQuests after changes constitutes acceptance of the updated policy.
           </p>
         </section>
 

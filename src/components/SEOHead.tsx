@@ -9,7 +9,7 @@ interface SEOHeadProps {
   jsonLd?: Record<string, unknown> | Record<string, unknown>[];
 }
 
-const SITE_NAME = "VocabQuest";
+const SITE_NAME = "VocabQuests";
 const BASE_URL = "https://vocabquests.com";
 const DEFAULT_DESCRIPTION =
   "The only platform purpose-built for NSW students to master vocabulary for Selective School, OC and NAPLAN tests. Gamified learning with 10+ game modes.";

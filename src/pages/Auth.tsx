@@ -134,7 +134,7 @@ const Auth = () => {
       }
     } else {
       toast({
-        title: "Welcome to VocabQuest!",
+        title: "Welcome to VocabQuests!",
         description: "Your account has been created successfully.",
       });
     }
@@ -144,7 +144,7 @@ const Auth = () => {
     <div className="min-h-screen bg-gradient-hero flex items-center justify-center p-4">
       <SEOHead
         title="Student Sign In"
-        description="Sign in or create your VocabQuest student account to start mastering vocabulary for NSW Selective, OC and NAPLAN tests."
+        description="Sign in or create your VocabQuests student account to start mastering vocabulary for NSW Selective, OC and NAPLAN tests."
         path="/auth"
       />
       <div className="w-full max-w-md space-y-8">
@@ -152,7 +152,7 @@ const Auth = () => {
         <div className="text-center space-y-3">
           <div className="flex items-center justify-center gap-2">
             <Gamepad2 className="h-10 w-10 text-primary" />
-            <h1 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">VocabQuest</h1>
+            <h1 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">VocabQuests</h1>
           </div>
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border-2 border-primary/30">
             <Gamepad2 className="h-5 w-5 text-primary" />

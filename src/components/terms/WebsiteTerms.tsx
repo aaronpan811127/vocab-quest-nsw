@@ -7,7 +7,7 @@ export const WebsiteTerms = () => {
         <section>
           <h3 className="text-lg font-semibold mb-2">1. Acceptance of Terms</h3>
           <p className="text-muted-foreground leading-relaxed">
-            By accessing and using the VocabQuest website ("Website"), you agree to be bound by these Website Terms and Conditions ("Terms"). If you do not agree to these Terms, please do not use the Website. These Terms apply to all visitors, users, and others who access or use the Website.
+            By accessing and using the VocabQuests website ("Website"), you agree to be bound by these Website Terms and Conditions ("Terms"). If you do not agree to these Terms, please do not use the Website. These Terms apply to all visitors, users, and others who access or use the Website.
           </p>
         </section>
 
@@ -21,7 +21,7 @@ export const WebsiteTerms = () => {
         <section>
           <h3 className="text-lg font-semibold mb-2">3. Intellectual Property</h3>
           <p className="text-muted-foreground leading-relaxed">
-            All content on this Website, including but not limited to text, graphics, logos, icons, images, audio clips, digital downloads, data compilations, and software, is the property of VocabQuest or its content suppliers and is protected by Australian and international copyright laws. The compilation of all content on this Website is the exclusive property of VocabQuest.
+            All content on this Website, including but not limited to text, graphics, logos, icons, images, audio clips, digital downloads, data compilations, and software, is the property of VocabQuests or its content suppliers and is protected by Australian and international copyright laws. The compilation of all content on this Website is the exclusive property of VocabQuests.
           </p>
         </section>
 
@@ -35,7 +35,7 @@ export const WebsiteTerms = () => {
         <section>
           <h3 className="text-lg font-semibold mb-2">5. Children's Privacy</h3>
           <p className="text-muted-foreground leading-relaxed">
-            VocabQuest is designed for use by students, including children under the age of 13. We take children's privacy seriously. Parent or guardian consent is required for students to create and use accounts. Parents and guardians can review, modify, or delete their child's personal information by contacting us. We do not knowingly collect personal information from children without parental consent.
+            VocabQuests is designed for use by students, including children under the age of 13. We take children's privacy seriously. Parent or guardian consent is required for students to create and use accounts. Parents and guardians can review, modify, or delete their child's personal information by contacting us. We do not knowingly collect personal information from children without parental consent.
           </p>
         </section>
 
@@ -49,21 +49,21 @@ export const WebsiteTerms = () => {
         <section>
           <h3 className="text-lg font-semibold mb-2">7. Disclaimer of Warranties</h3>
           <p className="text-muted-foreground leading-relaxed">
-            The Website is provided on an "as is" and "as available" basis. VocabQuest makes no warranties, expressed or implied, and hereby disclaims and negates all other warranties including, without limitation, implied warranties or conditions of merchantability, fitness for a particular purpose, or non-infringement of intellectual property. VocabQuest does not guarantee that the Website will be uninterrupted, timely, secure, or error-free.
+            The Website is provided on an "as is" and "as available" basis. VocabQuests makes no warranties, expressed or implied, and hereby disclaims and negates all other warranties including, without limitation, implied warranties or conditions of merchantability, fitness for a particular purpose, or non-infringement of intellectual property. VocabQuests does not guarantee that the Website will be uninterrupted, timely, secure, or error-free.
           </p>
         </section>
 
         <section>
           <h3 className="text-lg font-semibold mb-2">8. Limitation of Liability</h3>
           <p className="text-muted-foreground leading-relaxed">
-            In no event shall VocabQuest, its directors, employees, partners, agents, suppliers, or affiliates, be liable for any indirect, incidental, special, consequential, or punitive damages, including without limitation, loss of profits, data, use, goodwill, or other intangible losses, resulting from your access to or use of or inability to access or use the Website. To the maximum extent permitted by applicable Australian law, VocabQuest's total liability shall not exceed the amount you have paid to VocabQuest in the past twelve months.
+            In no event shall VocabQuests, its directors, employees, partners, agents, suppliers, or affiliates, be liable for any indirect, incidental, special, consequential, or punitive damages, including without limitation, loss of profits, data, use, goodwill, or other intangible losses, resulting from your access to or use of or inability to access or use the Website. To the maximum extent permitted by applicable Australian law, VocabQuests' total liability shall not exceed the amount you have paid to VocabQuests in the past twelve months.
           </p>
         </section>
 
         <section>
           <h3 className="text-lg font-semibold mb-2">9. Third-Party Links</h3>
           <p className="text-muted-foreground leading-relaxed">
-            The Website may contain links to third-party websites or services that are not owned or controlled by VocabQuest. VocabQuest has no control over, and assumes no responsibility for, the content, privacy policies, or practices of any third-party websites or services. You acknowledge and agree that VocabQuest shall not be responsible or liable for any damage or loss caused by or in connection with the use of any such third-party content, goods, or services.
+            The Website may contain links to third-party websites or services that are not owned or controlled by VocabQuests. VocabQuests has no control over, and assumes no responsibility for, the content, privacy policies, or practices of any third-party websites or services. You acknowledge and agree that VocabQuests shall not be responsible or liable for any damage or loss caused by or in connection with the use of any such third-party content, goods, or services.
           </p>
         </section>
 
