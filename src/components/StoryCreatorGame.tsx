@@ -510,6 +510,24 @@ export const StoryCreatorGame = ({ unitId, unitTitle, unitWords, onComplete, onB
                 </div>
               </div>
 
+              {/* Good & Bad example */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                <div className="p-3 rounded-lg bg-success/10 border border-success/30">
+                  <div className="flex items-center gap-1.5 mb-1 text-success font-semibold">
+                    <Check className="h-4 w-4" />
+                    Good example
+                  </div>
+                  <p className="text-muted-foreground italic">"The beauty of the cherry blossoms is <span className="font-semibold text-foreground">ephemeral</span>."</p>
+                </div>
+                <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/30">
+                  <div className="flex items-center gap-1.5 mb-1 text-destructive font-semibold">
+                    <X className="h-4 w-4" />
+                    Bad example
+                  </div>
+                  <p className="text-muted-foreground italic">"This is <span className="font-semibold text-foreground">ephemeral</span>."</p>
+                </div>
+              </div>
+
               <div className="space-y-2">
                 <Textarea
                   placeholder={`Write a creative sentence using "${currentWord}"...`}
