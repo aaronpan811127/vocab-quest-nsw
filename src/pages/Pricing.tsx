@@ -24,7 +24,7 @@ const Pricing = () => {
     <div className="min-h-screen bg-background">
       <SEOHead
         title="Pricing"
-        description="Start your VocabQuests journey with a free 7-day trial. Premium plans unlock unlimited vocabulary units and full parent dashboard for NSW test prep."
+        description="Start your free 7-day trial of VocabQuests. Premium plans unlock unlimited vocabulary units and full parent dashboard for Year 4-6 NSW Selective School, OC and NAPLAN test prep."
         path="/pricing"
         jsonLd={{
           "@context": "https://schema.org",

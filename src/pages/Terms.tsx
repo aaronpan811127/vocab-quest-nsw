@@ -26,7 +26,7 @@ const Terms = () => {
     <div className="min-h-screen bg-background">
       <SEOHead
         title="Terms & Conditions"
-        description="Read VocabQuests' terms of service, subscription terms, and privacy policy. Learn about our data practices and children's privacy protections."
+        description="Read VocabQuests' terms of service, subscription terms, and privacy policy for our Year 4-6 NSW vocabulary learning platform. Children's privacy protections included."
         path="/terms"
       />
       <nav className="fixed top-0 left-0 right-0 z-50 bg-card/80 backdrop-blur-md border-b border-border">

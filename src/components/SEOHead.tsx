@@ -12,7 +12,7 @@ interface SEOHeadProps {
 const SITE_NAME = "VocabQuests";
 const BASE_URL = "https://vocabquests.com";
 const DEFAULT_DESCRIPTION =
-  "The only platform purpose-built for NSW students to master vocabulary for Selective School, OC and NAPLAN tests. Gamified learning with 10+ game modes.";
+  "The only platform purpose-built for Year 4-6 NSW students to master vocabulary for Selective School, OC and NAPLAN placement tests. 10+ gamified vocabulary games with spaced repetition.";
 
 export const SEOHead = ({
   title,
