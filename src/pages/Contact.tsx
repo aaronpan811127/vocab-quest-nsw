@@ -146,7 +146,7 @@ const Contact = () => {
     <div className="min-h-screen bg-background">
       <SEOHead
         title="Contact Us"
-        description="Have questions about VocabQuests? Contact our team for help with NSW Selective School, OC and NAPLAN vocabulary prep for Year 4-6 students."
+        description="Have questions about VocabQuests? Contact our team for help with NSW Selective reading, OC reading, Selective writing, OC writing and NAPLAN vocabulary prep for Year 4-6 students."
         path="/contact"
         jsonLd={{
           "@context": "https://schema.org",
