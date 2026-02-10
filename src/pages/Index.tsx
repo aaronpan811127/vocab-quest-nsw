@@ -135,7 +135,7 @@ const Index = () => {
   return (
     <main className="min-h-screen">
       <SEOHead
-        description="The only platform purpose-built for Year 4-6 NSW students to master vocabulary for Selective School, OC and NAPLAN placement tests. 10+ gamified vocabulary games with spaced repetition."
+        description="The only platform purpose-built for Year 4-6 NSW students to master vocabulary for NSW Selective reading, OC reading, Selective writing, OC writing and NAPLAN placement tests. 10+ gamified vocabulary games with spaced repetition."
         path="/"
         jsonLd={[
           {

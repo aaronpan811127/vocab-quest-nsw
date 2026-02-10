@@ -147,7 +147,7 @@ export default function HowItWorks() {
     <div className="min-h-screen bg-background">
       <SEOHead
         title="How It Works"
-        description="See how VocabQuests helps Year 4-6 NSW students master vocabulary for Selective School, OC and NAPLAN placement tests with 10+ vocabulary games, spaced repetition, and expert-curated word lists."
+        description="See how VocabQuests helps Year 4-6 NSW students master vocabulary for NSW Selective reading, OC reading, Selective writing, OC writing and NAPLAN placement tests with 10+ vocabulary games and spaced repetition."
         path="/how-it-works"
         jsonLd={{
           "@context": "https://schema.org",
