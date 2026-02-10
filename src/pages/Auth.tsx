@@ -146,6 +146,7 @@ const Auth = () => {
         title="Student Sign In"
         description="Sign in or create your VocabQuests student account to start mastering vocabulary for NSW Selective, OC and NAPLAN tests."
         path="/auth"
+        noIndex
       />
       <div className="w-full max-w-md space-y-8">
         {/* Header with Student Account Badge */}

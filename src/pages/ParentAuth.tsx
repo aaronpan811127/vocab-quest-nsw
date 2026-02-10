@@ -146,6 +146,7 @@ const ParentAuth = () => {
         title="Parent Sign In"
         description="Sign in or create your VocabQuests parent account to monitor your child's vocabulary progress and manage your subscription."
         path="/parent-auth"
+        noIndex
       />
       <div className="w-full max-w-md space-y-8">
         {/* Header with Parent Account Badge */}

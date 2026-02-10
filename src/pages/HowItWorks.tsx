@@ -147,8 +147,38 @@ export default function HowItWorks() {
     <div className="min-h-screen bg-background">
       <SEOHead
         title="How It Works"
-        description="Discover how VocabQuests helps NSW students master vocabulary for Selective, OC and NAPLAN tests through gamified learning, expert-curated content, and spaced repetition."
+        description="See how VocabQuests helps Year 4-6 NSW students master vocabulary for Selective School, OC and NAPLAN placement tests with 10+ vocabulary games, spaced repetition, and expert-curated word lists."
         path="/how-it-works"
+        jsonLd={{
+          "@context": "https://schema.org",
+          "@type": "FAQPage",
+          mainEntity: [
+            {
+              "@type": "Question",
+              name: "How does VocabQuests help with NSW Selective School test preparation?",
+              acceptedAnswer: {
+                "@type": "Answer",
+                text: "VocabQuests uses 10+ gamified vocabulary games, spaced repetition, and expert-curated word lists specifically designed for Year 4-6 students preparing for NSW Selective School, OC, and NAPLAN placement tests.",
+              },
+            },
+            {
+              "@type": "Question",
+              name: "What vocabulary games are available for students?",
+              acceptedAnswer: {
+                "@type": "Answer",
+                text: "Students can play flashcards, matching games, listening challenges, cloze passages, reading comprehension, context mastery, odd one out, word intuition, and more — all designed to build deep vocabulary knowledge.",
+              },
+            },
+            {
+              "@type": "Question",
+              name: "How can parents track their child's vocabulary progress?",
+              acceptedAnswer: {
+                "@type": "Answer",
+                text: "Parents get a dedicated dashboard showing detailed progress reports, game scores, study streaks, and areas for improvement across all vocabulary units their children are working on.",
+              },
+            },
+          ],
+        }}
       />
       <nav className="fixed top-0 left-0 right-0 z-50 bg-card/80 backdrop-blur-md border-b border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4">
