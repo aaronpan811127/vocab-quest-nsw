@@ -14,6 +14,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCelebration } from "@/hooks/useCelebration";
+import { useGameTimer } from "@/hooks/useGameTimer";
+import { GameTimer } from "@/components/GameTimer";
 import { GameResultActions } from "@/components/GameResultActions";
 
 interface LingoGameProps {
@@ -34,6 +36,7 @@ interface LetterCell {
 
 const MAX_GUESSES = 6;
 const WORDS_PER_ROUND = 5;
+const SECONDS_PER_WORD = 60;
 
 const KEYBOARD_ROWS = [
   ["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"],
@@ -67,11 +70,38 @@ export const LingoGame = ({
   const [shakeRow, setShakeRow] = useState(false);
   const [revealRow, setRevealRow] = useState<number | null>(null);
 
+  const targetWord = targetWords[currentWordIndex] || "";
+  const wordLength = targetWord.length;
+
   const { user } = useAuth();
   const { toast } = useToast();
   const { celebrate } = useCelebration();
   const hasCelebrated = useRef(false);
 
+  const handleTimeUp = useCallback(() => {
+    if (!showCompletion) {
+      const remaining = targetWords.slice(results.length + (wordSolved || wordFailed ? 1 : 0));
+      const failedRemaining = remaining.map(w => ({ word: w, solved: false, attempts: 0 }));
+      if (!wordSolved && !wordFailed && targetWord) {
+        failedRemaining.unshift({ word: targetWord, solved: false, attempts: currentRow + 1 });
+      }
+      setResults(prev => [...prev, ...failedRemaining]);
+      finishGame();
+    }
+  }, [showCompletion, targetWords, results, wordSolved, wordFailed, targetWord, currentRow]);
+
+  const {
+    formattedTime,
+    percentage,
+    timerColor,
+    progressColor,
+    isExpired,
+  } = useGameTimer({
+    totalQuestions: WORDS_PER_ROUND,
+    secondsPerQuestion: SECONDS_PER_WORD,
+    onTimeUp: handleTimeUp,
+    isActive: !loading && !showCompletion && targetWords.length > 0,
+  });
   // Resolve game ID
   useEffect(() => {
     const resolve = async () => {
@@ -140,8 +170,6 @@ export const LingoGame = ({
     setRevealRow(null);
   }, [currentWordIndex, targetWords]);
 
-  const targetWord = targetWords[currentWordIndex] || "";
-  const wordLength = targetWord.length;
 
   const evaluateGuess = useCallback(
     (guess: string): LetterCell[] => {
@@ -217,7 +245,7 @@ export const LingoGame = ({
 
   const handleKeyPress = useCallback(
     (key: string) => {
-      if (wordSolved || wordFailed || showCompletion) return;
+      if (wordSolved || wordFailed || showCompletion || isExpired) return;
 
       if (key === "ENTER") {
         if (currentGuess.length === wordLength) {
@@ -487,6 +515,15 @@ export const LingoGame = ({
           {currentWordIndex + 1}/{targetWords.length}
         </Badge>
       </div>
+
+      {/* Timer */}
+      <GameTimer
+        formattedTime={formattedTime}
+        percentage={percentage}
+        timerColor={timerColor}
+        progressColor={progressColor}
+        isExpired={isExpired}
+      />
 
       {/* Word length hint */}
       <div className="text-center">
