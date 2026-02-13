@@ -37,6 +37,7 @@ interface LetterCell {
 const MAX_GUESSES = 6;
 const WORDS_PER_ROUND = 5;
 const SECONDS_PER_WORD = 60;
+const TIME_BONUS_MAX = 20; // Max bonus XP per word for fast solves
 
 const KEYBOARD_ROWS = [
   ["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"],
@@ -63,7 +64,8 @@ export const LingoGame = ({
   const [wordFailed, setWordFailed] = useState(false);
   const [usedLetters, setUsedLetters] = useState<Record<string, LetterStatus>>({});
   const [showCompletion, setShowCompletion] = useState(false);
-  const [results, setResults] = useState<{ word: string; solved: boolean; attempts: number }[]>([]);
+  const [results, setResults] = useState<{ word: string; solved: boolean; attempts: number; timeBonus: number }[]>([]);
+  const [wordStartTime, setWordStartTime] = useState(Date.now());
   const [saving, setSaving] = useState(false);
   const [startTime] = useState(Date.now());
   const [earnedXp, setEarnedXp] = useState(0);
@@ -78,12 +80,19 @@ export const LingoGame = ({
   const { celebrate } = useCelebration();
   const hasCelebrated = useRef(false);
 
+  const calculateTimeBonus = useCallback((solveTimeMs: number): number => {
+    const solveTimeSec = solveTimeMs / 1000;
+    if (solveTimeSec >= SECONDS_PER_WORD) return 0;
+    // Linear bonus: faster solve = more bonus, max TIME_BONUS_MAX XP
+    return Math.round((1 - solveTimeSec / SECONDS_PER_WORD) * TIME_BONUS_MAX);
+  }, []);
+
   const handleTimeUp = useCallback(() => {
     if (!showCompletion) {
       const remaining = targetWords.slice(results.length + (wordSolved || wordFailed ? 1 : 0));
-      const failedRemaining = remaining.map(w => ({ word: w, solved: false, attempts: 0 }));
+      const failedRemaining = remaining.map(w => ({ word: w, solved: false, attempts: 0, timeBonus: 0 }));
       if (!wordSolved && !wordFailed && targetWord) {
-        failedRemaining.unshift({ word: targetWord, solved: false, attempts: currentRow + 1 });
+        failedRemaining.unshift({ word: targetWord, solved: false, attempts: currentRow + 1, timeBonus: 0 });
       }
       setResults(prev => [...prev, ...failedRemaining]);
       finishGame();
@@ -168,6 +177,7 @@ export const LingoGame = ({
     setWordFailed(false);
     setUsedLetters({ [firstLetter]: "correct" });
     setRevealRow(null);
+    setWordStartTime(Date.now());
   }, [currentWordIndex, targetWords]);
 
 
@@ -232,11 +242,12 @@ export const LingoGame = ({
 
     const solved = currentGuess === targetWord;
     if (solved) {
+      const bonus = calculateTimeBonus(Date.now() - wordStartTime);
       setWordSolved(true);
-      setResults((prev) => [...prev, { word: targetWord, solved: true, attempts: currentRow + 1 }]);
+      setResults((prev) => [...prev, { word: targetWord, solved: true, attempts: currentRow + 1, timeBonus: bonus }]);
     } else if (currentRow >= MAX_GUESSES - 1) {
       setWordFailed(true);
-      setResults((prev) => [...prev, { word: targetWord, solved: false, attempts: MAX_GUESSES }]);
+      setResults((prev) => [...prev, { word: targetWord, solved: false, attempts: MAX_GUESSES, timeBonus: 0 }]);
     } else {
       setCurrentRow(currentRow + 1);
       setCurrentGuess("");
@@ -290,7 +301,7 @@ export const LingoGame = ({
   };
 
   const handleSkipWord = () => {
-    setResults((prev) => [...prev, { word: targetWord, solved: false, attempts: 0 }]);
+    setResults((prev) => [...prev, { word: targetWord, solved: false, attempts: 0, timeBonus: 0 }]);
     handleNextWord();
   };
 
@@ -308,7 +319,9 @@ export const LingoGame = ({
     const solvedCount = results.filter((r) => r.solved).length +
       (wordSolved && !results.find((r) => r.word === targetWord) ? 1 : 0);
     const totalWords = targetWords.length;
-    const score = Math.round((solvedCount / totalWords) * 100);
+    const totalTimeBonus = results.reduce((sum, r) => sum + r.timeBonus, 0);
+    const baseScore = Math.round((solvedCount / totalWords) * 100);
+    const score = Math.min(100, baseScore + totalTimeBonus);
     const isPerfect = solvedCount === totalWords;
 
     try {
@@ -448,7 +461,9 @@ export const LingoGame = ({
 
   if (showCompletion) {
     const solvedCount = results.filter((r) => r.solved).length;
-    const score = Math.round((solvedCount / targetWords.length) * 100);
+    const totalTimeBonus = results.reduce((sum, r) => sum + r.timeBonus, 0);
+    const baseScore = Math.round((solvedCount / targetWords.length) * 100);
+    const score = Math.min(100, baseScore + totalTimeBonus);
 
     return (
       <div className="max-w-lg mx-auto px-4 py-8 space-y-6">
@@ -457,16 +472,20 @@ export const LingoGame = ({
           <h2 className="text-2xl font-bold">Lingo Complete!</h2>
           <p className="text-muted-foreground">{unitTitle}</p>
 
-          <div className="grid grid-cols-2 gap-4 py-4">
+          <div className="grid grid-cols-3 gap-4 py-4">
             <div className="text-center">
               <p className="text-3xl font-bold text-primary">{score}%</p>
               <p className="text-xs text-muted-foreground">Score</p>
             </div>
             <div className="text-center">
-              <p className="text-3xl font-bold text-green-600">
+              <p className="text-3xl font-bold text-success">
                 {solvedCount}/{targetWords.length}
               </p>
               <p className="text-xs text-muted-foreground">Words Solved</p>
+            </div>
+            <div className="text-center">
+              <p className="text-3xl font-bold text-warning">+{totalTimeBonus}</p>
+              <p className="text-xs text-muted-foreground">Time Bonus</p>
             </div>
           </div>
 
@@ -475,13 +494,20 @@ export const LingoGame = ({
               <div
                 key={i}
                 className={`flex items-center justify-between p-2 rounded-lg border ${
-                  r.solved ? "border-green-500/30 bg-green-500/5" : "border-destructive/30 bg-destructive/5"
+                  r.solved ? "border-success/30 bg-success/5" : "border-destructive/30 bg-destructive/5"
                 }`}
               >
                 <span className="font-medium">{r.word}</span>
-                <Badge variant={r.solved ? "default" : "destructive"}>
-                  {r.solved ? `${r.attempts} guess${r.attempts > 1 ? "es" : ""}` : "Not solved"}
-                </Badge>
+                <div className="flex items-center gap-2">
+                  {r.solved && r.timeBonus > 0 && (
+                    <Badge variant="outline" className="text-warning border-warning/30">
+                      +{r.timeBonus} ⚡
+                    </Badge>
+                  )}
+                  <Badge variant={r.solved ? "default" : "destructive"}>
+                    {r.solved ? `${r.attempts} guess${r.attempts > 1 ? "es" : ""}` : "Not solved"}
+                  </Badge>
+                </div>
               </div>
             ))}
           </div>
