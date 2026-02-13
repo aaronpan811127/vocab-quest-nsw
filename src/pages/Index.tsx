@@ -20,6 +20,7 @@ const ClozeChallengeGame = lazy(() => import("@/components/ClozeChallengeGame").
 const ClozePassageGame = lazy(() => import("@/components/ClozePassageGame").then(m => ({ default: m.ClozePassageGame })));
 const GapFillPassageGame = lazy(() => import("@/components/GapFillPassageGame").then(m => ({ default: m.GapFillPassageGame })));
 const WordShooterGame = lazy(() => import("@/components/WordShooterGame").then(m => ({ default: m.WordShooterGame })));
+const LingoGame = lazy(() => import("@/components/LingoGame").then(m => ({ default: m.LingoGame })));
 import { useProfile } from "@/hooks/useProfile";
 import { useExpiredSessionCheck } from "@/hooks/useExpiredSessionCheck";
 import { TestType } from "@/contexts/TestTypeContext";
@@ -111,6 +112,8 @@ const Index = () => {
         return <GapFillPassageGame {...commonProps} />;
       case "word_shooter":
         return <WordShooterGame {...commonProps} />;
+      case "lingo":
+        return <LingoGame {...commonProps} />;
       default:
         return <ReadingGame {...commonProps} />;
     }
