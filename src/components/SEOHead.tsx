@@ -12,7 +12,7 @@ interface SEOHeadProps {
 const SITE_NAME = "VocabQuests";
 const BASE_URL = "https://vocabquests.com";
 const DEFAULT_DESCRIPTION =
-  "The only platform purpose-built for Year 4-6 NSW students to master vocabulary for Selective School reading, OC reading, Selective writing and OC writing placement tests. 10+ gamified vocabulary games with spaced repetition.";
+  "The only platform purpose-built for Australian students to master vocabulary for NSW Selective School, NSW OC and NAPLAN placement tests. 10+ gamified vocabulary games with spaced repetition.";
 
 export const SEOHead = ({
   title,
@@ -22,7 +22,7 @@ export const SEOHead = ({
   noIndex = false,
   jsonLd,
 }: SEOHeadProps) => {
-  const fullTitle = title ? `${title} | ${SITE_NAME}` : `${SITE_NAME} - NSW Selective, OC & NAPLAN Vocabulary Prep`;
+  const fullTitle = title ? `${title} | ${SITE_NAME}` : `${SITE_NAME} - Australian Vocabulary Prep for NSW Selective, NSW OC & NAPLAN`;
   const canonicalUrl = `${BASE_URL}${path}`;
 
   const jsonLdArray = jsonLd

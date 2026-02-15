@@ -50,7 +50,7 @@ export const Hero = ({ onSelectTestType }: HeroProps) => {
       <div className="absolute inset-0 z-0">
         <img
           src="/images/hero-gaming.jpg"
-          alt="VocabQuests gamified vocabulary learning for NSW students"
+          alt="VocabQuests gamified vocabulary learning for Australian students"
           fetchPriority="high"
           decoding="async"
           width={1539}
@@ -108,7 +108,7 @@ export const Hero = ({ onSelectTestType }: HeroProps) => {
             Level Up Your <span className="bg-gradient-primary bg-clip-text text-transparent">Vocabulary</span>
           </h1>
            <p className="text-base sm:text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto leading-relaxed px-2">
-             The only platform purpose-built for NSW students to master vocabulary, strengthen reading skills, and excel in Selective, OC &amp; NAPLAN tests.
+             The only platform purpose-built for Australian students to master vocabulary, strengthen reading skills, and excel in NSW Selective, NSW OC &amp; NAPLAN tests.
            </p>
          </div>
 
@@ -141,8 +141,8 @@ export const Hero = ({ onSelectTestType }: HeroProps) => {
               <Target className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <div className="font-semibold text-xs sm:text-sm">NSW-Focused</div>
-              <div className="text-[10px] sm:text-xs text-muted-foreground">Only platform dedicated to NSW vocab test prep</div>
+               <div className="font-semibold text-xs sm:text-sm">Australia-Wide</div>
+               <div className="text-[10px] sm:text-xs text-muted-foreground">NSW Selective, NSW OC &amp; national NAPLAN prep</div>
             </div>
           </div>
           <div className="flex items-center gap-3 p-3 sm:p-4 rounded-xl bg-card/40 backdrop-blur-sm border border-border/50 text-left">
