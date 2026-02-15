@@ -50,7 +50,7 @@ export const Hero = ({ onSelectTestType }: HeroProps) => {
       <div className="absolute inset-0 z-0">
         <img
           src="/images/hero-gaming.jpg"
-          alt="VocabQuests gamified vocabulary learning for Australian students"
+          alt="VocabQuests gamified reading comprehension for Australian students"
           fetchPriority="high"
           decoding="async"
           width={1539}
@@ -104,11 +104,11 @@ export const Hero = ({ onSelectTestType }: HeroProps) => {
 
         {/* Headline */}
         <div className="space-y-3 sm:space-y-4">
-          <h1 className="text-3xl sm:text-5xl md:text-7xl font-bold tracking-tight">
-            Level Up Your <span className="bg-gradient-primary bg-clip-text text-transparent">Vocabulary</span>
+           <h1 className="text-3xl sm:text-5xl md:text-7xl font-bold tracking-tight">
+            Stronger <span className="bg-gradient-primary bg-clip-text text-transparent">Reading</span>, Better Results
           </h1>
            <p className="text-base sm:text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto leading-relaxed px-2">
-             The only platform purpose-built for Australian students to master vocabulary, strengthen reading skills, and excel in NSW Selective, NSW OC &amp; NAPLAN tests.
+             Build reading comprehension and achieve better NAPLAN, NSW OC &amp; NSW Selective results through gamified learning designed for Australian students.
            </p>
          </div>
 
@@ -119,8 +119,8 @@ export const Hero = ({ onSelectTestType }: HeroProps) => {
                <Swords className="h-5 w-5 text-warning" />
              </div>
              <div>
-               <div className="font-semibold text-xs sm:text-sm">Epic Gaming Adventures</div>
-               <div className="text-[10px] sm:text-xs text-muted-foreground">Master words through fun, engaging game modes</div>
+                <div className="font-semibold text-xs sm:text-sm">Epic Gaming Adventures</div>
+                <div className="text-[10px] sm:text-xs text-muted-foreground">Boost reading skills through fun, engaging game modes</div>
              </div>
            </div>
            <div className="flex items-center gap-3 p-3 sm:p-4 rounded-xl bg-card/40 backdrop-blur-sm border border-border/50 text-left">
@@ -128,8 +128,8 @@ export const Hero = ({ onSelectTestType }: HeroProps) => {
                <Clock className="h-5 w-5 text-primary" />
              </div>
              <div>
-               <div className="font-semibold text-xs sm:text-sm">20-Min Daily Challenges</div>
-               <div className="text-[10px] sm:text-xs text-muted-foreground">Build vocabulary with real results, every day</div>
+                <div className="font-semibold text-xs sm:text-sm">20-Min Daily Challenges</div>
+                <div className="text-[10px] sm:text-xs text-muted-foreground">Build comprehension with real results, every day</div>
              </div>
            </div>
          </div>
@@ -142,7 +142,7 @@ export const Hero = ({ onSelectTestType }: HeroProps) => {
             </div>
             <div>
                <div className="font-semibold text-xs sm:text-sm">Australia-Wide</div>
-               <div className="text-[10px] sm:text-xs text-muted-foreground">NSW Selective, NSW OC &amp; national NAPLAN prep</div>
+               <div className="text-[10px] sm:text-xs text-muted-foreground">NAPLAN, NSW Selective &amp; NSW OC test prep</div>
             </div>
           </div>
           <div className="flex items-center gap-3 p-3 sm:p-4 rounded-xl bg-card/40 backdrop-blur-sm border border-border/50 text-left">

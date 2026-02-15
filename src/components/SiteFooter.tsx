@@ -31,7 +31,7 @@ export const SiteFooter = () => {
           </div>
         </div>
         <p className="text-sm text-muted-foreground text-center sm:text-left">
-          © {new Date().getFullYear()} VocabQuests. Making vocabulary learning fun.
+          © {new Date().getFullYear()} VocabQuests. Stronger reading, better results.
         </p>
       </div>
     </footer>

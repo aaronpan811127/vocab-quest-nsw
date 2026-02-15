@@ -144,7 +144,7 @@ const ParentAuth = () => {
     <div className="min-h-screen bg-gradient-to-b from-secondary/10 via-background to-background flex items-center justify-center p-4">
       <SEOHead
         title="Parent Sign In"
-        description="Sign in or create your VocabQuests parent account to monitor your child's vocabulary progress and manage your subscription."
+        description="Sign in or create your VocabQuests parent account to monitor your child's reading progress and manage your subscription."
         path="/parent-auth"
         noIndex
       />
@@ -358,7 +358,7 @@ const ParentAuth = () => {
           </div>
           
           <p className="text-xs text-muted-foreground">
-            Supporting your child's vocabulary journey! 📚
+            Supporting your child's reading journey! 📚
           </p>
         </div>
       </div>
