@@ -45,7 +45,7 @@ export const Hero = ({ onSelectTestType }: HeroProps) => {
   };
 
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
+    <section className="relative min-h-[auto] py-20 sm:py-24 flex items-center justify-center overflow-hidden">
       {/* Background Image */}
       <div className="absolute inset-0 z-0">
         <img
@@ -95,7 +95,7 @@ export const Hero = ({ onSelectTestType }: HeroProps) => {
       </div>
 
       {/* Main Content */}
-      <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 text-center space-y-6 sm:space-y-8 animate-slide-up">
+      <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 text-center space-y-5 sm:space-y-6 animate-slide-up">
         {/* Badge */}
         <Badge className="bg-gradient-primary text-primary-foreground px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium">
           <Gamepad2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
