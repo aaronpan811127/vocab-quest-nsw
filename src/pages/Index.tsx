@@ -138,7 +138,7 @@ const Index = () => {
   return (
     <main className="min-h-screen">
       <SEOHead
-        description="The only platform purpose-built for Year 4-6 NSW students to master vocabulary for NSW Selective reading, OC reading, Selective writing, OC writing and NAPLAN placement tests. 10+ gamified vocabulary games with spaced repetition."
+        description="Stronger reading comprehension and better NAPLAN, NSW OC & NSW Selective results. 10+ gamified learning games with spaced repetition for Australian students."
         path="/"
         jsonLd={[
           {
@@ -147,7 +147,7 @@ const Index = () => {
             name: "VocabQuests",
             url: "https://vocabquests.com",
             logo: "https://vocabquests.com/og-image.png",
-            description: "The only platform purpose-built for NSW students to master vocabulary for Selective School, OC and NAPLAN tests.",
+            description: "Gamified reading comprehension and test prep platform for Australian students preparing for NAPLAN, NSW OC & NSW Selective.",
             sameAs: [],
           },
           {
@@ -166,7 +166,7 @@ const Index = () => {
             "@type": "EducationalOrganization",
             name: "VocabQuests",
             url: "https://vocabquests.com",
-            description: "Gamified vocabulary learning platform for NSW Selective, OC & NAPLAN test preparation.",
+            description: "Gamified reading comprehension and test prep for NAPLAN, NSW OC & NSW Selective across Australia.",
           },
         ]}
       />

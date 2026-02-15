@@ -24,7 +24,7 @@ const Pricing = () => {
     <div className="min-h-screen bg-background">
       <SEOHead
         title="Pricing"
-        description="Start your free 7-day trial of VocabQuests. Unlimited vocabulary units for Year 4-6 NSW Selective reading, OC reading, Selective writing, OC writing and NAPLAN test prep."
+        description="Start your free 7-day trial of VocabQuests. Strengthen reading comprehension and achieve better NAPLAN, NSW OC & NSW Selective results with gamified learning."
         path="/pricing"
         jsonLd={{
           "@context": "https://schema.org",
@@ -35,7 +35,7 @@ const Pricing = () => {
               name: "What's included in the free trial?",
               acceptedAnswer: {
                 "@type": "Answer",
-                text: "Students get 7 days of access to the first 2 units and all vocabulary games. Parents can link 1 child and view high-level progress.",
+                text: "Students get 7 days of access to the first 2 units and all learning games. Parents can link 1 child and view high-level progress.",
               },
             },
             {
@@ -43,7 +43,7 @@ const Pricing = () => {
               name: "Can I add multiple children to my account?",
               acceptedAnswer: {
                 "@type": "Answer",
-                text: "Yes! Premium parent accounts can link up to 3 student accounts, making it perfect for families with more than one child preparing for Selective or OC tests.",
+                text: "Yes! Premium parent accounts can link up to 3 student accounts, making it perfect for families with more than one child preparing for NSW Selective or NSW OC tests.",
               },
             },
             {
@@ -282,7 +282,7 @@ const Pricing = () => {
               </div>
               <h3 className="font-semibold mb-2">Learn & Play</h3>
               <p className="text-sm text-muted-foreground">
-                Explore vocabulary games, track progress, and compete on leaderboards
+                Explore learning games, track progress, and compete on leaderboards
               </p>
             </div>
             <div className="text-center p-6">
@@ -307,9 +307,9 @@ const Pricing = () => {
               <CardTitle className="text-base">What's included in the free trial?</CardTitle>
             </CardHeader>
             <CardContent className="pt-0 pb-4">
-              <p className="text-sm text-muted-foreground">
-                Students get 7 days of access to the first 2 units and all vocabulary games. 
-                Parents can link 1 child and view high-level progress. Perfect for trying before subscribing!
+               <p className="text-sm text-muted-foreground">
+                 Students get 7 days of access to the first 2 units and all learning games. 
+                 Parents can link 1 child and view high-level progress. Perfect for trying before subscribing!
               </p>
             </CardContent>
           </Card>
@@ -318,9 +318,9 @@ const Pricing = () => {
               <CardTitle className="text-base">Can I add multiple children to my account?</CardTitle>
             </CardHeader>
             <CardContent className="pt-0 pb-4">
-              <p className="text-sm text-muted-foreground">
-                Yes! Premium parent accounts can link up to 3 student accounts, making it perfect for families 
-                with more than one child preparing for Selective or OC tests.
+               <p className="text-sm text-muted-foreground">
+                 Yes! Premium parent accounts can link up to 3 student accounts, making it perfect for families 
+                 with more than one child preparing for NSW Selective or NSW OC tests.
               </p>
             </CardContent>
           </Card>
@@ -354,8 +354,8 @@ const Pricing = () => {
         <div className="max-w-2xl mx-auto text-center">
           <Trophy className="h-12 w-12 text-primary mx-auto mb-4" />
           <h2 className="text-2xl font-bold mb-4">Ready to Start?</h2>
-          <p className="text-muted-foreground mb-6">
-            Join thousands of NSW students preparing for their Selective and OC tests
+           <p className="text-muted-foreground mb-6">
+             Join thousands of Australian students preparing for NAPLAN, NSW Selective &amp; NSW OC tests
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button size="lg" onClick={() => navigate("/auth")}>

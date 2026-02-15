@@ -34,28 +34,28 @@ const studentSteps = [
   {
     number: "01",
     title: "Choose Your Quest",
-    description: "Pick your adventure - Selective, OC, or NAPLAN. Your personalized learning journey awaits!",
+    description: "Pick your adventure - NSW Selective, NSW OC, or NAPLAN. Your personalized learning journey awaits!",
     icon: Target,
     color: "from-primary to-primary/80",
   },
   {
     number: "02", 
     title: "Pick Your Unit",
-    description: "Each unit is packed with exciting words to master. Start fresh or jump to your level!",
+    description: "Each unit builds reading comprehension with targeted exercises. Start fresh or jump to your level!",
     icon: BookOpen,
     color: "from-secondary to-secondary/80",
   },
   {
     number: "03",
     title: "Play & Win",
-    description: "Battle through 10+ fun games! Flashcards, matching, listening challenges - variety keeps it exciting.",
+    description: "Battle through 10+ fun games! Reading passages, cloze exercises, context challenges — variety keeps it exciting.",
     icon: Gamepad2,
     color: "from-success to-success/80",
   },
   {
     number: "04",
     title: "Level Up",
-    description: "Earn XP, build streaks, unlock achievements, and climb the leaderboard to become the ultimate vocab champion!",
+    description: "Earn XP, build streaks, unlock achievements, and climb the leaderboard as your reading skills soar!",
     icon: Trophy,
     color: "from-accent to-accent/80",
   },
@@ -72,33 +72,33 @@ const studentGameHighlights = [
 const parentFeatures = [
   {
     icon: BookOpen,
-    title: "Curated Vocabulary",
-    description: "Expert-selected words aligned with NSW Selective, OC, and NAPLAN exams. Each unit contains carefully chosen vocabulary that appears in actual tests.",
+    title: "Curated Content",
+    description: "Expert-selected reading exercises aligned with NAPLAN, NSW Selective & NSW OC exams. Each unit strengthens comprehension with content that mirrors actual test formats.",
     color: "from-primary to-primary/80",
   },
   {
     icon: Target,
-    title: "Selective-Level Questions",
-    description: "Practice questions mirror the difficulty and format of real Selective School placement tests. Your child trains with authentic exam-style content.",
+    title: "Test-Level Questions",
+    description: "Practice questions mirror the difficulty and format of real NSW Selective and NSW OC placement tests. Your child trains with authentic exam-style content.",
     color: "from-secondary to-secondary/80",
   },
   {
     icon: Brain,
     title: "Science-Based Repetition",
-    description: "Our spaced repetition system is built on proven memory research. Words are reviewed at optimal intervals to maximize long-term retention.",
+    description: "Our spaced repetition system is built on proven memory research. Concepts are reviewed at optimal intervals to maximise long-term retention and reading fluency.",
     color: "from-success to-success/80",
   },
   {
     icon: TrendingUp,
     title: "Detailed Progress Tracking",
-    description: "Monitor your child's learning with the dedicated parent dashboard. See completed units, struggling words, time spent, and improvement trends.",
+    description: "Monitor your child's learning with the dedicated parent dashboard. See completed units, areas of difficulty, time spent, and improvement trends.",
     color: "from-accent to-accent/80",
   },
 ];
 
 const parentTestimonials = [
   {
-    quote: "My daughter improved her vocabulary score by 30% in just 2 months. The practice questions are exactly like the Selective test!",
+    quote: "My daughter improved her reading comprehension score by 30% in just 2 months. The practice questions are exactly like the NSW Selective test!",
     author: "Sarah M.",
     role: "Parent of Year 5 student",
   },
@@ -108,7 +108,7 @@ const parentTestimonials = [
     role: "Parent of Year 4 student",
   },
   {
-    quote: "The progress tracking helps me understand exactly where my child needs more support. Invaluable for exam prep.",
+    quote: "The progress tracking helps me understand exactly where my child needs more support. Invaluable for NSW OC and NAPLAN exam prep.",
     author: "Michelle K.",
     role: "Parent of Year 6 student",
   },
@@ -121,12 +121,12 @@ const studentTestimonials = [
     role: "Year 5 Student",
   },
   {
-    quote: "The games are so fun I forget I'm studying. My vocabulary has gotten way better!",
+    quote: "The games are so fun I forget I'm studying. My reading has gotten way better!",
     author: "James W.",
     role: "Year 4 Student",
   },
   {
-    quote: "I got into my dream school! VocabQuests helped me learn words I never knew before.",
+    quote: "I got into my dream school! VocabQuests helped me understand passages I never could before.",
     author: "Sophie L.",
     role: "Year 6 Student",
   },
@@ -147,7 +147,7 @@ export default function HowItWorks() {
     <div className="min-h-screen bg-background">
       <SEOHead
         title="How It Works"
-        description="See how VocabQuests helps Year 4-6 NSW students master vocabulary for NSW Selective reading, OC reading, Selective writing, OC writing and NAPLAN placement tests with 10+ vocabulary games and spaced repetition."
+        description="See how VocabQuests builds stronger reading comprehension and delivers better NAPLAN, NSW OC & NSW Selective results with 10+ gamified learning games and spaced repetition."
         path="/how-it-works"
         jsonLd={{
           "@context": "https://schema.org",
@@ -155,26 +155,26 @@ export default function HowItWorks() {
           mainEntity: [
             {
               "@type": "Question",
-              name: "How does VocabQuests help with NSW Selective School test preparation?",
+              name: "How does VocabQuests help with NSW Selective School and NSW OC test preparation?",
               acceptedAnswer: {
                 "@type": "Answer",
-                text: "VocabQuests uses 10+ gamified vocabulary games, spaced repetition, and expert-curated word lists specifically designed for Year 4-6 students preparing for NSW Selective School, OC, and NAPLAN placement tests.",
+                text: "VocabQuests uses 10+ gamified learning games, spaced repetition, and expert-curated content to build reading comprehension skills for Australian students preparing for NAPLAN, NSW Selective School & NSW OC placement tests.",
               },
             },
             {
               "@type": "Question",
-              name: "What vocabulary games are available for students?",
+              name: "What learning games are available for students?",
               acceptedAnswer: {
                 "@type": "Answer",
-                text: "Students can play flashcards, matching games, listening challenges, cloze passages, reading comprehension, context mastery, odd one out, word intuition, and more — all designed to build deep vocabulary knowledge.",
+                text: "Students can play flashcards, matching games, listening challenges, cloze passages, reading comprehension, context mastery, odd one out, word intuition, and more — all designed to build deep reading comprehension and vocabulary knowledge.",
               },
             },
             {
               "@type": "Question",
-              name: "How can parents track their child's vocabulary progress?",
+              name: "How can parents track their child's reading progress?",
               acceptedAnswer: {
                 "@type": "Answer",
-                text: "Parents get a dedicated dashboard showing detailed progress reports, game scores, study streaks, and areas for improvement across all vocabulary units their children are working on.",
+                text: "Parents get a dedicated dashboard showing detailed progress reports, game scores, study streaks, and areas for improvement across all units their children are working on.",
               },
             },
           ],
@@ -210,9 +210,9 @@ export default function HowItWorks() {
               <Star className="h-4 w-4 mr-2" />
               Why VocabQuests
             </Badge>
-            <h1 className="text-3xl sm:text-4xl font-bold mb-4">The Only Platform Purpose-Built for NSW Vocabulary</h1>
+            <h1 className="text-3xl sm:text-4xl font-bold mb-4">Purpose-Built for Better Test Results</h1>
             <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              No generic word games — every feature is designed specifically to help NSW students master vocabulary for Selective, OC &amp; NAPLAN success.
+              No generic word games — every feature is designed to strengthen reading comprehension and deliver better NAPLAN, NSW OC &amp; NSW Selective results.
             </p>
           </div>
 
@@ -223,9 +223,9 @@ export default function HowItWorks() {
                 <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center mx-auto mb-4">
                   <Target className="h-8 w-8 text-primary-foreground" />
                 </div>
-                <h3 className="text-xl font-bold mb-2">NSW-Dedicated Focus</h3>
+                <h3 className="text-xl font-bold mb-2">Australian Test Focus</h3>
                 <p className="text-muted-foreground text-sm leading-relaxed">
-                  The only website exclusively dedicated to improving vocabulary learning for NSW students. Every word list, every question, and every exercise is aligned with Selective School, OC, and NAPLAN reading requirements.
+                  Dedicated to improving reading comprehension for Australian students. Every exercise is aligned with NAPLAN, NSW Selective School &amp; NSW OC reading requirements.
                 </p>
               </CardContent>
             </Card>
@@ -238,7 +238,7 @@ export default function HowItWorks() {
                 </div>
                 <h3 className="text-xl font-bold mb-2">Created by Expert Educators</h3>
                 <p className="text-muted-foreground text-sm leading-relaxed">
-                  Designed and curated by educators with decades of hands-on experience preparing students for NSW academic assessments. Real classroom insight drives every aspect of the curriculum.
+                  Designed and curated by educators with decades of hands-on experience preparing students for NAPLAN, NSW Selective &amp; NSW OC assessments. Real classroom insight drives every aspect of the curriculum.
                 </p>
               </CardContent>
             </Card>
@@ -347,7 +347,7 @@ export default function HowItWorks() {
               For Students
             </Badge>
             <h2 className="text-3xl sm:text-4xl font-bold mb-4">Your Epic Learning Adventure</h2>
-            <p className="text-muted-foreground text-lg">Level up your vocabulary while having a blast!</p>
+            <p className="text-muted-foreground text-lg">Level up your reading skills while having a blast!</p>
           </div>
           
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
@@ -393,7 +393,7 @@ export default function HowItWorks() {
               Student Stories
             </Badge>
             <h2 className="text-3xl sm:text-4xl font-bold mb-4">What Students Say</h2>
-            <p className="text-muted-foreground text-lg">Hear from students who leveled up their vocabulary</p>
+            <p className="text-muted-foreground text-lg">Hear from students who improved their reading skills</p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-6">
@@ -424,7 +424,7 @@ export default function HowItWorks() {
             Ready to Start Your Quest?
           </h2>
           <p className="text-primary-foreground/80 text-lg">
-            Join thousands of students building their vocabulary the fun way.
+            Join thousands of Australian students building stronger reading skills the fun way.
           </p>
           <Button 
             size="lg" 

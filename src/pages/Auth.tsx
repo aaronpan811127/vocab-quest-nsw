@@ -144,7 +144,7 @@ const Auth = () => {
     <div className="min-h-screen bg-gradient-hero flex items-center justify-center p-4">
       <SEOHead
         title="Student Sign In"
-        description="Sign in or create your VocabQuests student account to start mastering vocabulary for NSW Selective, OC and NAPLAN tests."
+        description="Sign in or create your VocabQuests student account to strengthen reading comprehension and prepare for NAPLAN, NSW Selective & NSW OC tests."
         path="/auth"
         noIndex
       />
@@ -159,7 +159,7 @@ const Auth = () => {
             <Gamepad2 className="h-5 w-5 text-primary" />
             <span className="font-bold text-primary text-lg">Student Account</span>
           </div>
-          <p className="text-muted-foreground">Master vocabulary through gaming!</p>
+          <p className="text-muted-foreground">Strengthen your reading through gaming!</p>
         </div>
 
         {/* Features */}
@@ -395,7 +395,7 @@ const Auth = () => {
             </Button>
           </div>
           
-          <p className="text-xs text-muted-foreground">Ready to learn awesome vocabulary! 🎮</p>
+          <p className="text-xs text-muted-foreground">Ready to boost your reading skills! 🎮</p>
         </div>
       </div>
     </div>
