@@ -45,7 +45,7 @@ export const Hero = ({ onSelectTestType }: HeroProps) => {
   };
 
   return (
-    <section className="relative min-h-[auto] py-20 sm:py-24 flex items-center justify-center overflow-hidden">
+    <section className="relative h-[calc(100vh-4rem)] sm:h-[calc(100vh-5rem)] flex items-center justify-center overflow-hidden">
       {/* Background Image */}
       <div className="absolute inset-0 z-0">
         <img
@@ -95,7 +95,7 @@ export const Hero = ({ onSelectTestType }: HeroProps) => {
       </div>
 
       {/* Main Content */}
-      <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 text-center space-y-5 sm:space-y-6 animate-slide-up">
+      <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 text-center space-y-3 sm:space-y-4 animate-slide-up">
         {/* Badge */}
         <Badge className="bg-gradient-primary text-primary-foreground px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium">
           <Gamepad2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
@@ -103,18 +103,18 @@ export const Hero = ({ onSelectTestType }: HeroProps) => {
         </Badge>
 
         {/* Headline */}
-        <div className="space-y-3 sm:space-y-4">
-           <h1 className="text-3xl sm:text-5xl md:text-7xl font-bold tracking-tight">
+        <div className="space-y-2 sm:space-y-3">
+           <h1 className="text-3xl sm:text-4xl md:text-6xl font-bold tracking-tight">
             Stronger <span className="bg-gradient-primary bg-clip-text text-transparent">Reading</span>, Better Results
           </h1>
-           <p className="text-base sm:text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto leading-relaxed px-2">
+           <p className="text-sm sm:text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed px-2">
              Build reading comprehension and achieve better NAPLAN, NSW OC &amp; NSW Selective results through gamified learning designed for Australian students.
            </p>
          </div>
 
          {/* Value Props */}
-         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 max-w-2xl mx-auto">
-           <div className="flex items-center gap-3 p-3 sm:p-4 rounded-xl bg-card/40 backdrop-blur-sm border border-border/50 text-left">
+         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 max-w-2xl mx-auto">
+           <div className="flex items-center gap-2 p-2.5 sm:p-3 rounded-xl bg-card/40 backdrop-blur-sm border border-border/50 text-left">
              <div className="p-2 rounded-lg bg-warning/15 flex-shrink-0">
                <Swords className="h-5 w-5 text-warning" />
              </div>
@@ -123,7 +123,7 @@ export const Hero = ({ onSelectTestType }: HeroProps) => {
                 <div className="text-[10px] sm:text-xs text-muted-foreground">Boost reading skills through fun, engaging game modes</div>
              </div>
            </div>
-           <div className="flex items-center gap-3 p-3 sm:p-4 rounded-xl bg-card/40 backdrop-blur-sm border border-border/50 text-left">
+           <div className="flex items-center gap-2 p-2.5 sm:p-3 rounded-xl bg-card/40 backdrop-blur-sm border border-border/50 text-left">
              <div className="p-2 rounded-lg bg-primary/15 flex-shrink-0">
                <Clock className="h-5 w-5 text-primary" />
              </div>
@@ -135,8 +135,8 @@ export const Hero = ({ onSelectTestType }: HeroProps) => {
          </div>
 
         {/* Trust Signals */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 max-w-3xl mx-auto">
-          <div className="flex items-center gap-3 p-3 sm:p-4 rounded-xl bg-card/40 backdrop-blur-sm border border-border/50 text-left">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 max-w-3xl mx-auto">
+          <div className="flex items-center gap-2 p-2.5 sm:p-3 rounded-xl bg-card/40 backdrop-blur-sm border border-border/50 text-left">
             <div className="p-2 rounded-lg bg-primary/15 flex-shrink-0">
               <Target className="h-5 w-5 text-primary" />
             </div>
@@ -145,7 +145,7 @@ export const Hero = ({ onSelectTestType }: HeroProps) => {
                <div className="text-[10px] sm:text-xs text-muted-foreground">NAPLAN, NSW Selective &amp; NSW OC test prep</div>
             </div>
           </div>
-          <div className="flex items-center gap-3 p-3 sm:p-4 rounded-xl bg-card/40 backdrop-blur-sm border border-border/50 text-left">
+          <div className="flex items-center gap-2 p-2.5 sm:p-3 rounded-xl bg-card/40 backdrop-blur-sm border border-border/50 text-left">
             <div className="p-2 rounded-lg bg-secondary/15 flex-shrink-0">
               <GraduationCap className="h-5 w-5 text-secondary" />
             </div>
@@ -154,7 +154,7 @@ export const Hero = ({ onSelectTestType }: HeroProps) => {
               <div className="text-[10px] sm:text-xs text-muted-foreground">Built by educators with decades of experience</div>
             </div>
           </div>
-          <div className="flex items-center gap-3 p-3 sm:p-4 rounded-xl bg-card/40 backdrop-blur-sm border border-border/50 text-left">
+          <div className="flex items-center gap-2 p-2.5 sm:p-3 rounded-xl bg-card/40 backdrop-blur-sm border border-border/50 text-left">
             <div className="p-2 rounded-lg bg-success/15 flex-shrink-0">
               <FlaskConical className="h-5 w-5 text-success" />
             </div>
@@ -166,13 +166,13 @@ export const Hero = ({ onSelectTestType }: HeroProps) => {
         </div>
 
         {/* Test Type Selection */}
-        <div className="space-y-4">
+        <div className="space-y-3">
           {!user ? (
             <div className="flex flex-col items-center gap-6">
               <Button
                 variant="hero"
                 size="lg"
-                className="text-lg sm:text-xl px-8 sm:px-10 py-6 sm:py-7 animate-glow-pulse w-full sm:w-auto"
+                 className="text-base sm:text-lg px-6 sm:px-8 py-5 sm:py-6 animate-glow-pulse w-full sm:w-auto"
                 onClick={() => navigate("/auth")}
               >
                 <Zap className="h-5 w-5 sm:h-6 sm:w-6 mr-2" />
@@ -181,7 +181,7 @@ export const Hero = ({ onSelectTestType }: HeroProps) => {
               <Button
                 variant="outline"
                 size="lg"
-                className="text-base sm:text-lg px-6 sm:px-8 py-4 sm:py-5 border-primary/50 text-primary hover:bg-primary/10 font-semibold gap-2"
+                 className="text-sm sm:text-base px-5 sm:px-6 py-3 sm:py-4 border-primary/50 text-primary hover:bg-primary/10 font-semibold gap-2"
                 onClick={() => navigate("/how-it-works")}
               >
                 <HelpCircle className="h-5 w-5" />
