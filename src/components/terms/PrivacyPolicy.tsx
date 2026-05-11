@@ -7,7 +7,7 @@ export const PrivacyPolicy = () => {
         <section>
           <h3 className="text-lg font-semibold mb-2">1. Introduction</h3>
           <p className="text-muted-foreground leading-relaxed">
-            VocabQuests ("we", "us", or "our") is committed to protecting the privacy of all users, including children. This Privacy Policy explains how we collect, use, disclose, and safeguard your personal information when you use our website and services. By using VocabQuests, you consent to the practices described in this policy.
+            VocabQuests (ABN: 83 270 759 669) ("we", "us", or "our") is committed to protecting the privacy of all users, including children. This Privacy Policy explains how we collect, use, disclose, and safeguard your personal information when you use our website and services. By using VocabQuests, you consent to the practices described in this policy.
           </p>
         </section>
 
