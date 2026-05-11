@@ -187,6 +187,7 @@ const Contact = () => {
           </Badge>
           <h1 className="text-3xl sm:text-4xl font-bold mb-4">Contact Us</h1>
           <p className="text-muted-foreground text-lg">Have a question or feedback? We'd love to hear from you.</p>
+          <p className="text-sm text-muted-foreground mt-2">ABN: 83 270 759 669</p>
         </div>
       </section>
 

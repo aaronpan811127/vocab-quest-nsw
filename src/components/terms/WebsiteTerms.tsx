@@ -7,7 +7,7 @@ export const WebsiteTerms = () => {
         <section>
           <h3 className="text-lg font-semibold mb-2">1. Acceptance of Terms</h3>
           <p className="text-muted-foreground leading-relaxed">
-            By accessing and using the VocabQuests website ("Website"), you agree to be bound by these Website Terms and Conditions ("Terms"). If you do not agree to these Terms, please do not use the Website. These Terms apply to all visitors, users, and others who access or use the Website.
+            By accessing and using the VocabQuests website ("Website"), which is operated by VocabQuests (ABN: 83 270 759 669), you agree to be bound by these Website Terms and Conditions ("Terms"). If you do not agree to these Terms, please do not use the Website. These Terms apply to all visitors, users, and others who access or use the Website.
           </p>
         </section>
 

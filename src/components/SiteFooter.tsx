@@ -33,6 +33,9 @@ export const SiteFooter = () => {
         <p className="text-sm text-muted-foreground text-center sm:text-left">
           © {new Date().getFullYear()} VocabQuests. Stronger reading, better results.
         </p>
+        <p className="text-xs text-muted-foreground text-center sm:text-left">
+          ABN: 83 270 759 669
+        </p>
       </div>
     </footer>
   );

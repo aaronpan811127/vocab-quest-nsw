@@ -8,7 +8,7 @@ export const SubscriptionTerms = () => {
         <section>
           <h3 className="text-lg font-semibold mb-2">1. Subscription Overview</h3>
           <p className="text-muted-foreground leading-relaxed">
-            VocabQuests offers a Premium subscription plan ("{PRICING.premium.name}") that provides enhanced access to our educational platform. By subscribing, you agree to these Subscription Terms and Conditions in addition to our Website Terms and Conditions. The Premium plan is available at ${PRICING.premium.monthlyPrice}/month or ${PRICING.premium.annualPrice}/year.
+            VocabQuests (ABN: 83 270 759 669) offers a Premium subscription plan ("{PRICING.premium.name}") that provides enhanced access to our educational platform. By subscribing, you agree to these Subscription Terms and Conditions in addition to our Website Terms and Conditions. The Premium plan is available at ${PRICING.premium.monthlyPrice}/month or ${PRICING.premium.annualPrice}/year.
           </p>
         </section>
 
