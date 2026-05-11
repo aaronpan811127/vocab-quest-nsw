@@ -141,10 +141,10 @@ const handler = async (req: Request): Promise<Response> => {
     const safeMessage = escapeHtml(message.trim());
 
     const emailResponse = await resend.emails.send({
-      from: "VocabQuest Contact <onboarding@resend.dev>",
-      to: ["aaronpan@gmail.com"],
+      from: "VocabQuests Contact <onboarding@resend.dev>",
+      to: ["info@vocabquests.com"],
       replyTo: email.trim(),
-      subject: `[VocabQuest Contact] ${safeSubject}`,
+      subject: `[VocabQuests Contact] ${safeSubject}`,
       html: `
         <!DOCTYPE html>
         <html>
