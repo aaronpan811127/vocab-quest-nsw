@@ -938,6 +938,7 @@ export type Database = {
           role: string
         }[]
       }
+      has_premium_access: { Args: { _user_id: string }; Returns: boolean }
       is_admin: { Args: { p_user_id: string }; Returns: boolean }
       validate_dictation_game_submission:
         | {
