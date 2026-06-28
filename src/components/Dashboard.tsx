@@ -844,7 +844,7 @@ Game XP = (Avg Score over all attempts × 0.5) + Time Bonus
               <div className="flex-1 space-y-1">
                 <h3 className="font-semibold text-lg">Your 7-day free trial has ended</h3>
                 <p className="text-sm text-muted-foreground">
-                  Ask your parent or guardian to subscribe so you can continue learning and unlock all units and games.
+                  You can still play the first 2 units of each test type for free. To unlock all remaining units and games, ask your parent or guardian to subscribe.
                 </p>
               </div>
               <Button
