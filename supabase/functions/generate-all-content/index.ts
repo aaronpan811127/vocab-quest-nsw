@@ -2,8 +2,7 @@
 // across one test type (or all). Runs in the background after returning.
 //
 // Body: { test_type_code?: string, unit_id?: string }
-// Auth: requires an authenticated admin user. The user's bearer token is
-// forwarded to each child generator function.
+// Writes progress to public.generation_jobs (subscribed via realtime by the admin UI).
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 
@@ -18,11 +17,6 @@ const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 const QUESTION_GAME_TYPES = new Set(["context_master", "cloze_challenge"]);
-const PASSAGE_GAME_TYPES = new Set([
-  "reading",
-  "linked_extracts",
-  "gap_fill_passage",
-]);
 const MAX_PASSAGE_ITERATIONS = 5;
 
 type Unit = {
@@ -81,85 +75,124 @@ async function invokeChild(
 }
 
 async function runGeneration(
+  jobId: string,
   units: Unit[],
   gamesByTestType: Map<string, Game[]>,
   testTypeCodeById: Map<string, string>,
   authHeader: string,
+  admin: ReturnType<typeof createClient>,
 ) {
   let success = 0;
   let skipped = 0;
   let failed = 0;
   const startedAt = Date.now();
 
-  for (const unit of units) {
-    const games = gamesByTestType.get(unit.test_type_id) ?? [];
-    const testTypeCode = testTypeCodeById.get(unit.test_type_id) ?? "";
-    const words = Array.isArray(unit.words) ? unit.words : [];
-    if (words.length === 0) {
-      log(`Skipping unit with no words`, { unit_id: unit.id, title: unit.title });
-      continue;
+  const updateJob = async (patch: Record<string, unknown>) => {
+    try {
+      await admin.from("generation_jobs").update(patch).eq("id", jobId);
+    } catch (e) {
+      log("Failed to update job", { jobId, e: String(e) });
     }
+  };
 
-    for (const game of games) {
-      const gen = resolveGenerator(game.game_type);
-      if (!gen) continue;
+  try {
+    for (const unit of units) {
+      const games = gamesByTestType.get(unit.test_type_id) ?? [];
+      const testTypeCode = testTypeCodeById.get(unit.test_type_id) ?? "";
+      const words = Array.isArray(unit.words) ? unit.words : [];
+      if (words.length === 0) continue;
 
-      let payload: Record<string, unknown>;
-      if (gen.fn === "generate-vocabulary") {
-        payload = { unit_id: unit.id, words };
-      } else if (gen.fn === "generate-test-questions") {
-        payload = {
-          unit_id: unit.id,
-          words,
-          game_type: game.game_type,
-          game_id: game.id,
-          test_type_code: testTypeCode,
-        };
-      } else {
-        payload = {
-          unit_id: unit.id,
-          words,
-          test_type_code: testTypeCode,
-          unit_title: unit.title,
-        };
-      }
+      for (const game of games) {
+        const gen = resolveGenerator(game.game_type);
+        if (!gen) continue;
 
-      const iterations = gen.isPassage ? MAX_PASSAGE_ITERATIONS : 1;
-      for (let i = 0; i < iterations; i++) {
-        try {
-          const result = await invokeChild(gen.fn, payload, authHeader);
-          if (!result.ok) {
+        await updateJob({
+          current_label: `${testTypeCode} • ${unit.title} • ${game.game_type}`,
+        });
+
+        let payload: Record<string, unknown>;
+        if (gen.fn === "generate-vocabulary") {
+          payload = { unit_id: unit.id, words };
+        } else if (gen.fn === "generate-test-questions") {
+          payload = {
+            unit_id: unit.id,
+            words,
+            game_type: game.game_type,
+            game_id: game.id,
+            test_type_code: testTypeCode,
+          };
+        } else {
+          payload = {
+            unit_id: unit.id,
+            words,
+            test_type_code: testTypeCode,
+            unit_title: unit.title,
+          };
+        }
+
+        const iterations = gen.isPassage ? MAX_PASSAGE_ITERATIONS : 1;
+        for (let i = 0; i < iterations; i++) {
+          try {
+            const result = await invokeChild(gen.fn, payload, authHeader);
+            if (!result.ok) {
+              failed++;
+              log(`FAIL ${gen.fn}`, {
+                unit: unit.title,
+                game: game.game_type,
+                status: result.status,
+                body: result.body,
+              });
+              break;
+            }
+            const body = result.body as { skipped?: boolean } | null;
+            if (gen.isPassage && body?.skipped) {
+              skipped++;
+              break;
+            }
+            success++;
+            if (!gen.isPassage) break;
+          } catch (err) {
             failed++;
-            log(`FAIL ${gen.fn}`, {
+            log(`ERR ${gen.fn}`, {
               unit: unit.title,
               game: game.game_type,
-              status: result.status,
-              body: result.body,
+              error: String(err),
             });
             break;
           }
-          const body = result.body as { skipped?: boolean } | null;
-          if (gen.isPassage && body?.skipped) {
-            skipped++;
-            break;
-          }
-          success++;
-          if (!gen.isPassage) break;
-        } catch (err) {
-          failed++;
-          log(`ERR ${gen.fn}`, {
-            unit: unit.title,
-            game: game.game_type,
-            error: String(err),
-          });
-          break;
         }
+
+        await updateJob({
+          success_count: success,
+          skipped_count: skipped,
+          failed_count: failed,
+        });
       }
     }
-  }
 
-  const elapsed = Math.round((Date.now() - startedAt) / 1000);
-  log(`Done`, { success, skipped, failed, elapsed_seconds: elapsed });
+    const elapsed = Math.round((Date.now() - startedAt) / 1000);
+    log(`Done`, { success, skipped, failed, elapsed_seconds: elapsed });
+    await updateJob({
+      status: "completed",
+      success_count: success,
+      skipped_count: skipped,
+      failed_count: failed,
+      current_label: null,
+      finished_at: new Date().toISOString(),
+    });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    log("Job crashed", { msg });
+    await updateJob({
+      status: "failed",
+      error_message: msg,
+      success_count: success,
+      skipped_count: skipped,
+      failed_count: failed,
+      current_label: null,
+      finished_at: new Date().toISOString(),
+    });
+  }
 }
 
 Deno.serve(async (req) => {
@@ -208,7 +241,6 @@ Deno.serve(async (req) => {
       unit_id?: string;
     };
 
-    // Resolve target test types
     const { data: testTypes } = await admin
       .from("test_types")
       .select("id, code")
@@ -227,7 +259,6 @@ Deno.serve(async (req) => {
     const testTypeIds = filteredTestTypes.map((t) => t.id);
     const testTypeCodeById = new Map(filteredTestTypes.map((t) => [t.id, t.code]));
 
-    // Units
     let unitsQuery = admin
       .from("units")
       .select("id, title, unit_number, test_type_id, words")
@@ -239,7 +270,6 @@ Deno.serve(async (req) => {
     if (unitsErr) throw unitsErr;
     const units = (unitsData ?? []) as Unit[];
 
-    // Enabled games per test type
     const { data: ttgRows, error: ttgErr } = await admin
       .from("test_type_games")
       .select("test_type_id, game_id, games!inner(id, game_type, rules)")
@@ -262,7 +292,22 @@ Deno.serve(async (req) => {
       return acc + games.filter((g) => resolveGenerator(g.game_type)).length;
     }, 0);
 
-    log(`Starting background generation`, {
+    const { data: jobRow, error: jobErr } = await admin
+      .from("generation_jobs")
+      .insert({
+        created_by: userId,
+        test_type_code: body.test_type_code ?? null,
+        scope_unit_id: body.unit_id ?? null,
+        status: "running",
+        total_tasks: totalGameTasks,
+      })
+      .select("id")
+      .single();
+    if (jobErr || !jobRow) throw jobErr ?? new Error("Failed to create job row");
+    const jobId = jobRow.id as string;
+
+    log("Job created", {
+      jobId,
       test_types: filteredTestTypes.map((t) => t.code),
       units: units.length,
       tasks: totalGameTasks,
@@ -270,13 +315,14 @@ Deno.serve(async (req) => {
 
     // @ts-ignore EdgeRuntime is provided by Supabase Edge runtime
     EdgeRuntime.waitUntil(
-      runGeneration(units, gamesByTestType, testTypeCodeById, authHeader),
+      runGeneration(jobId, units, gamesByTestType, testTypeCodeById, authHeader, admin),
     );
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: "Generation started in background. Check function logs for progress.",
+        job_id: jobId,
+        message: "Generation started in background.",
         test_types: filteredTestTypes.map((t) => t.code),
         units: units.length,
         tasks: totalGameTasks,

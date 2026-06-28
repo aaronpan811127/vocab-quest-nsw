@@ -225,6 +225,57 @@ export type Database = {
         }
         Relationships: []
       }
+      generation_jobs: {
+        Row: {
+          created_by: string | null
+          current_label: string | null
+          error_message: string | null
+          failed_count: number
+          finished_at: string | null
+          id: string
+          scope_unit_id: string | null
+          skipped_count: number
+          started_at: string
+          status: string
+          success_count: number
+          test_type_code: string | null
+          total_tasks: number
+          updated_at: string
+        }
+        Insert: {
+          created_by?: string | null
+          current_label?: string | null
+          error_message?: string | null
+          failed_count?: number
+          finished_at?: string | null
+          id?: string
+          scope_unit_id?: string | null
+          skipped_count?: number
+          started_at?: string
+          status?: string
+          success_count?: number
+          test_type_code?: string | null
+          total_tasks?: number
+          updated_at?: string
+        }
+        Update: {
+          created_by?: string | null
+          current_label?: string | null
+          error_message?: string | null
+          failed_count?: number
+          finished_at?: string | null
+          id?: string
+          scope_unit_id?: string | null
+          skipped_count?: number
+          started_at?: string
+          status?: string
+          success_count?: number
+          test_type_code?: string | null
+          total_tasks?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       leaderboard: {
         Row: {
           created_at: string
