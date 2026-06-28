@@ -3,12 +3,13 @@ import { useNavigate } from "react-router-dom";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Shield, LogOut, FileQuestion, Users, Loader2, BarChart3, Settings } from "lucide-react";
+import { Shield, LogOut, FileQuestion, Users, Loader2, BarChart3, Settings, Activity } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AdminQuestionReview } from "@/components/admin/AdminQuestionReview";
 import { AdminUserManagement } from "@/components/admin/AdminUserManagement";
 import { AdminContentStats } from "@/components/admin/AdminContentStats";
 import { AdminUnitEditor } from "@/components/admin/AdminUnitEditor";
+import { AdminGenerationJobs } from "@/components/admin/AdminGenerationJobs";
 
 const AdminDashboard = () => {
   const { isAdmin, loading, user } = useAdminAuth();
