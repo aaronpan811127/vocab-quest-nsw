@@ -265,9 +265,10 @@ export const ReadingGame = ({ unitId, unitTitle, unitWords, onComplete, onBack }
         throw error;
       }
 
-      if (!data.success) {
-        throw new Error(data.error || 'Failed to generate passage');
+      if (!data || !data.success || !data.passage) {
+        throw new Error(data?.error || 'Failed to generate passage');
       }
+
 
       setPassage({
         id: data.passage.id,
