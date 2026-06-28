@@ -76,6 +76,10 @@ const AdminDashboard = () => {
               <FileQuestion className="h-4 w-4" />
               Question Review
             </TabsTrigger>
+            <TabsTrigger value="jobs" className="gap-2">
+              <Activity className="h-4 w-4" />
+              Generation Jobs
+            </TabsTrigger>
             <TabsTrigger value="users" className="gap-2">
               <Users className="h-4 w-4" />
               User Management
@@ -92,6 +96,10 @@ const AdminDashboard = () => {
 
           <TabsContent value="units">
             <AdminUnitEditor />
+          </TabsContent>
+
+          <TabsContent value="jobs">
+            <AdminGenerationJobs />
           </TabsContent>
 
           <TabsContent value="users">
