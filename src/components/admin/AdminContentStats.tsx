@@ -834,21 +834,54 @@ export const AdminContentStats = () => {
       <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between">
           {/* Global Generate All Button */}
-          {incompleteCount > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {incompleteCount > 0 && (
+              <Button
+                onClick={handleGenerateAll}
+                disabled={generatingAll || generatingUnit !== null}
+                className="gap-2"
+              >
+                {generatingAll ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Wand2 className="h-4 w-4" />
+                )}
+                Generate All ({incompleteCount} games)
+              </Button>
+            )}
             <Button
-              onClick={handleGenerateAll}
-              disabled={generatingAll || generatingUnit !== null}
+              variant="secondary"
               className="gap-2"
+              onClick={async () => {
+                const code = testTypes.find(t => t.id === testTypeFilter)?.code;
+                const confirmAll = window.confirm(
+                  `Kick off background generation for ALL units in ${code ?? 'all test types'}? This runs in the background and may take a while. Watch edge function logs for progress.`
+                );
+                if (!confirmAll) return;
+                try {
+                  const { data, error } = await supabase.functions.invoke('generate-all-content', {
+                    body: code ? { test_type_code: code } : {},
+                  });
+                  if (error) throw error;
+                  toast({
+                    title: 'Background generation started',
+                    description: `Queued ${data?.tasks ?? 0} tasks across ${data?.units ?? 0} units. Check edge function logs for progress.`,
+                  });
+                } catch (e) {
+                  toast({
+                    title: 'Failed to start',
+                    description: e instanceof Error ? e.message : 'Unknown error',
+                    variant: 'destructive',
+                  });
+                }
+              }}
             >
-              {generatingAll ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Wand2 className="h-4 w-4" />
-              )}
-              Generate All ({incompleteCount} games)
+              <Sparkles className="h-4 w-4" />
+              Generate All Units (Background)
             </Button>
-          )}
+          </div>
         </div>
+
 
         {/* Test Type Radio Buttons */}
         <RadioGroup 
