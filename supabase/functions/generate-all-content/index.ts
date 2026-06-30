@@ -180,11 +180,11 @@ async function invokeChild(
   return { ok: res.ok, status: res.status, body };
 }
 
+type Task = { unit: Unit; game: Game; testTypeCode: string };
+
 async function runGeneration(
   jobId: string,
-  units: Unit[],
-  gamesByTestType: Map<string, Game[]>,
-  testTypeCodeById: Map<string, string>,
+  tasks: Task[],
   authHeader: string,
   admin: ReturnType<typeof createClient>,
 ) {
@@ -202,78 +202,73 @@ async function runGeneration(
   };
 
   try {
-    for (const unit of units) {
-      const games = gamesByTestType.get(unit.test_type_id) ?? [];
-      const testTypeCode = testTypeCodeById.get(unit.test_type_id) ?? "";
+    for (const { unit, game, testTypeCode } of tasks) {
       const words = Array.isArray(unit.words) ? unit.words : [];
       if (words.length === 0) continue;
+      const gen = resolveGenerator(game.game_type);
+      if (!gen) continue;
 
-      for (const game of games) {
-        const gen = resolveGenerator(game.game_type);
-        if (!gen) continue;
+      await updateJob({
+        current_label: `${testTypeCode} • ${unit.title} • ${game.game_type}`,
+      });
 
-        await updateJob({
-          current_label: `${testTypeCode} • ${unit.title} • ${game.game_type}`,
-        });
+      let payload: Record<string, unknown>;
+      if (gen.fn === "generate-vocabulary") {
+        payload = { unit_id: unit.id, words };
+      } else if (gen.fn === "generate-test-questions") {
+        payload = {
+          unit_id: unit.id,
+          words,
+          game_type: game.game_type,
+          game_id: game.id,
+          test_type_code: testTypeCode,
+        };
+      } else {
+        payload = {
+          unit_id: unit.id,
+          words,
+          test_type_code: testTypeCode,
+          unit_title: unit.title,
+        };
+      }
 
-        let payload: Record<string, unknown>;
-        if (gen.fn === "generate-vocabulary") {
-          payload = { unit_id: unit.id, words };
-        } else if (gen.fn === "generate-test-questions") {
-          payload = {
-            unit_id: unit.id,
-            words,
-            game_type: game.game_type,
-            game_id: game.id,
-            test_type_code: testTypeCode,
-          };
-        } else {
-          payload = {
-            unit_id: unit.id,
-            words,
-            test_type_code: testTypeCode,
-            unit_title: unit.title,
-          };
-        }
-
-        const iterations = gen.isPassage ? MAX_PASSAGE_ITERATIONS : 1;
-        for (let i = 0; i < iterations; i++) {
-          try {
-            const result = await invokeChild(gen.fn, payload, authHeader);
-            if (!result.ok) {
-              failed++;
-              log(`FAIL ${gen.fn}`, {
-                unit: unit.title,
-                game: game.game_type,
-                status: result.status,
-                body: result.body,
-              });
-              break;
-            }
-            const body = result.body as { skipped?: boolean } | null;
-            if (gen.isPassage && body?.skipped) {
-              skipped++;
-              break;
-            }
-            success++;
-            if (!gen.isPassage) break;
-          } catch (err) {
+      const iterations = gen.isPassage ? MAX_PASSAGE_ITERATIONS : 1;
+      for (let i = 0; i < iterations; i++) {
+        try {
+          const result = await invokeChild(gen.fn, payload, authHeader);
+          if (!result.ok) {
             failed++;
-            log(`ERR ${gen.fn}`, {
+            log(`FAIL ${gen.fn}`, {
               unit: unit.title,
               game: game.game_type,
-              error: String(err),
+              status: result.status,
+              body: result.body,
             });
             break;
           }
+          const body = result.body as { skipped?: boolean } | null;
+          if (gen.isPassage && body?.skipped) {
+            skipped++;
+            break;
+          }
+          success++;
+          if (!gen.isPassage) break;
+        } catch (err) {
+          failed++;
+          log(`ERR ${gen.fn}`, {
+            unit: unit.title,
+            game: game.game_type,
+            error: String(err),
+          });
+          break;
         }
-
-        await updateJob({
-          success_count: success,
-          skipped_count: skipped,
-          failed_count: failed,
-        });
       }
+
+      await updateJob({
+        success_count: success,
+        skipped_count: skipped,
+        failed_count: failed,
+      });
     }
 
     const elapsed = Math.round((Date.now() - startedAt) / 1000);
