@@ -233,11 +233,13 @@ export type Database = {
           failed_count: number
           finished_at: string | null
           id: string
+          pending_tasks: Json
           scope_unit_id: string | null
           skipped_count: number
           started_at: string
           status: string
           success_count: number
+          task_errors: Json
           test_type_code: string | null
           total_tasks: number
           updated_at: string
@@ -249,11 +251,13 @@ export type Database = {
           failed_count?: number
           finished_at?: string | null
           id?: string
+          pending_tasks?: Json
           scope_unit_id?: string | null
           skipped_count?: number
           started_at?: string
           status?: string
           success_count?: number
+          task_errors?: Json
           test_type_code?: string | null
           total_tasks?: number
           updated_at?: string
@@ -265,11 +269,13 @@ export type Database = {
           failed_count?: number
           finished_at?: string | null
           id?: string
+          pending_tasks?: Json
           scope_unit_id?: string | null
           skipped_count?: number
           started_at?: string
           status?: string
           success_count?: number
+          task_errors?: Json
           test_type_code?: string | null
           total_tasks?: number
           updated_at?: string
