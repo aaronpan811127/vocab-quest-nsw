@@ -51,6 +51,112 @@ function resolveGenerator(
   return null;
 }
 
+/**
+ * Returns true if the given (unit, game) already meets its content requirement
+ * and should be skipped when only_incomplete=true. Mirrors the logic used in
+ * AdminContentStats.fetchStats so the background job aligns with the UI.
+ */
+async function isGameComplete(
+  admin: ReturnType<typeof createClient>,
+  unit: Unit,
+  game: Game,
+): Promise<boolean> {
+  const words = Array.isArray(unit.words) ? unit.words : [];
+  const totalWords = words.length;
+  if (totalWords === 0) return true;
+  const rules = (game.rules ?? {}) as Record<string, number>;
+
+  // Flashcards: one approved/pending vocab entry per unique unit word
+  if (game.game_type === "flashcards") {
+    const { data: vocabData } = await admin
+      .from("vocabulary")
+      .select("word, review_status")
+      .eq("unit_id", unit.id);
+    const vocab = (vocabData ?? []) as Array<{ word: string | null; review_status: string | null }>;
+    const lowerWords = words.map((w) => w.toLowerCase());
+    let nonRejectedUnique = 0;
+    for (const w of lowerWords) {
+      const matches = vocab.filter((v) => v.word?.toLowerCase() === w);
+      if (matches.length === 0) continue;
+      const hasNonRejected = matches.some((m) => m.review_status !== "rejected");
+      if (hasNonRejected) nonRejectedUnique++;
+    }
+    return nonRejectedUnique >= totalWords;
+  }
+
+  // Passage-based games
+  if (game.game_type === "reading" || game.game_type === "linked_extracts" || game.game_type === "gap_fill_passage") {
+    const passagesPerGame = Number(rules.passages_per_game ?? 3);
+    const questionsPerPassage = Number(rules.questions_per_passage ?? 10);
+
+    let passageQuery = admin
+      .from("reading_passages")
+      .select("id, review_status, title")
+      .eq("unit_id", unit.id);
+
+    const { data: allPassagesRaw } = await passageQuery;
+    let allPassages = (allPassagesRaw ?? []) as Array<{ id: string; review_status: string | null; title: string | null }>;
+
+    // Apply title prefix filters in JS (Supabase JS doesn't support .or with .not chains cleanly here)
+    if (game.game_type === "linked_extracts") {
+      allPassages = allPassages.filter((p) => /^(linked extracts:|cloze passage:)/i.test(p.title ?? ""));
+    } else if (game.game_type === "gap_fill_passage") {
+      allPassages = allPassages.filter((p) => /^gap fill passage:/i.test(p.title ?? ""));
+    } else {
+      allPassages = allPassages.filter((p) => {
+        const t = (p.title ?? "").toLowerCase();
+        return !t.startsWith("linked extracts:") && !t.startsWith("cloze passage:") && !t.startsWith("gap fill passage:");
+      });
+    }
+
+    const passageIds = allPassages.map((p) => p.id);
+    if (passageIds.length === 0) return false;
+
+    const { data: qData } = await admin
+      .from("question_bank")
+      .select("passage_id, review_status")
+      .eq("game_id", game.id)
+      .eq("unit_id", unit.id)
+      .in("passage_id", passageIds);
+    const questions = (qData ?? []) as Array<{ passage_id: string | null; review_status: string | null }>;
+
+    const byPassage = new Map<string, number>();
+    for (const q of questions) {
+      if (!q.passage_id) continue;
+      if (q.review_status === "rejected") continue;
+      byPassage.set(q.passage_id, (byPassage.get(q.passage_id) ?? 0) + 1);
+    }
+
+    let validCount = 0;
+    for (const p of allPassages) {
+      if (p.review_status === "rejected") continue;
+      if ((byPassage.get(p.id) ?? 0) >= questionsPerPassage) validCount++;
+    }
+    return validCount >= passagesPerGame;
+  }
+
+  // Word/question-based games (context_master, cloze_challenge)
+  if (QUESTION_GAME_TYPES.has(game.game_type)) {
+    const questionsPerWord = Number(rules.questions_per_word ?? 3);
+    const required = totalWords * questionsPerWord;
+    const lowerWords = new Set(words.map((w) => w.toLowerCase()));
+
+    const { data: qData } = await admin
+      .from("question_bank")
+      .select("word, review_status")
+      .eq("game_id", game.id)
+      .eq("unit_id", unit.id);
+    const all = (qData ?? []) as Array<{ word: string | null; review_status: string | null }>;
+    // Word-based: only count questions whose word is currently in the unit
+    const inUnit = all.filter((q) => q.word && lowerWords.has(q.word.toLowerCase()));
+    const nonRejected = inUnit.filter((q) => q.review_status !== "rejected").length;
+    return nonRejected >= required;
+  }
+
+  // Unknown game type — treat as complete (skip)
+  return true;
+}
+
 async function invokeChild(
   fnName: string,
   payload: Record<string, unknown>,
