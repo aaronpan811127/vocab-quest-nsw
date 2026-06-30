@@ -855,17 +855,17 @@ export const AdminContentStats = () => {
               onClick={async () => {
                 const code = testTypes.find(t => t.id === testTypeFilter)?.code;
                 const confirmAll = window.confirm(
-                  `Kick off background generation for ALL units in ${code ?? 'all test types'}? This runs in the background and may take a while. Watch edge function logs for progress.`
+                  `Kick off background generation for INCOMPLETE games in ${code ?? 'all test types'}? Game/unit pairs that already meet their content requirement will be skipped. Watch the Generation Jobs tab for progress.`
                 );
                 if (!confirmAll) return;
                 try {
                   const { data, error } = await supabase.functions.invoke('generate-all-content', {
-                    body: code ? { test_type_code: code } : {},
+                    body: { ...(code ? { test_type_code: code } : {}), only_incomplete: true },
                   });
                   if (error) throw error;
                   toast({
                     title: 'Background generation started',
-                    description: `Queued ${data?.tasks ?? 0} tasks across ${data?.units ?? 0} units. Check edge function logs for progress.`,
+                    description: `Queued ${data?.tasks ?? 0} incomplete tasks across ${data?.units ?? 0} units (skipped ${data?.already_complete ?? 0} already-complete).`,
                   });
                 } catch (e) {
                   toast({
@@ -877,7 +877,7 @@ export const AdminContentStats = () => {
               }}
             >
               <Sparkles className="h-4 w-4" />
-              Generate All Units (Background)
+              Generate Incomplete Units (Background)
             </Button>
           </div>
         </div>
