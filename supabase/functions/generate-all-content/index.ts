@@ -1,8 +1,18 @@
 // Orchestrator: generate all questions/passages/vocabulary for every unit
 // across one test type (or all). Runs in the background after returning.
 //
-// Body: { test_type_code?: string, unit_id?: string }
-// Writes progress to public.generation_jobs (subscribed via realtime by the admin UI).
+// Design:
+// - Initial request builds the full task list and inserts a generation_jobs row
+//   with pending_tasks = the work queue.
+// - The background worker processes a small CHUNK_SIZE per invocation, then
+//   re-invokes this same function with { resume_job_id } until the queue is empty.
+//   This avoids edge-function wall-clock timeouts on large batches.
+// - Each child call is retried with backoff. Failures are appended to
+//   generation_jobs.task_errors so the admin UI can show reasons.
+//
+// Body:
+//   Initial:  { test_type_code?: string, unit_id?: string, only_incomplete?: boolean }
+//   Resume :  { resume_job_id: string }
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 
@@ -18,6 +28,13 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 const QUESTION_GAME_TYPES = new Set(["context_master", "cloze_challenge"]);
 const MAX_PASSAGE_ITERATIONS = 5;
+// Keep small so a chunk fits well under edge-function wall-clock limits.
+const CHUNK_SIZE = 6;
+// Cap how many failure entries we persist per job (oldest dropped).
+const MAX_ERROR_ENTRIES = 100;
+// Per child invocation retry policy.
+const RETRY_ATTEMPTS = 3; // total attempts including first try
+const RETRY_BACKOFF_MS = 1500;
 
 type Unit = {
   id: string;
@@ -35,10 +52,25 @@ type Game = {
 
 type TestType = { id: string; code: string };
 
+type QueuedTask = { u: string; g: string; t: string };
+
+type TaskError = {
+  at: string;
+  unit_id: string;
+  unit_title: string;
+  game_id: string;
+  game_type: string;
+  fn: string;
+  status?: number;
+  message: string;
+};
+
 const log = (msg: string, extra?: unknown) => {
   const tail = extra !== undefined ? ` ${JSON.stringify(extra)}` : "";
   console.log(`[GENERATE-ALL] ${msg}${tail}`);
 };
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 function resolveGenerator(
   gameType: string,
@@ -52,9 +84,8 @@ function resolveGenerator(
 }
 
 /**
- * Returns true if the given (unit, game) already meets its content requirement
- * and should be skipped when only_incomplete=true. Mirrors the logic used in
- * AdminContentStats.fetchStats so the background job aligns with the UI.
+ * Returns true if (unit, game) already meets its content requirement.
+ * Mirrors AdminContentStats so the background job aligns with the UI.
  */
 async function isGameComplete(
   admin: ReturnType<typeof createClient>,
@@ -66,7 +97,6 @@ async function isGameComplete(
   if (totalWords === 0) return true;
   const rules = (game.rules ?? {}) as Record<string, number>;
 
-  // Flashcards: one approved/pending vocab entry per unique unit word
   if (game.game_type === "flashcards") {
     const { data: vocabData } = await admin
       .from("vocabulary")
@@ -78,26 +108,21 @@ async function isGameComplete(
     for (const w of lowerWords) {
       const matches = vocab.filter((v) => v.word?.toLowerCase() === w);
       if (matches.length === 0) continue;
-      const hasNonRejected = matches.some((m) => m.review_status !== "rejected");
-      if (hasNonRejected) nonRejectedUnique++;
+      if (matches.some((m) => m.review_status !== "rejected")) nonRejectedUnique++;
     }
     return nonRejectedUnique >= totalWords;
   }
 
-  // Passage-based games
   if (game.game_type === "reading" || game.game_type === "linked_extracts" || game.game_type === "gap_fill_passage") {
     const passagesPerGame = Number(rules.passages_per_game ?? 3);
     const questionsPerPassage = Number(rules.questions_per_passage ?? 10);
 
-    let passageQuery = admin
+    const { data: allPassagesRaw } = await admin
       .from("reading_passages")
       .select("id, review_status, title")
       .eq("unit_id", unit.id);
-
-    const { data: allPassagesRaw } = await passageQuery;
     let allPassages = (allPassagesRaw ?? []) as Array<{ id: string; review_status: string | null; title: string | null }>;
 
-    // Apply title prefix filters in JS (Supabase JS doesn't support .or with .not chains cleanly here)
     if (game.game_type === "linked_extracts") {
       allPassages = allPassages.filter((p) => /^(linked extracts:|cloze passage:)/i.test(p.title ?? ""));
     } else if (game.game_type === "gap_fill_passage") {
@@ -122,8 +147,7 @@ async function isGameComplete(
 
     const byPassage = new Map<string, number>();
     for (const q of questions) {
-      if (!q.passage_id) continue;
-      if (q.review_status === "rejected") continue;
+      if (!q.passage_id || q.review_status === "rejected") continue;
       byPassage.set(q.passage_id, (byPassage.get(q.passage_id) ?? 0) + 1);
     }
 
@@ -135,7 +159,6 @@ async function isGameComplete(
     return validCount >= passagesPerGame;
   }
 
-  // Word/question-based games (context_master, cloze_challenge)
   if (QUESTION_GAME_TYPES.has(game.game_type)) {
     const questionsPerWord = Number(rules.questions_per_word ?? 3);
     const required = totalWords * questionsPerWord;
@@ -147,13 +170,11 @@ async function isGameComplete(
       .eq("game_id", game.id)
       .eq("unit_id", unit.id);
     const all = (qData ?? []) as Array<{ word: string | null; review_status: string | null }>;
-    // Word-based: only count questions whose word is currently in the unit
     const inUnit = all.filter((q) => q.word && lowerWords.has(q.word.toLowerCase()));
     const nonRejected = inUnit.filter((q) => q.review_status !== "rejected").length;
     return nonRejected >= required;
   }
 
-  // Unknown game type — treat as complete (skip)
   return true;
 }
 
@@ -180,119 +201,237 @@ async function invokeChild(
   return { ok: res.ok, status: res.status, body };
 }
 
-type Task = { unit: Unit; game: Game; testTypeCode: string };
+async function invokeChildWithRetry(
+  fnName: string,
+  payload: Record<string, unknown>,
+  authHeader: string,
+): Promise<{ ok: boolean; status: number; body: unknown; attempts: number; lastError?: string }> {
+  let lastError = "";
+  let lastStatus = 0;
+  let lastBody: unknown = null;
+  for (let attempt = 1; attempt <= RETRY_ATTEMPTS; attempt++) {
+    try {
+      const r = await invokeChild(fnName, payload, authHeader);
+      if (r.ok) return { ...r, attempts: attempt };
+      lastStatus = r.status;
+      lastBody = r.body;
+      const bodyMsg =
+        typeof r.body === "object" && r.body && "error" in r.body
+          ? String((r.body as { error: unknown }).error)
+          : typeof r.body === "string"
+            ? r.body
+            : JSON.stringify(r.body);
+      lastError = `HTTP ${r.status}: ${bodyMsg?.slice(0, 400) ?? "no body"}`;
+      // Don't retry auth or validation errors
+      if (r.status === 401 || r.status === 403 || r.status === 400) break;
+    } catch (err) {
+      lastError = err instanceof Error ? err.message : String(err);
+    }
+    if (attempt < RETRY_ATTEMPTS) await sleep(RETRY_BACKOFF_MS * attempt);
+  }
+  return { ok: false, status: lastStatus, body: lastBody, attempts: RETRY_ATTEMPTS, lastError };
+}
 
-async function runGeneration(
+async function selfInvokeResume(jobId: string, authHeader: string) {
+  // Fire-and-forget chain — we don't await the response body.
+  try {
+    await fetch(`${SUPABASE_URL}/functions/v1/generate-all-content`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: authHeader,
+        apikey: SUPABASE_ANON_KEY,
+      },
+      body: JSON.stringify({ resume_job_id: jobId }),
+    });
+  } catch (err) {
+    log("self-invoke failed", { jobId, err: String(err) });
+  }
+}
+
+async function processChunk(
   jobId: string,
-  tasks: Task[],
   authHeader: string,
   admin: ReturnType<typeof createClient>,
 ) {
-  let success = 0;
-  let skipped = 0;
-  let failed = 0;
-  const startedAt = Date.now();
+  // Reload job snapshot
+  const { data: jobRow, error: jobLoadErr } = await admin
+    .from("generation_jobs")
+    .select(
+      "id, status, pending_tasks, task_errors, success_count, skipped_count, failed_count",
+    )
+    .eq("id", jobId)
+    .single();
+  if (jobLoadErr || !jobRow) {
+    log("processChunk: job not found", { jobId, err: String(jobLoadErr) });
+    return;
+  }
+  if (jobRow.status !== "running") {
+    log("processChunk: job not running, exit", { jobId, status: jobRow.status });
+    return;
+  }
 
-  const updateJob = async (patch: Record<string, unknown>) => {
-    try {
-      await admin.from("generation_jobs").update(patch).eq("id", jobId);
-    } catch (e) {
-      log("Failed to update job", { jobId, e: String(e) });
+  const pending = (jobRow.pending_tasks ?? []) as QueuedTask[];
+  if (pending.length === 0) {
+    await admin
+      .from("generation_jobs")
+      .update({
+        status: "completed",
+        current_label: null,
+        finished_at: new Date().toISOString(),
+      })
+      .eq("id", jobId);
+    log("Job completed", { jobId });
+    return;
+  }
+
+  const chunk = pending.slice(0, CHUNK_SIZE);
+  const remainingAfterChunk = pending.slice(CHUNK_SIZE);
+
+  // Hydrate units and games used by this chunk
+  const unitIds = Array.from(new Set(chunk.map((t) => t.u)));
+  const gameIds = Array.from(new Set(chunk.map((t) => t.g)));
+
+  const [{ data: unitsData }, { data: gamesData }] = await Promise.all([
+    admin.from("units").select("id, title, unit_number, test_type_id, words").in("id", unitIds),
+    admin.from("games").select("id, game_type, rules").in("id", gameIds),
+  ]);
+  const unitsById = new Map<string, Unit>(((unitsData ?? []) as Unit[]).map((u) => [u.id, u]));
+  const gamesById = new Map<string, Game>(((gamesData ?? []) as Game[]).map((g) => [g.id, g]));
+
+  let success = jobRow.success_count ?? 0;
+  let skipped = jobRow.skipped_count ?? 0;
+  let failed = jobRow.failed_count ?? 0;
+  const taskErrors = ((jobRow.task_errors ?? []) as TaskError[]).slice();
+
+  const recordError = (entry: TaskError) => {
+    taskErrors.push(entry);
+    if (taskErrors.length > MAX_ERROR_ENTRIES) {
+      taskErrors.splice(0, taskErrors.length - MAX_ERROR_ENTRIES);
     }
   };
 
-  try {
-    for (const { unit, game, testTypeCode } of tasks) {
-      const words = Array.isArray(unit.words) ? unit.words : [];
-      if (words.length === 0) continue;
-      const gen = resolveGenerator(game.game_type);
-      if (!gen) continue;
-
-      await updateJob({
-        current_label: `${testTypeCode} • ${unit.title} • ${game.game_type}`,
+  for (let i = 0; i < chunk.length; i++) {
+    const task = chunk[i];
+    const unit = unitsById.get(task.u);
+    const game = gamesById.get(task.g);
+    if (!unit || !game) {
+      failed++;
+      recordError({
+        at: new Date().toISOString(),
+        unit_id: task.u,
+        unit_title: unit?.title ?? "(missing unit)",
+        game_id: task.g,
+        game_type: game?.game_type ?? "?",
+        fn: "(prep)",
+        message: "Unit or game row not found",
       });
+      continue;
+    }
+    const words = Array.isArray(unit.words) ? unit.words : [];
+    if (words.length === 0) {
+      skipped++;
+      continue;
+    }
+    const gen = resolveGenerator(game.game_type);
+    if (!gen) {
+      skipped++;
+      continue;
+    }
 
-      let payload: Record<string, unknown>;
-      if (gen.fn === "generate-vocabulary") {
-        payload = { unit_id: unit.id, words };
-      } else if (gen.fn === "generate-test-questions") {
-        payload = {
+    // Update current_label + remove this task from queue progressively so
+    // restarts after a crash don't re-run the in-flight task forever.
+    const progressivePending = [...chunk.slice(i + 1), ...remainingAfterChunk];
+    await admin
+      .from("generation_jobs")
+      .update({
+        current_label: `${task.t} • ${unit.title} • ${game.game_type}`,
+        pending_tasks: progressivePending,
+      })
+      .eq("id", jobId);
+
+    let payload: Record<string, unknown>;
+    if (gen.fn === "generate-vocabulary") {
+      payload = { unit_id: unit.id, words };
+    } else if (gen.fn === "generate-test-questions") {
+      payload = {
+        unit_id: unit.id,
+        words,
+        game_type: game.game_type,
+        game_id: game.id,
+        test_type_code: task.t,
+      };
+    } else {
+      payload = {
+        unit_id: unit.id,
+        words,
+        test_type_code: task.t,
+        unit_title: unit.title,
+      };
+    }
+
+    const iterations = gen.isPassage ? MAX_PASSAGE_ITERATIONS : 1;
+    for (let iter = 0; iter < iterations; iter++) {
+      const result = await invokeChildWithRetry(gen.fn, payload, authHeader);
+      if (!result.ok) {
+        failed++;
+        recordError({
+          at: new Date().toISOString(),
           unit_id: unit.id,
-          words,
-          game_type: game.game_type,
-          game_id: game.id,
-          test_type_code: testTypeCode,
-        };
-      } else {
-        payload = {
-          unit_id: unit.id,
-          words,
-          test_type_code: testTypeCode,
           unit_title: unit.title,
-        };
+          game_id: game.id,
+          game_type: game.game_type,
+          fn: gen.fn,
+          status: result.status,
+          message: result.lastError ?? "Unknown failure",
+        });
+        log(`FAIL ${gen.fn}`, {
+          unit: unit.title,
+          game: game.game_type,
+          status: result.status,
+          attempts: result.attempts,
+        });
+        break;
       }
-
-      const iterations = gen.isPassage ? MAX_PASSAGE_ITERATIONS : 1;
-      for (let i = 0; i < iterations; i++) {
-        try {
-          const result = await invokeChild(gen.fn, payload, authHeader);
-          if (!result.ok) {
-            failed++;
-            log(`FAIL ${gen.fn}`, {
-              unit: unit.title,
-              game: game.game_type,
-              status: result.status,
-              body: result.body,
-            });
-            break;
-          }
-          const body = result.body as { skipped?: boolean } | null;
-          if (gen.isPassage && body?.skipped) {
-            skipped++;
-            break;
-          }
-          success++;
-          if (!gen.isPassage) break;
-        } catch (err) {
-          failed++;
-          log(`ERR ${gen.fn}`, {
-            unit: unit.title,
-            game: game.game_type,
-            error: String(err),
-          });
-          break;
-        }
+      const body = result.body as { skipped?: boolean } | null;
+      if (gen.isPassage && body?.skipped) {
+        skipped++;
+        break;
       }
+      success++;
+      if (!gen.isPassage) break;
+    }
 
-      await updateJob({
+    await admin
+      .from("generation_jobs")
+      .update({
         success_count: success,
         skipped_count: skipped,
         failed_count: failed,
-      });
-    }
+        task_errors: taskErrors,
+      })
+      .eq("id", jobId);
+  }
 
-    const elapsed = Math.round((Date.now() - startedAt) / 1000);
-    log(`Done`, { success, skipped, failed, elapsed_seconds: elapsed });
-    await updateJob({
-      status: "completed",
-      success_count: success,
-      skipped_count: skipped,
-      failed_count: failed,
-      current_label: null,
-      finished_at: new Date().toISOString(),
-    });
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    log("Job crashed", { msg });
-    await updateJob({
-      status: "failed",
-      error_message: msg,
-      success_count: success,
-      skipped_count: skipped,
-      failed_count: failed,
-      current_label: null,
-      finished_at: new Date().toISOString(),
-    });
+  // Chunk done. Either chain to next chunk or complete.
+  if (remainingAfterChunk.length > 0) {
+    await admin
+      .from("generation_jobs")
+      .update({ pending_tasks: remainingAfterChunk })
+      .eq("id", jobId);
+    log("Chunk done, chaining", { jobId, remaining: remainingAfterChunk.length });
+    await selfInvokeResume(jobId, authHeader);
+  } else {
+    await admin
+      .from("generation_jobs")
+      .update({
+        status: "completed",
+        current_label: null,
+        finished_at: new Date().toISOString(),
+        pending_tasks: [],
+      })
+      .eq("id", jobId);
+    log("Job completed", { jobId, success, skipped, failed });
   }
 }
 
@@ -341,8 +480,22 @@ Deno.serve(async (req) => {
       test_type_code?: string;
       unit_id?: string;
       only_incomplete?: boolean;
+      resume_job_id?: string;
     };
-    // Default: skip game/unit pairs that already meet their content requirement.
+
+    // ===== Resume path =====
+    if (body.resume_job_id) {
+      const jobId = body.resume_job_id;
+      // Process synchronously-in-background so this invocation can return fast.
+      // @ts-ignore EdgeRuntime is provided by Supabase Edge runtime
+      EdgeRuntime.waitUntil(processChunk(jobId, authHeader, admin));
+      return new Response(
+        JSON.stringify({ success: true, resumed: true, job_id: jobId }),
+        { status: 202, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    // ===== Initial path =====
     const onlyIncomplete = body.only_incomplete !== false;
 
     const { data: testTypes } = await admin
@@ -382,17 +535,15 @@ Deno.serve(async (req) => {
     if (ttgErr) throw ttgErr;
 
     const gamesByTestType = new Map<string, Game[]>();
-    for (const row of (ttgRows ?? []) as Array<{
-      test_type_id: string;
-      games: Game;
-    }>) {
+    for (const row of (ttgRows ?? []) as Array<{ test_type_id: string; games: Game }>) {
       const list = gamesByTestType.get(row.test_type_id) ?? [];
       list.push(row.games);
       gamesByTestType.set(row.test_type_id, list);
     }
 
-    // Build the candidate task list (one per unit × generator-supported game).
-    const allCandidates: Task[] = [];
+    // Build candidate task list
+    type Candidate = { unit: Unit; game: Game; testTypeCode: string };
+    const allCandidates: Candidate[] = [];
     for (const unit of units) {
       const games = gamesByTestType.get(unit.test_type_id) ?? [];
       const testTypeCode = testTypeCodeById.get(unit.test_type_id) ?? "";
@@ -402,27 +553,31 @@ Deno.serve(async (req) => {
       }
     }
 
-    // If only_incomplete, drop pairs that already meet their requirement.
-    // Run completeness checks in small parallel batches to keep DB load sane.
-    let tasks: Task[] = allCandidates;
+    // Filter to incomplete only
+    let filtered: Candidate[] = allCandidates;
     let alreadyCompleteCount = 0;
     if (onlyIncomplete && allCandidates.length > 0) {
-      const filtered: Task[] = [];
+      const next: Candidate[] = [];
       const BATCH = 10;
       for (let i = 0; i < allCandidates.length; i += BATCH) {
         const slice = allCandidates.slice(i, i + BATCH);
         const flags = await Promise.all(
-          slice.map((t) => isGameComplete(admin, t.unit, t.game).catch(() => false)),
+          slice.map((c) => isGameComplete(admin, c.unit, c.game).catch(() => false)),
         );
-        slice.forEach((t, idx) => {
+        slice.forEach((c, idx) => {
           if (flags[idx]) alreadyCompleteCount++;
-          else filtered.push(t);
+          else next.push(c);
         });
       }
-      tasks = filtered;
+      filtered = next;
     }
 
-    const totalGameTasks = tasks.length;
+    const queuedTasks: QueuedTask[] = filtered.map((c) => ({
+      u: c.unit.id,
+      g: c.game.id,
+      t: c.testTypeCode,
+    }));
+    const totalGameTasks = queuedTasks.length;
 
     const { data: jobRow, error: jobErr } = await admin
       .from("generation_jobs")
@@ -432,6 +587,8 @@ Deno.serve(async (req) => {
         scope_unit_id: body.unit_id ?? null,
         status: "running",
         total_tasks: totalGameTasks,
+        pending_tasks: queuedTasks,
+        task_errors: [],
       })
       .select("id")
       .single();
@@ -446,12 +603,18 @@ Deno.serve(async (req) => {
       already_complete: alreadyCompleteCount,
       tasks: totalGameTasks,
       only_incomplete: onlyIncomplete,
+      chunk_size: CHUNK_SIZE,
     });
 
-    // @ts-ignore EdgeRuntime is provided by Supabase Edge runtime
-    EdgeRuntime.waitUntil(
-      runGeneration(jobId, tasks, authHeader, admin),
-    );
+    if (totalGameTasks === 0) {
+      await admin
+        .from("generation_jobs")
+        .update({ status: "completed", finished_at: new Date().toISOString() })
+        .eq("id", jobId);
+    } else {
+      // @ts-ignore EdgeRuntime is provided by Supabase Edge runtime
+      EdgeRuntime.waitUntil(processChunk(jobId, authHeader, admin));
+    }
 
     return new Response(
       JSON.stringify({
@@ -466,6 +629,7 @@ Deno.serve(async (req) => {
         already_complete: alreadyCompleteCount,
         tasks: totalGameTasks,
         only_incomplete: onlyIncomplete,
+        chunk_size: CHUNK_SIZE,
       }),
       {
         status: 202,
