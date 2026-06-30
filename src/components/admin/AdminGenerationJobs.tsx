@@ -61,7 +61,7 @@ export const AdminGenerationJobs = () => {
       .select("*")
       .order("started_at", { ascending: false })
       .limit(25);
-    setJobs((data ?? []) as GenerationJob[]);
+    setJobs((data ?? []) as unknown as GenerationJob[]);
     setLoading(false);
   };
 
