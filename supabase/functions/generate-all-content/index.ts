@@ -340,7 +340,10 @@ Deno.serve(async (req) => {
     const body = (await req.json().catch(() => ({}))) as {
       test_type_code?: string;
       unit_id?: string;
+      only_incomplete?: boolean;
     };
+    // Default: skip game/unit pairs that already meet their content requirement.
+    const onlyIncomplete = body.only_incomplete !== false;
 
     const { data: testTypes } = await admin
       .from("test_types")
@@ -388,10 +391,38 @@ Deno.serve(async (req) => {
       gamesByTestType.set(row.test_type_id, list);
     }
 
-    const totalGameTasks = units.reduce((acc, u) => {
-      const games = gamesByTestType.get(u.test_type_id) ?? [];
-      return acc + games.filter((g) => resolveGenerator(g.game_type)).length;
-    }, 0);
+    // Build the candidate task list (one per unit × generator-supported game).
+    const allCandidates: Task[] = [];
+    for (const unit of units) {
+      const games = gamesByTestType.get(unit.test_type_id) ?? [];
+      const testTypeCode = testTypeCodeById.get(unit.test_type_id) ?? "";
+      for (const game of games) {
+        if (!resolveGenerator(game.game_type)) continue;
+        allCandidates.push({ unit, game, testTypeCode });
+      }
+    }
+
+    // If only_incomplete, drop pairs that already meet their requirement.
+    // Run completeness checks in small parallel batches to keep DB load sane.
+    let tasks: Task[] = allCandidates;
+    let alreadyCompleteCount = 0;
+    if (onlyIncomplete && allCandidates.length > 0) {
+      const filtered: Task[] = [];
+      const BATCH = 10;
+      for (let i = 0; i < allCandidates.length; i += BATCH) {
+        const slice = allCandidates.slice(i, i + BATCH);
+        const flags = await Promise.all(
+          slice.map((t) => isGameComplete(admin, t.unit, t.game).catch(() => false)),
+        );
+        slice.forEach((t, idx) => {
+          if (flags[idx]) alreadyCompleteCount++;
+          else filtered.push(t);
+        });
+      }
+      tasks = filtered;
+    }
+
+    const totalGameTasks = tasks.length;
 
     const { data: jobRow, error: jobErr } = await admin
       .from("generation_jobs")
@@ -411,22 +442,30 @@ Deno.serve(async (req) => {
       jobId,
       test_types: filteredTestTypes.map((t) => t.code),
       units: units.length,
+      candidates: allCandidates.length,
+      already_complete: alreadyCompleteCount,
       tasks: totalGameTasks,
+      only_incomplete: onlyIncomplete,
     });
 
     // @ts-ignore EdgeRuntime is provided by Supabase Edge runtime
     EdgeRuntime.waitUntil(
-      runGeneration(jobId, units, gamesByTestType, testTypeCodeById, authHeader, admin),
+      runGeneration(jobId, tasks, authHeader, admin),
     );
 
     return new Response(
       JSON.stringify({
         success: true,
         job_id: jobId,
-        message: "Generation started in background.",
+        message: onlyIncomplete
+          ? "Background generation started for incomplete games only."
+          : "Background generation started.",
         test_types: filteredTestTypes.map((t) => t.code),
         units: units.length,
+        candidates: allCandidates.length,
+        already_complete: alreadyCompleteCount,
         tasks: totalGameTasks,
+        only_incomplete: onlyIncomplete,
       }),
       {
         status: 202,
