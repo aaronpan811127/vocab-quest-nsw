@@ -57,6 +57,29 @@ serve(async (req) => {
       });
     }
 
+    // Server-side premium/trial gate
+    {
+      const { data: unitRow, error: unitErr } = await supabaseUser
+        .from("units").select("unit_number, test_type_id").eq("id", unit_id).single();
+      if (unitErr || !unitRow) {
+        return new Response(JSON.stringify({ error: "Invalid unit" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const { data: premiumFlag } = await supabaseUser.rpc("has_premium_access", { _user_id: user.id });
+      if (premiumFlag !== true) {
+        const { count } = await supabaseUser.from("units")
+          .select("id", { count: "exact", head: true })
+          .eq("test_type_id", (unitRow as any).test_type_id)
+          .lte("unit_number", (unitRow as any).unit_number);
+        if ((count ?? 0) > 2) {
+          return new Response(JSON.stringify({ error: "Premium subscription required for this unit" }), {
+            status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+      }
+    }
+
     // Use service role to check existing questions
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
