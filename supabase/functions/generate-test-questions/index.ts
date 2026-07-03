@@ -62,6 +62,29 @@ serve(async (req) => {
       });
     }
 
+    // Server-side premium/trial gate
+    {
+      const { data: unitRow, error: unitErr } = await supabaseUser
+        .from("units").select("unit_number, test_type_id").eq("id", unit_id).single();
+      if (unitErr || !unitRow) {
+        return new Response(JSON.stringify({ error: "Invalid unit" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const { data: premiumFlag } = await supabaseUser.rpc("has_premium_access", { _user_id: user.id });
+      if (premiumFlag !== true) {
+        const { count } = await supabaseUser.from("units")
+          .select("id", { count: "exact", head: true })
+          .eq("test_type_id", (unitRow as any).test_type_id)
+          .lte("unit_number", (unitRow as any).unit_number);
+        if ((count ?? 0) > 2) {
+          return new Response(JSON.stringify({ error: "Premium subscription required for this unit" }), {
+            status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+      }
+    }
+
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Get game rules for questions_per_word
@@ -125,7 +148,7 @@ serve(async (req) => {
       console.log("All words have sufficient questions, returning existing");
       return new Response(JSON.stringify({ 
         success: true, 
-        questions: existingQuestions, 
+        questions: (existingQuestions || []).map(({ correct_answer, ...q }: any) => q), 
         generated: 0 
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -334,10 +357,12 @@ IMPORTANT:
 
     // Combine existing and new questions for response
     const allQuestions = [...(existingQuestions || []), ...(insertedData || [])];
+    // Strip correct_answer before returning to client — server-side grading only
+    const safeQuestions = allQuestions.map(({ correct_answer, ...q }: any) => q);
 
     return new Response(JSON.stringify({ 
       success: true, 
-      questions: allQuestions,
+      questions: safeQuestions,
       generated: insertedData?.length || 0
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

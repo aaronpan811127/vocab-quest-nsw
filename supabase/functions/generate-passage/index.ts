@@ -60,6 +60,29 @@ serve(async (req) => {
       );
     }
 
+    // Server-side premium/trial gate
+    {
+      const { data: unitRow, error: unitErr } = await supabaseUser
+        .from("units").select("unit_number, test_type_id").eq("id", unit_id).single();
+      if (unitErr || !unitRow) {
+        return new Response(JSON.stringify({ success: false, error: "Invalid unit" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const { data: premiumFlag } = await supabaseUser.rpc("has_premium_access", { _user_id: user.id });
+      if (premiumFlag !== true) {
+        const { count } = await supabaseUser.from("units")
+          .select("id", { count: "exact", head: true })
+          .eq("test_type_id", (unitRow as any).test_type_id)
+          .lte("unit_number", (unitRow as any).unit_number);
+        if ((count ?? 0) > 2) {
+          return new Response(JSON.stringify({ success: false, error: "Premium subscription required for this unit" }), {
+            status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+      }
+    }
+
     // Use service role for database operations
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
@@ -339,7 +362,7 @@ Respond with ONLY this JSON structure (no markdown, no explanation):
       JSON.stringify({ 
         success: true, 
         passage: insertedPassage,
-        questions: insertedQuestions,
+        questions: (insertedQuestions || []).map(({ correct_answer, ...q }: any) => q),
         questions_count: insertedQuestions?.length || 0
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
