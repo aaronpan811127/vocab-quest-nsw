@@ -57,7 +57,7 @@ export const Hero = ({ onSelectTestType }: HeroProps) => {
           height={1080}
           className="w-full h-full object-cover object-center"
         />
-        <div className="absolute inset-0 bg-background/90 backdrop-blur-sm" />
+        <div className="absolute inset-0 bg-background/85 dark:bg-background/75 backdrop-blur-md" />
       </div>
 
       {/* Cartoon Cat Pattern Overlay - deferred to not block LCP */}
@@ -114,7 +114,7 @@ export const Hero = ({ onSelectTestType }: HeroProps) => {
 
          {/* Value Props */}
          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 max-w-2xl mx-auto">
-           <div className="flex items-center gap-2 p-2.5 sm:p-3 rounded-xl bg-card/40 backdrop-blur-sm border border-border/50 text-left">
+           <div className="flex items-center gap-2 p-2.5 sm:p-3 rounded-xl bg-card/70 dark:bg-card/85 backdrop-blur-md border border-border/60 text-left">
              <div className="p-2 rounded-lg bg-warning/15 flex-shrink-0">
                <Swords className="h-5 w-5 text-warning" />
              </div>
@@ -123,7 +123,7 @@ export const Hero = ({ onSelectTestType }: HeroProps) => {
                 <div className="text-[10px] sm:text-xs text-muted-foreground">Boost reading skills through fun, engaging game modes</div>
              </div>
            </div>
-           <div className="flex items-center gap-2 p-2.5 sm:p-3 rounded-xl bg-card/40 backdrop-blur-sm border border-border/50 text-left">
+           <div className="flex items-center gap-2 p-2.5 sm:p-3 rounded-xl bg-card/70 dark:bg-card/85 backdrop-blur-md border border-border/60 text-left">
              <div className="p-2 rounded-lg bg-primary/15 flex-shrink-0">
                <Clock className="h-5 w-5 text-primary" />
              </div>
@@ -136,7 +136,7 @@ export const Hero = ({ onSelectTestType }: HeroProps) => {
 
         {/* Trust Signals */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 max-w-3xl mx-auto">
-          <div className="flex items-center gap-2 p-2.5 sm:p-3 rounded-xl bg-card/40 backdrop-blur-sm border border-border/50 text-left">
+          <div className="flex items-center gap-2 p-2.5 sm:p-3 rounded-xl bg-card/70 dark:bg-card/85 backdrop-blur-md border border-border/60 text-left">
             <div className="p-2 rounded-lg bg-primary/15 flex-shrink-0">
               <Target className="h-5 w-5 text-primary" />
             </div>
@@ -145,7 +145,7 @@ export const Hero = ({ onSelectTestType }: HeroProps) => {
                <div className="text-[10px] sm:text-xs text-muted-foreground">NAPLAN, NSW Selective &amp; NSW OC test prep</div>
             </div>
           </div>
-          <div className="flex items-center gap-2 p-2.5 sm:p-3 rounded-xl bg-card/40 backdrop-blur-sm border border-border/50 text-left">
+          <div className="flex items-center gap-2 p-2.5 sm:p-3 rounded-xl bg-card/70 dark:bg-card/85 backdrop-blur-md border border-border/60 text-left">
             <div className="p-2 rounded-lg bg-secondary/15 flex-shrink-0">
               <GraduationCap className="h-5 w-5 text-secondary" />
             </div>
@@ -154,7 +154,7 @@ export const Hero = ({ onSelectTestType }: HeroProps) => {
               <div className="text-[10px] sm:text-xs text-muted-foreground">Built by educators with decades of experience</div>
             </div>
           </div>
-          <div className="flex items-center gap-2 p-2.5 sm:p-3 rounded-xl bg-card/40 backdrop-blur-sm border border-border/50 text-left">
+          <div className="flex items-center gap-2 p-2.5 sm:p-3 rounded-xl bg-card/70 dark:bg-card/85 backdrop-blur-md border border-border/60 text-left">
             <div className="p-2 rounded-lg bg-success/15 flex-shrink-0">
               <FlaskConical className="h-5 w-5 text-success" />
             </div>
@@ -211,7 +211,7 @@ export const Hero = ({ onSelectTestType }: HeroProps) => {
                       ${
                         isSelected
                           ? `border-primary bg-primary/10 ring-2 ring-primary/50`
-                          : `border-border/50 bg-card/30 backdrop-blur-sm hover:border-primary/30`
+                          : `border-border/50 bg-card/70 dark:bg-card/85 backdrop-blur-md hover:border-primary/30`
                       }
                     `}
                   >
