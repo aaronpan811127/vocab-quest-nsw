@@ -156,7 +156,7 @@ serve(async (req) => {
       console.log("All words have sufficient questions, returning existing");
       return new Response(JSON.stringify({ 
         success: true, 
-        questions: existingQuestions, 
+        questions: (existingQuestions || []).map(({ correct_answer, ...q }: any) => q), 
         generated: 0 
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -287,10 +287,11 @@ IMPORTANT: Write plain sentences without any special formatting or markdown.`;
 
     // Combine existing and new questions for response
     const allQuestions = [...(existingQuestions || []), ...(insertedData || [])];
+    const safeQuestions = allQuestions.map(({ correct_answer, ...q }: any) => q);
 
     return new Response(JSON.stringify({ 
       success: true, 
-      questions: allQuestions,
+      questions: safeQuestions,
       generated: insertedData?.length || 0
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

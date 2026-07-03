@@ -362,7 +362,7 @@ Respond with ONLY this JSON structure (no markdown, no explanation):
       JSON.stringify({ 
         success: true, 
         passage: insertedPassage,
-        questions: insertedQuestions,
+        questions: (insertedQuestions || []).map(({ correct_answer, ...q }: any) => q),
         questions_count: insertedQuestions?.length || 0
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
