@@ -272,7 +272,7 @@ const ParentDashboard = () => {
 
       <main className="container mx-auto px-4 py-8">
         <Tabs defaultValue="children" className="space-y-6">
-          <TabsList className="grid w-full max-w-md grid-cols-3">
+          <TabsList className="grid w-full max-w-md grid-cols-2">
             <TabsTrigger value="children" className="flex items-center gap-2">
               <Users className="h-4 w-4" />
               Children
@@ -280,10 +280,6 @@ const ParentDashboard = () => {
             <TabsTrigger value="subscription" className="flex items-center gap-2">
               <CreditCard className="h-4 w-4" />
               Plan
-            </TabsTrigger>
-            <TabsTrigger value="settings" className="flex items-center gap-2">
-              <Settings className="h-4 w-4" />
-              Settings
             </TabsTrigger>
           </TabsList>
 
@@ -556,41 +552,6 @@ const ParentDashboard = () => {
             )}
           </TabsContent>
 
-          {/* Settings Tab */}
-          <TabsContent value="settings" className="space-y-6">
-            <div>
-              <h2 className="text-2xl font-bold">Settings</h2>
-              <p className="text-muted-foreground">Manage your account and preferences</p>
-            </div>
-
-            <div className="grid gap-4">
-              <Card className="cursor-pointer hover:bg-muted/50 transition-colors">
-                <CardContent className="flex items-center justify-between p-4">
-                  <div className="flex items-center gap-3">
-                    <User className="h-5 w-5 text-muted-foreground" />
-                    <div>
-                      <p className="font-medium">Profile Settings</p>
-                      <p className="text-sm text-muted-foreground">Update your name and email</p>
-                    </div>
-                  </div>
-                  <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                </CardContent>
-              </Card>
-
-              <Card className="cursor-pointer hover:bg-muted/50 transition-colors">
-                <CardContent className="flex items-center justify-between p-4">
-                  <div className="flex items-center gap-3">
-                    <AlertCircle className="h-5 w-5 text-muted-foreground" />
-                    <div>
-                      <p className="font-medium">Notifications</p>
-                      <p className="text-sm text-muted-foreground">Manage email and push notifications</p>
-                    </div>
-                  </div>
-                  <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
         </Tabs>
       </main>
 
