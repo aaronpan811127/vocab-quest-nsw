@@ -175,7 +175,7 @@ const Pricing = () => {
               <Button 
                 className="w-full" 
                 variant="outline"
-                onClick={() => navigate("/auth")}
+                onClick={() => navigate("/auth?view=signup")}
               >
                 <Gamepad2 className="h-4 w-4 mr-2" />
                 Start Free Trial
@@ -249,7 +249,7 @@ const Pricing = () => {
 
               <Button 
                 className="w-full bg-secondary hover:bg-secondary/90"
-                onClick={() => navigate("/parent-auth")}
+                onClick={() => navigate("/parent-auth?view=signup")}
               >
                 <Users className="h-4 w-4 mr-2" />
                 Subscribe as Parent
@@ -358,11 +358,11 @@ const Pricing = () => {
              Join thousands of Australian students preparing for NAPLAN, NSW Selective &amp; NSW OC tests
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" onClick={() => navigate("/auth")}>
+            <Button size="lg" onClick={() => navigate("/auth?view=signup")}>
               <Gamepad2 className="h-5 w-5 mr-2" />
               Start Free Trial
             </Button>
-            <Button size="lg" variant="outline" onClick={() => navigate("/parent-auth")}>
+            <Button size="lg" variant="outline" onClick={() => navigate("/parent-auth?view=signup")}>
               <Users className="h-5 w-5 mr-2" />
               Parent Sign Up
             </Button>

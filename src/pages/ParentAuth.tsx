@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { SEOHead } from "@/components/SEOHead";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +20,15 @@ const ParentAuth = () => {
   const [termsAccepted, setTermsAccepted] = useState(false);
   const { signIn, signUpAsParent, resetPassword, user, currentRole } = useAuth();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const authView = searchParams.get("view") === "signup" ? "signup" : "signin";
+  const changeAuthView = (view: string) => {
+    setSearchParams(previous => {
+      const next = new URLSearchParams(previous);
+      next.set("view", view === "signup" ? "signup" : "signin");
+      return next;
+    });
+  };
   const { toast } = useToast();
 
   useEffect(() => {
@@ -143,7 +152,7 @@ const ParentAuth = () => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-secondary/10 via-background to-background flex items-center justify-center p-4">
       <SEOHead
-        title="Parent Sign In"
+        title={authView === "signup" ? "Parent Sign Up" : "Parent Sign In"}
         description="Sign in or create your VocabQuests parent account to monitor your child's reading progress and manage your subscription."
         path="/parent-auth"
         noIndex
@@ -231,7 +240,7 @@ const ParentAuth = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Tabs defaultValue="signin" className="w-full">
+                <Tabs value={authView} onValueChange={changeAuthView} className="w-full">
                   <TabsList className="grid w-full grid-cols-2 mb-6">
                     <TabsTrigger value="signin">Sign In</TabsTrigger>
                     <TabsTrigger value="signup">Sign Up</TabsTrigger>

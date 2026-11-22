@@ -173,7 +173,7 @@ export const Hero = ({ onSelectTestType }: HeroProps) => {
                 variant="hero"
                 size="lg"
                  className="text-base sm:text-lg px-6 sm:px-8 py-5 sm:py-6 animate-glow-pulse w-full sm:w-auto"
-                onClick={() => navigate("/auth")}
+                onClick={() => navigate("/auth?view=signup")}
               >
                 <Zap className="h-5 w-5 sm:h-6 sm:w-6 mr-2" />
                 Start 7-Day Free Trial

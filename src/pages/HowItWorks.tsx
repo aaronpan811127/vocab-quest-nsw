@@ -430,7 +430,7 @@ export default function HowItWorks() {
             size="lg" 
             variant="secondary"
             className="text-lg px-8 py-6"
-            onClick={() => navigate("/auth")}
+            onClick={() => navigate("/auth?view=signup")}
           >
             Get Started Free
             <ArrowRight className="h-5 w-5 ml-2" />

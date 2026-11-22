@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { SEOHead } from "@/components/SEOHead";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,6 +23,15 @@ const Auth = () => {
   const [termsAccepted, setTermsAccepted] = useState(false);
   const { signIn, signUp, resetPassword, user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const authView = searchParams.get("view") === "signup" ? "signup" : "signin";
+  const changeAuthView = (view: string) => {
+    setSearchParams(previous => {
+      const next = new URLSearchParams(previous);
+      next.set("view", view === "signup" ? "signup" : "signin");
+      return next;
+    });
+  };
   const { toast } = useToast();
 
   useEffect(() => {
@@ -143,7 +152,7 @@ const Auth = () => {
   return (
     <div className="min-h-screen bg-gradient-hero flex items-center justify-center p-4">
       <SEOHead
-        title="Student Sign In"
+        title={authView === "signup" ? "Student Sign Up" : "Student Sign In"}
         description="Sign in or create your VocabQuests student account to strengthen reading comprehension and prepare for NAPLAN, NSW Selective & NSW OC tests."
         path="/auth"
         noIndex
@@ -220,7 +229,7 @@ const Auth = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Tabs defaultValue="signin" className="w-full">
+                <Tabs value={authView} onValueChange={changeAuthView} className="w-full">
                   <TabsList className="grid w-full grid-cols-2 mb-6">
                     <TabsTrigger value="signin">Sign In</TabsTrigger>
                     <TabsTrigger value="signup">Sign Up</TabsTrigger>
